@@ -6,7 +6,26 @@ authors:
   -
     family-names: Liu
     given-names: Yang
-    orcid: "https://orcid.org/0000-0000-0000-0000"
+    orcid: "https://orcid.org/0000-0002-1966-8460"
+    affilication: "Netherlands eScience Center"
+
+  -
+    family-names: Kalverla
+    given-names: Peter
+    orcid: "https://orcid.org/0000-0002-5025-7862"
+    affiliation: "Netherlands eScience Center"
+
+  -
+    family-names: Vijverberg
+    given-names: Sem
+    orcid: "https://orcid.org/0000-0002-1839-2618"
+    affiliation: "Vrije Universiteit Amsterdam"
+
+  -
+    family-names: van Ingen
+    given-names: Jannes
+    affiliation: "Vrije Universiteit Amsterdam"
+
 date-released: 20??-MM-DD
 doi: <insert your DOI here>
 version: "0.1.0"
