@@ -8,24 +8,27 @@ observations from the same cycle (typically 1 year) together and paying close
 attention to the treatment of adjacent cycles, we avoid information leakage
 between train and test sets.
 """
+import pandas as pd
 
 
 class TimeIndex:
     """TimeIndex anchored to a date or period of interest."""
 
-    def __init__(self, anchor_date='20201130', freq='7d', cycle_time='1yr'):
+    def __init__(self, anchor_date='2020-11-30', freq='7d', cycle_time='1yr'):
         """Instantiate a basic index with minimal configuration.
 
         Set up the index with given freq ending exactly on the anchor date. The
         index will extend back in time as many periods as fit within the cycle
         time.
         """
-        # set self.index or self.dataframe or something like that
-        raise NotImplementedError
+        n = pd.Timedelta('365days') // pd.to_timedelta(freq)
+        anchor = pd.Timestamp(anchor_date)
+        # TODO see if I can make self._index **be** just self.
+        self._index = pd.interval_range(end=anchor, periods=n, freq=freq)
 
     def __str__(self):
         """Return nicely formatted representation of self."""
-        return f"I'm {self}"
+        return f"I'm {self._index}"
 
     def discard(self, max_lag):
         """Only keep indices up to the given max lag."""

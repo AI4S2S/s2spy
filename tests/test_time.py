@@ -5,6 +5,9 @@ import pytest
 from s2s.time import TimeIndex
 
 
-def test_timeindex_notimplemented():
-    with pytest.raises(NotImplementedError):
-        TimeIndex()
+class TestTimeIndex:
+
+    def test_init(self):
+        index = TimeIndex()
+        # TODO fix this test
+        assert index._index = Interval('2020-11-23', '2020-11-30', closed='right')
