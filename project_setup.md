@@ -44,7 +44,7 @@ help you decide which tool to use for packaging.
   - [PyTest introduction](https://pythontest.com/pytest-book/)
   - PyTest is listed as a development dependency
   - This is configured in `setup.cfg`
-- The project uses [GitHub action workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions) to automatically run tests on GitHub infrastructure against multiple Python versions
+- The project uses GitHub action workflows to automatically run tests on GitHub infrastructure against multiple Python versions
   - Workflows can be found in [`.github/workflows`](.github/workflows/)
 - [Relevant section in the guide](https://guide.esciencecenter.nl/#/best_practices/language_guides/python?id=testing)
 
