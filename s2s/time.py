@@ -14,28 +14,27 @@ import pandas as pd
 class TimeIndex:
     """TimeIndex anchored to a date or period of interest."""
 
-    def __init__(self, anchor_date='2020-11-30', freq='7d', cycle_time='1yr'):
+    def __init__(self, anchor_date="2020-11-30", freq="7d", cycle_time="1yr"):
         """Instantiate a basic index with minimal configuration.
 
         Set up the index with given freq ending exactly on the anchor date. The
         index will extend back in time as many periods as fit within the cycle
         time.
         """
-        n = pd.Timedelta('365days') // pd.to_timedelta(freq)
+        n = pd.Timedelta("365days") // pd.to_timedelta(freq)
         anchor = pd.Timestamp(anchor_date)
-        # TODO see if I can make self._index **be** just self.
         self._index = pd.interval_range(end=anchor, periods=n, freq=freq)
 
     def __str__(self):
         """Return nicely formatted representation of self."""
-        return f"I'm {self._index}"
+        return f"{self._index}"
 
     def discard(self, max_lag):
         """Only keep indices up to the given max lag."""
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start, end, periods):
+    def mark_target_period(self, start=None, end=None, periods=None):
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
         raise NotImplementedError
@@ -51,6 +50,7 @@ class TimeIndex:
 
     def get_lagged_indices(self, lag=1):
         """Return indices shifted backward by given lag."""
+        raise NotImplementedError
 
     def get_train_indices(self, strategy, params):
         """Return indices for training data indices using given strategy."""
