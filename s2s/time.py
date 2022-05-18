@@ -3,7 +3,7 @@
 Utilities designed to aid in seasonal-to-subseasonal prediction experiments in
 which we search for skillful predictors preceding a certain event of interest.
 
-Time indices are anchored to the target period of interest. By keeping keeping
+Time indices are anchored to the target period of interest. By keeping
 observations from the same cycle (typically 1 year) together and paying close
 attention to the treatment of adjacent cycles, we avoid information leakage
 between train and test sets.
