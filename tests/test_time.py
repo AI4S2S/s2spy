@@ -13,11 +13,11 @@ class TestTimeIndex:
             end=pd.Timestamp("2020-11-30"), periods=52, freq="7d"
         )
         # TODO make more useful tests
-        np.array_equal(index._index, expected)
+        np.array_equal(index._index, expected)  # noqa
 
     def test_str(self):
         index = TimeIndex()
-        assert str(index) == str(index._index)
+        assert str(index) == str(index._index)  # noqa
 
     def test_discard(self):
         index = TimeIndex()
@@ -29,7 +29,7 @@ class TestTimeIndex:
         index = TimeIndex()
 
         with pytest.raises(NotImplementedError):
-            index.mark_target_period()
+            index.mark_target_period(end='20200101', periods=5)
 
     def test_resample_with_dataframe(self):
         index = TimeIndex()

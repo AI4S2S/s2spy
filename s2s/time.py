@@ -21,7 +21,8 @@ class TimeIndex:
         index will extend back in time as many periods as fit within the cycle
         time.
         """
-        n = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        if cycle_time == '1yr':
+            n = pd.Timedelta("365days") // pd.to_timedelta(freq)
         anchor = pd.Timestamp(anchor_date)
         self._index = pd.interval_range(end=anchor, periods=n, freq=freq)
 
@@ -37,6 +38,14 @@ class TimeIndex:
     def mark_target_period(self, start=None, end=None, periods=None):
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
+        if start and end:
+            pass
+        elif start and periods:
+            pass
+        elif end and periods:
+            pass
+        else:
+            raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
     def resample(self, input_data):
@@ -48,19 +57,19 @@ class TimeIndex:
         """
         raise NotImplementedError
 
-    def get_lagged_indices(self, lag=1):
+    def get_lagged_indices(self, lag=1): # noqa
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
-    def get_train_indices(self, strategy, params):
+    def get_train_indices(self, strategy, params):  # noqa
         """Return indices for training data indices using given strategy."""
         raise NotImplementedError
 
-    def get_test_indices(self, strategy, params):
+    def get_test_indices(self, strategy, params):  # noqa
         """Return indices for test data indices using given strategy."""
         raise NotImplementedError
 
-    def get_train_test_indices(self, strategy, params):
+    def get_train_test_indices(self, strategy, params):  # noqa
         """Shorthand for getting both train and test indices."""
         train = self.get_train_sets()
         test = self.get_test_sets()
