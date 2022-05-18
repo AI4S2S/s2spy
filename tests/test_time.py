@@ -31,6 +31,15 @@ class TestTimeIndex:
         with pytest.raises(NotImplementedError):
             index.mark_target_period(end='20200101', periods=5)
 
+        with pytest.raises(NotImplementedError):
+            index.mark_target_period(start='20200101', periods=5)
+
+        with pytest.raises(NotImplementedError):
+            index.mark_target_period(start='20190101', end='20200101')
+
+        with pytest.raises(ValueError):
+            index.mark_target_period(end='20200101')
+
     def test_resample_with_dataframe(self):
         index = TimeIndex()
         df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
