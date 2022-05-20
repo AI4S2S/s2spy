@@ -15,7 +15,7 @@
 
 python package for s2s forecasts with ai
 
-The project setup is documented in [project_setup.md](project_setup.md). Feel free to remove this document (and/or the link to this document) if you don't need it.
+The project setup is documented in [project_setup.md](docs/project_setup.md). Feel free to remove this document (and/or the link to this document) if you don't need it.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Include a link to your project's full documentation here.
 ## Contributing
 
 If you want to contribute to the development of s2s,
-have a look at the [contribution guidelines](CONTRIBUTING.md).
+have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## Credits
 
