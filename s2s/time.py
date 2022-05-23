@@ -11,7 +11,7 @@ between train and test sets.
 import pandas as pd
 
 
-class AdventCalendar():
+class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(self, anchor_date=(11, 30), freq="7d"):
@@ -25,27 +25,32 @@ class AdventCalendar():
         self.day = anchor_date[1]
         self.freq = freq
         self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
-        print(f"{self.n} periods of {freq} leading up to {anchor_date}.")
 
     def map_year(self, year):
+        """Return a concrete IntervalIndex for the given year."""
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(end=anchor, periods=self.n, freq=self.freq)
-        intervals = intervals[::-1].to_frame(name=year).reset_index(drop=True)
+        intervals = pd.Series(intervals[::-1], name=str(year))
         intervals.index = intervals.index.map(lambda i: f"t-{i}")
         return intervals
 
-    def map_years(self, start=1979, end=2020):
-        """Store a periodic timeindex anchored to anchor_date for given year."""
-        self.index = pd.concat([
-            self.map_year(year) for year in range(start, end+1)
-            ], axis=1).T[::-1]
-        return self.index
+    def map_years(self, start=1979, end=2020, flat=False):
+        """Return a periodic IntervalIndex for the given years."""
+        index = pd.concat(
+            [self.map_year(year) for year in range(start, end + 1)], axis=1
+        ).T[::-1]
+
+        if flat:
+            return index.stack().reset_index(drop=True)
+
+        return index
 
     def __str__(self):
-        f"{self.n} periods of {freq} leading up to {anchor_date}."
+        return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__, self.__dict__)
+        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
+        return f"AdventCalendar({props})"
 
     def discard(self, max_lag):
         """Only keep indices up to the given max lag."""
@@ -74,7 +79,7 @@ class AdventCalendar():
         """
         raise NotImplementedError
 
-    def get_lagged_indices(self, lag=1): # noqa
+    def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
