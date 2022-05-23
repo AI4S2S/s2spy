@@ -11,24 +11,41 @@ between train and test sets.
 import pandas as pd
 
 
-class TimeIndex:
-    """TimeIndex anchored to a date or period of interest."""
+class AdventCalendar():
+    """Countdown time to anticipated anchor date or period of interest."""
 
-    def __init__(self, anchor_date="2020-11-30", freq="7d", cycle_time="1yr"):
-        """Instantiate a basic index with minimal configuration.
+    def __init__(self, anchor_date=(11, 30), freq="7d"):
+        """Instantiate a basic calendar with minimal configuration.
 
-        Set up the index with given freq ending exactly on the anchor date. The
+        Set up the calendar with given freq ending exactly on the anchor date. The
         index will extend back in time as many periods as fit within the cycle
         time.
         """
-        if cycle_time == '1yr':
-            n = pd.Timedelta("365days") // pd.to_timedelta(freq)
-        anchor = pd.Timestamp(anchor_date)
-        self._index = pd.interval_range(end=anchor, periods=n, freq=freq)
+        self.month = anchor_date[0]
+        self.day = anchor_date[1]
+        self.freq = freq
+        self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        print(f"{self.n} periods of {freq} leading up to {anchor_date}.")
+
+    def map_year(self, year):
+        anchor = pd.Timestamp(year, self.month, self.day)
+        intervals = pd.interval_range(end=anchor, periods=self.n, freq=self.freq)
+        intervals = intervals[::-1].to_frame(name=year).reset_index(drop=True)
+        intervals.index = intervals.index.map(lambda i: f"t-{i}")
+        return intervals
+
+    def map_years(self, start=1979, end=2020):
+        """Store a periodic timeindex anchored to anchor_date for given year."""
+        self.index = pd.concat([
+            self.map_year(year) for year in range(start, end+1)
+            ], axis=1).T[::-1]
+        return self.index
 
     def __str__(self):
-        """Return nicely formatted representation of self."""
-        return f"{self._index}"
+        f"{self.n} periods of {freq} leading up to {anchor_date}."
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__, self.__dict__)
 
     def discard(self, max_lag):
         """Only keep indices up to the given max lag."""
