@@ -17,7 +17,7 @@ Example:
     >>> calendar
     AdventCalendar(month=12, day=31, freq=7d, n=52)
     >>> print(calendar)
-    "52 periods of 7d leading up to 12/31."
+    52 periods of 7d leading up to 12/31.
 
     >>> # Get the 60-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='60d')
@@ -34,7 +34,7 @@ Example:
     >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
     >>> calendar.map_years(2020, 2022)
-                                t-0                       t-1
+                               t-0                       t-1
     2022  (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
     2021  (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
     2020  (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
