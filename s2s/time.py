@@ -26,6 +26,11 @@ class AdventCalendar:
         self.freq = freq
         self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
 
+    def map_to_data(input_data):
+        """Map the calendar to input data."""
+
+        raise NotImplementedError
+
     def map_year(self, year):
         """Return a concrete IntervalIndex for the given year."""
         anchor = pd.Timestamp(year, self.month, self.day)
@@ -57,7 +62,7 @@ class AdventCalendar:
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, end=None, periods=None):
+    def mark_target_period(self, start=None, end=None, periods=None): # we can drop end since we have anchor date
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
         if start and end:
@@ -70,6 +75,10 @@ class AdventCalendar:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
+    def _get_resample_bins(self, input_data):
+        """Label bins for resampling."""
+
+
     def resample(self, input_data):
         """Resample input data onto this Index' axis.
 
@@ -77,7 +86,10 @@ class AdventCalendar:
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex.
         """
-        raise NotImplementedError
+        bins = self._get_resample_bins(input_data)
+        resample_data = input_data.groupby_bins(bins) # check pandas/xarray
+
+        return resample_data.mean() #check agg() in panadas and xarray
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
