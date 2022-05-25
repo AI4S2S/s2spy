@@ -100,8 +100,8 @@ class AdventCalendar:
             year: The year for which the AdventCalendar will be realized
 
         Returns:
-            intervals: pandas series filled with Intervals of the calendar's
-                frequency, counting backwards from the calendar's anchor_date.
+            Pandas Series filled with Intervals of the calendar's frequency, counting
+            backwards from the calendar's anchor_date.
 
         Example:
 
@@ -137,8 +137,8 @@ class AdventCalendar:
                 continous index.
 
         Returns:
-            intervals: pandas dataframe filled with Intervals of the calendar's
-                frequency, counting backwards from the calendar's anchor_date.
+            Pandas DataFrame filled with Intervals of the calendar's frequency,
+            counting backwards from the calendar's anchor_date.
 
         Example:
 
