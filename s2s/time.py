@@ -3,10 +3,10 @@
 Utilities designed to aid in seasonal-to-subseasonal prediction experiments in
 which we search for skillful predictors preceding a certain event of interest.
 
-Time indices are anchored to the target period of interest. By keeping keeping
-observations from the same cycle (typically 1 year) together and paying close
-attention to the treatment of adjacent cycles, we avoid information leakage
-between train and test sets.
+Time indices are anchored to the target period of interest. By keeping
+observations from the same cycle (typically 1 year) together and paying
+close attention to the treatment of adjacent cycles, we avoid information
+leakage  between train and test sets.
 """
 import pandas as pd
 
@@ -26,8 +26,10 @@ class AdventCalendar:
         self.freq = freq
         self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
 
-    def map_to_data(input_data):
-        """Map the calendar to input data."""
+    def map_to_data_year(input_data):
+        """Map the calendar to input data period."""
+        # identify how many years, then call map_year or map_years
+
 
         raise NotImplementedError
 
@@ -75,8 +77,9 @@ class AdventCalendar:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
-    def _get_resample_bins(self, input_data):
+    def _get_resample_bins(self, input_data, target_freq):
         """Label bins for resampling."""
+        raise NotImplementedError
 
 
     def resample(self, input_data):
@@ -86,10 +89,12 @@ class AdventCalendar:
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex.
         """
-        bins = self._get_resample_bins(input_data)
-        resample_data = input_data.groupby_bins(bins) # check pandas/xarray
+        #bins = self._get_resample_bins(input_data)
+        #resample_data = input_data.groupby_bins(bins) # check pandas/xarray
 
-        return resample_data.mean() #check agg() in panadas and xarray
+        #return resample_data.mean() #check agg() in panadas and xarray
+        raise NotImplementedError
+
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
