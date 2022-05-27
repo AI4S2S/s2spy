@@ -34,9 +34,12 @@ class TestAdventCalendar:
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
         year = cal.map_year(2020)
         expected = np.array(
-            [interval("2020-07-04", "2020-12-31"), interval("2020-01-06", "2020-07-04")]
+            [
+                interval("2020-07-04", "2020-12-31"),
+                interval("2020-01-06", "2020-07-04"),
+            ]
         )
-        assert np.array_equal(year.values, expected)
+        assert np.array_equal(year, expected)
 
     def test_map_years(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
@@ -53,7 +56,7 @@ class TestAdventCalendar:
                 ],
             ]
         )
-        assert np.array_equal(years.values, expected)
+        assert np.array_equal(years, expected)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
