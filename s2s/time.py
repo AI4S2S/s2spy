@@ -50,8 +50,10 @@ Example:
     dtype: interval
 
 """
-from typing import Tuple
+from typing import Tuple, Union
+from xmlrpc.client import boolean
 import pandas as pd
+import xarray as xr
 
 
 class AdventCalendar:
@@ -68,8 +70,9 @@ class AdventCalendar:
 
         Args:
             anchor_date: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date. freq:
-                Frequency of the calendar.
+                of the calendar. It will countdown until this date. 
+            freq: Frequency of the calendar datetime. The input string must follow 
+                the same format as pandas.DatetimeIndex.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -201,24 +204,47 @@ class AdventCalendar:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
-    def _get_resample_bins(self, input_data, target_freq):
-        """Label bins for resampling."""
-        raise NotImplementedError
+    def _get_resample_bins(
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray],
+        target_freq: str = "7d", trim=False
+    ) -> Union[pd.Series, pd.DataFrame, xr.DataArray]:
+        """Label bins for resampling.
+        
+        Include an extra "bin" axis based on the target frequency for
+        resampling.
 
 
-    def resample(self, input_data):
-        """Resample input data onto this Index' axis.
+        Args:
+        """
+        # target frequency must be larger than the original frequency
+        if pd.Timedelta(target_freq) < input_data.index.freq:
+            raise ValueError("Target frequency must be larger than the original frequency.")
+
+        # np.repeat
+
+
+        return input_data
+
+    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray],
+                 target_freq: str = "7d", trim: boolean=False):
+        """Resample input data to target frequency.
 
         Pass in pandas dataframe or xarray object with a datetime axis.
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex.
+
+        Args:
+            input_data: Input data for resampling. Its first axis must be
+                pandas.DatetimeIndex.
+            target_freq:
+            trim: whether keep the left-over data during resampling.
         """
-        #bins = self._get_resample_bins(input_data)
-        #resample_data = input_data.groupby_bins(bins) # check pandas/xarray
+        bins = self._get_resample_bins(input_data, target_freq, trim)
+        #resample_data = input_data.groupby_bins(bins, ) # check pandas/xarray
 
         #return resample_data.mean() #check agg() in panadas and xarray
-        raise NotImplementedError
-
+        return bins
+        
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
