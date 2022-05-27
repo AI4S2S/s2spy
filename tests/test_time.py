@@ -3,78 +3,111 @@
 import numpy as np
 import pandas as pd
 import pytest
-from s2s.time import TimeIndex
+from s2s.time import AdventCalendar
 
 
-class TestTimeIndex:
+def interval(start, end):
+    """Shorthand for more readable tests."""
+    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end))
+
+
+class TestAdventCalendar:
     def test_init(self):
-        index = TimeIndex()
-        expected = pd.interval_range(
-            end=pd.Timestamp("2020-11-30"), periods=52, freq="7d"
-        )
-        # TODO make more useful tests
-        np.array_equal(index._index, expected)  # noqa
+        cal = AdventCalendar()
+        assert isinstance(cal, AdventCalendar)
+
+    def test_repr(self):
+        cal = AdventCalendar()
+        assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d, n=52)"
 
     def test_str(self):
-        index = TimeIndex()
-        assert str(index) == str(index._index)  # noqa
+        cal = AdventCalendar()
+        assert str(cal) == "52 periods of 7d leading up to 11/30."
 
     def test_discard(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.discard(max_lag=5)
+            cal.discard(max_lag=5)
+
+    def test_map_year(self):
+        cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
+        year = cal.map_year(2020)
+        expected = np.array(
+            [
+                interval("2020-07-04", "2020-12-31"),
+                interval("2020-01-06", "2020-07-04"),
+            ]
+        )
+        assert np.array_equal(year, expected)
+
+    def test_map_years(self):
+        cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
+        years = cal.map_years(2020, 2021)
+        expected = np.array(
+            [
+                [
+                    interval("2021-07-04", "2021-12-31"),
+                    interval("2021-01-05", "2021-07-04"),
+                ],
+                [
+                    interval("2020-07-04", "2020-12-31"),
+                    interval("2020-01-06", "2020-07-04"),  # notice the leap day
+                ],
+            ]
+        )
+        assert np.array_equal(years, expected)
 
     def test_mark_target_period(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.mark_target_period(end='20200101', periods=5)
+            cal.mark_target_period(end="20200101", periods=5)
 
         with pytest.raises(NotImplementedError):
-            index.mark_target_period(start='20200101', periods=5)
+            cal.mark_target_period(start="20200101", periods=5)
 
         with pytest.raises(NotImplementedError):
-            index.mark_target_period(start='20190101', end='20200101')
+            cal.mark_target_period(start="20190101", end="20200101")
 
         with pytest.raises(ValueError):
-            index.mark_target_period(end='20200101')
+            cal.mark_target_period(end="20200101")
 
     def test_resample_with_dataframe(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
         df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
 
         with pytest.raises(NotImplementedError):
-            index.resample(df)
+            cal.resample(df)
 
     def test_resample_with_dataarray(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
         df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
         da = df.to_xarray()
 
         with pytest.raises(NotImplementedError):
-            index.resample(da)
+            cal.resample(da)
 
     def test_get_lagged_indices(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.get_lagged_indices()
+            cal.get_lagged_indices()
 
     def test_get_train_indices(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.get_train_indices("leave_n_out", {"n": 5})
+            cal.get_train_indices("leave_n_out", {"n": 5})
 
     def test_get_test_indices(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.get_test_indices("leave_n_out", {"n": 5})
+            cal.get_test_indices("leave_n_out", {"n": 5})
 
     def get_train_test_indices(self):
-        index = TimeIndex()
+        cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            index.get_train_test_indices("leave_n_out", {"n": 5})
+            cal.get_train_test_indices("leave_n_out", {"n": 5})
