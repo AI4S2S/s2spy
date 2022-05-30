@@ -204,45 +204,33 @@ class AdventCalendar:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
-    def _get_resample_bins(
-        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray],
-        target_freq: str = "7d", trim=False
-    ) -> Union[pd.Series, pd.DataFrame, xr.DataArray]:
-        """Label bins for resampling.
-        
-        Include an extra "bin" axis based on the target frequency for
-        resampling.
-
-
-        Args:
-        """
-        # target frequency must be larger than the original frequency
-        if pd.Timedelta(target_freq) < input_data.index.freq:
-            raise ValueError("Target frequency must be larger than the original frequency.")
-
-        # np.repeat
-
-
-        return input_data
-
     def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray],
-                 target_freq: str = "7d", trim: boolean=False):
+                 target_freq: str = "7d"
+        ) -> Union[pd.Series, pd.DataFrame, xr.DataArray]:
         """Resample input data to target frequency.
 
         Pass in pandas dataframe or xarray object with a datetime axis.
         It will return the same object with the datetimes resampled onto
-        this DateTimeIndex.
+        this DateTimeIndex by calculating the mean of each bins.
 
         Args:
-            input_data: Input data for resampling. Its first axis must be
+            input_data: Input data for resampling. Its index (first axis) must be
                 pandas.DatetimeIndex.
             target_freq:
-            trim: whether keep the left-over data during resampling.
         """
-        bins = self._get_resample_bins(input_data, target_freq, trim)
-        #resample_data = input_data.groupby_bins(bins, ) # check pandas/xarray
+        # check if the time index of input data is in reverse order
+        if "-" in input_data.index.freqstr:
+            target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
+            bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq).mean()[::-1],
+                              input_data[-(len(input_data)%target_freq_int):].resample(target_freq).mean()[::-1]])
+        else:
+            bins = input_data.resample(target_freq).mean()
 
-        #return resample_data.mean() #check agg() in panadas and xarray
+        #To be implemented
+        #Pandas.dataframe.resample()
+        #xarray.Dataset.resample()
+        #xarray.DataArray.resample
+
         return bins
         
 
