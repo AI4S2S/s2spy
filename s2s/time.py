@@ -227,7 +227,7 @@ class AdventCalendar:
             bins = input_data.resample(target_freq).mean()
 
         #To be implemented
-        #Pandas.dataframe.resample()
+        #pandas.dataframe.resample()
         #xarray.Dataset.resample()
         #xarray.DataArray.resample
 

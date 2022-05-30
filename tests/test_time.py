@@ -75,18 +75,26 @@ class TestAdventCalendar:
 
     def test_resample_with_dataframe(self):
         cal = AdventCalendar()
-        df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
+        time_index = pd.date_range('20211101', '20211116', freq='1d')
+        test_data = np.arange(0, 16, 1)
+        # timeindex normal order
+        timeseries = pd.Series(test_data, index=time_index)
+        bins = cal.resample(timeseries, target_freq='5d')
+        # resample hand calculation
+        expected = np.mean(test_data[:15].reshape(-1, 5), axis=1)
+        expected = np.append(expected, test_data[-1])
 
-        with pytest.raises(NotImplementedError):
-            cal.resample(df)
+        assert np.array_equal(bins, expected)
 
-    def test_resample_with_dataarray(self):
-        cal = AdventCalendar()
-        df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
-        da = df.to_xarray()
+        # timeindex reverse order
 
-        with pytest.raises(NotImplementedError):
-            cal.resample(da)
+    # def test_resample_with_dataarray(self):
+    #     cal = AdventCalendar()
+    #     df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
+    #     da = df.to_xarray()
+
+    #     with pytest.raises(NotImplementedError):
+    #         cal.resample(da)
 
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
