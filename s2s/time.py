@@ -239,15 +239,15 @@ class AdventCalendar:
             >>> import pandas as pd
             >>> import numpy as np
             >>> cal = s2s.time.AdventCalendar()
-            >>> time_index = pd.date_range('20211101', '20211116', freq='1d')
-            >>> var = np.random.random(len(time_index))
+            >>> time_index = pd.date_range('20211101', '20211111', freq='1d')
+            >>> var = np.arange(len(time_index))
             >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data, target_freq='5d')
             >>> bins
-            2021-11-11    0.502463
-            2021-11-06    0.746351
-            2021-11-01    0.746351
-            dtype: float64
+            2021-11-01    2.0
+            2021-11-06    7.0
+            2021-11-11    10.0
+            Freq: 5D, dtype: float64
         """
         # raise a warning for downscaling
         # check if the time index of input data is reverse
