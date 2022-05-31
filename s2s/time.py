@@ -244,8 +244,8 @@ class AdventCalendar:
             >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data, target_freq='5d')
             >>> bins
-            2021-11-01    2.0
-            2021-11-06    7.0
+            2021-11-01     2.0
+            2021-11-06     7.0
             2021-11-11    10.0
             Freq: 5D, dtype: float64
         """
