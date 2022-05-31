@@ -213,9 +213,9 @@ class AdventCalendar:
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex by calculating the mean of each bins.
 
-        Note that this function is intended for downscaling operations, which means
+        Note that this function is intended for upscaling operations, which means
         the target frequency is larger than the original frequency of input data (e.g. 
-        `target_freq` is "7days" and the input is daily data). It supports upscaling
+        `target_freq` is "7days" and the input is daily data). It supports downscaling
         operations but the user need to be careful since the returned values may contain
         "NaN".
 
@@ -243,30 +243,29 @@ class AdventCalendar:
             2021-11-01    0.746351
             dtype: float64
         """
-        # raise a warning for upscaling
+        # raise a warning for downscaling
         # check if the time index of input data is reverse
         if "-" in input_data.index.freqstr:
             # target frequency must be larger than the original frequency
             if pd.Timedelta(target_freq) < -input_data.index.freq:
                 warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
+                    + "It is downscaling and please check the returned values.")
         else:
             if pd.Timedelta(target_freq) < input_data.index.freq:
                 warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
+                    + "It is downscaling and please check the returned values.")
         
         # check if the time index of input data is in reverse order
         if "-" in input_data.index.freqstr:
             target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
+            # because pandas resample always process data with sorted order of time
             bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq).mean()[::-1],
                               input_data[-(len(input_data)%target_freq_int):].resample(target_freq).mean()[::-1]])
         else:
             bins = input_data.resample(target_freq).mean()
 
-        #To be implemented
-        #pandas.dataframe.resample()
         #xarray.Dataset.resample()
-        #xarray.DataArray.resample
+        #xarray.DataArray.resample()
 
         return bins
         
