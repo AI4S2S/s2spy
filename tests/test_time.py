@@ -116,7 +116,7 @@ class TestAdventCalendar:
         with pytest.raises(NotImplementedError):
             cal.get_test_indices("leave_n_out", {"n": 5})
 
-    def get_train_test_indices(self):
+    def test_get_train_test_indices(self):
         cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):

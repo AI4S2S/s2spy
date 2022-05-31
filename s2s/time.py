@@ -50,8 +50,8 @@ Example:
     dtype: interval
 
 """
-from typing import Tuple, Union
 import warnings
+from typing import Tuple, Union
 import pandas as pd
 import xarray as xr
 
@@ -204,34 +204,56 @@ class AdventCalendar:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
 
-    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray],
+    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
                  target_freq: str = "7d"
-        ) -> Union[pd.Series, pd.DataFrame, xr.DataArray]:
+        ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
         """Resample input data to target frequency.
 
         Pass in pandas dataframe or xarray object with a datetime axis.
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex by calculating the mean of each bins.
 
+        Note that this function is intended for downscaling operations, which means
+        the target frequency is larger than the original frequency of input data (e.g. 
+        `target_freq` is "7days" and the input is daily data). It supports upscaling
+        operations but the user need to be careful since the returned values may contain
+        "NaN".
+
         Args:
-            input_data: Input data for resampling. Its index (first axis) must be
-                pandas.DatetimeIndex.
-            target_freq:
+            input_data: Input data for resampling. Its index must be pandas.DatetimeIndex.
+            target_freq: Target resampling frequency.
 
         Raises:
-            Warning
+            UserWarning: If `target_freq` is smaller than the frequency of input data
 
+        Returns:
+            Input data resampled based on the target frequency, same data format as given
+            inputs.
 
+        Example:
+            Assuming the input data is pd.DataFrame containing random values with index from 
+            2021-11-11 to 2021-11-01 at daily frequency.
+
+            >>> import s2s.time
+            >>> calendar = s2s.time.AdventCalendar()
+            >>> bins = cal.resample(input_data, target_freq='5d')
+            >>> bins
+            2021-11-11    0.502463
+            2021-11-06    0.746351
+            2021-11-01    0.746351
+            dtype: float64
         """
         # raise a warning for upscaling
         # check if the time index of input data is reverse
         if "-" in input_data.index.freqstr:
             # target frequency must be larger than the original frequency
             if pd.Timedelta(target_freq) < -input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency. It is upscaling and please check the returned values.")
+                warnings.warn("Target frequency is smaller than the original frequency."
+                    + "It is upscaling and please check the returned values.")
         else:
             if pd.Timedelta(target_freq) < input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency. It is upscaling and please check the returned values.")
+                warnings.warn("Target frequency is smaller than the original frequency."
+                    + "It is upscaling and please check the returned values.")
         
         # check if the time index of input data is in reverse order
         if "-" in input_data.index.freqstr:
@@ -248,7 +270,6 @@ class AdventCalendar:
 
         return bins
         
-
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
