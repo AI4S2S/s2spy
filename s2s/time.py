@@ -51,7 +51,7 @@ Example:
 
 """
 from typing import Tuple, Union
-from xmlrpc.client import boolean
+import warnings
 import pandas as pd
 import xarray as xr
 
@@ -90,12 +90,6 @@ class AdventCalendar:
         self.day = anchor_date[1]
         self.freq = freq
         self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
-
-    def map_to_data_year(input_data):
-        """Map the calendar to input data period."""
-        # identify how many years, then call map_year or map_years
-
-        raise NotImplementedError
 
     def map_year(self, year: int) -> pd.Series:
         """Return a concrete IntervalIndex for the given year.
@@ -179,6 +173,12 @@ class AdventCalendar:
 
         return index
 
+    # def map_year_to_data(input_data):
+    #     """Map the calendar to input data period."""
+    #     # identify how many years, then call map_year or map_years
+
+    #     raise NotImplementedError
+
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
 
@@ -217,7 +217,22 @@ class AdventCalendar:
             input_data: Input data for resampling. Its index (first axis) must be
                 pandas.DatetimeIndex.
             target_freq:
+
+        Raises:
+            Warning
+
+
         """
+        # raise a warning for upscaling
+        # check if the time index of input data is reverse
+        if "-" in input_data.index.freqstr:
+            # target frequency must be larger than the original frequency
+            if pd.Timedelta(target_freq) < -input_data.index.freq:
+                warnings.warn("Target frequency is smaller than the original frequency. It is upscaling and please check the returned values.")
+        else:
+            if pd.Timedelta(target_freq) < input_data.index.freq:
+                warnings.warn("Target frequency is smaller than the original frequency. It is upscaling and please check the returned values.")
+        
         # check if the time index of input data is in reverse order
         if "-" in input_data.index.freqstr:
             target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
@@ -248,6 +263,7 @@ class AdventCalendar:
 
     def get_train_test_indices(self, strategy, params):  # noqa
         """Shorthand for getting both train and test indices."""
-        train = self.get_train_sets()
-        test = self.get_test_sets()
-        return train, test
+        # train = self.get_train_sets()
+        # test = self.get_test_sets()
+        # return train, test
+        raise NotImplementedError

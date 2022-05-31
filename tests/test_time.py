@@ -80,13 +80,15 @@ class TestAdventCalendar:
         # timeindex normal order
         timeseries = pd.Series(test_data, index=time_index)
         bins = cal.resample(timeseries, target_freq='5d')
-        # resample hand calculation
+        # resample by hand calculation
         expected = np.mean(test_data[:15].reshape(-1, 5), axis=1)
         expected = np.append(expected, test_data[-1])
 
         assert np.array_equal(bins, expected)
 
         # timeindex reverse order
+        # timeseries = pd.Series(test_data[::-1], index=time_index[::-1])
+        # bins = cal.resample(timeseries, target_freq='5d')
 
     # def test_resample_with_dataarray(self):
     #     cal = AdventCalendar()
