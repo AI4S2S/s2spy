@@ -51,7 +51,8 @@ Example:
 
 """
 import warnings
-from typing import Tuple, Union
+from typing import Tuple
+from typing import Union
 import pandas as pd
 import xarray as xr
 
@@ -205,7 +206,7 @@ class AdventCalendar:
         raise NotImplementedError
 
     def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-                 target_freq: str = "7d"
+                 target_freq: str = "7d", **kwargs
         ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
         """Resample input data to target frequency.
 
@@ -235,7 +236,12 @@ class AdventCalendar:
             2021-11-11 to 2021-11-01 at daily frequency.
 
             >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar()
+            >>> import pandas as pd
+            >>> import numpy as np
+            >>> cal = s2s.time.AdventCalendar()
+            >>> time_index = pd.date_range('20211101', '20211116', freq='1d')
+            >>> var = np.random.random(len(time_index))
+            >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data, target_freq='5d')
             >>> bins
             2021-11-11    0.502463
@@ -259,11 +265,12 @@ class AdventCalendar:
         if "-" in input_data.index.freqstr:
             target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
             # because pandas resample always process data with sorted order of time
-            bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq).mean()[::-1],
-                              input_data[-(len(input_data)%target_freq_int):].resample(target_freq).mean()[::-1]])
+            bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq, **kwargs).mean()[::-1],
+                              input_data[-(len(input_data)%target_freq_int):].resample(target_freq, **kwargs).mean()[::-1]])
         else:
-            bins = input_data.resample(target_freq).mean()
+            bins = input_data.resample(target_freq, **kwargs).mean()
 
+        # TBA
         #xarray.Dataset.resample()
         #xarray.DataArray.resample()
 

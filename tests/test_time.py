@@ -98,12 +98,6 @@ class TestAdventCalendar:
         assert np.array_equal(bins, expected)
 
     # def test_resample_with_dataarray(self):
-    #     cal = AdventCalendar()
-    #     df = pd.DataFrame([1, 2, 3], index=pd.date_range("20200101", periods=3))
-    #     da = df.to_xarray()
-
-    #     with pytest.raises(NotImplementedError):
-    #         cal.resample(da)
 
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
