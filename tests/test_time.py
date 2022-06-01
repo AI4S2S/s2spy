@@ -1,4 +1,4 @@
-"""Tests for the s2s.my_module module.
+"""Tests for the s2s.time module.
 """
 import numpy as np
 import pandas as pd
