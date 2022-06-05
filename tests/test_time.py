@@ -60,6 +60,22 @@ class TestAdventCalendar:
 
     def test_map_year_to_data(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
+        # single year in input data
+        time_index = pd.date_range('20210401', '20211231', freq='180d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        year = cal.map_year_to_data(timeseries)
+
+        expected = np.array(
+            [
+                interval("2021-07-04", "2021-12-31"),
+                interval("2021-01-05", "2021-07-04"),
+            ]
+        )
+
+        assert np.array_equal(year, expected)
+
+        # multiple years in input data
         time_index = pd.date_range('20200401', '20211231', freq='180d')
         test_data = np.random.random(len(time_index))
 
