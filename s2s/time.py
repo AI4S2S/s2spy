@@ -50,7 +50,6 @@ Example:
     dtype: interval
 
 """
-from re import S
 import warnings
 from typing import Tuple
 from typing import Union
@@ -180,7 +179,15 @@ class AdventCalendar:
         ) -> pd.DataFrame:
         """Map the calendar to input data period.
         
-        Use ``map_year`` and ``map_years``.
+        Get time range from input data and generate correpodning interval index 
+        using ``map_year`` and ``map_years`` functions.
+
+        Args:
+            input_data: Input data for year mapping. Its index must be pandas.DatetimeIndex.
+            flat: Same as the argument in ``map_years``.
+
+        Returns:
+            Pandas DataFrame filled with Intervals of the calendar's frequency.
         """
         # identify how many years, then call map_year or map_years
         first_index_year = input_data.index[0].year
