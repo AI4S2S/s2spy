@@ -50,6 +50,7 @@ Example:
     dtype: interval
 
 """
+from re import S
 import warnings
 from typing import Tuple
 from typing import Union
@@ -174,11 +175,21 @@ class AdventCalendar:
 
         return index
 
-    # def map_year_to_data(input_data):
-    #     """Map the calendar to input data period."""
-    #     # identify how many years, then call map_year or map_years
+    def map_year_to_data(self, input_data, flat: bool = False):
+        """Map the calendar to input data period."""
+        # identify how many years, then call map_year or map_years
+        first_index_year = input_data.index[0].year
+        last_index_year = input_data.index[-1].year
+        if first_index_year == last_index_year:
+            intervals = self.map_year(first_index_year)
+        else:
+            if first_index_year < last_index_year:
+                intervals = self.map_years(first_index_year, last_index_year, flat)
+            # time index in reverse order
+            else:
+                intervals = self.map_years(last_index_year, first_index_year, flat)
 
-    #     raise NotImplementedError
+        return intervals
 
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -250,7 +261,7 @@ class AdventCalendar:
             Freq: 5D, dtype: float64
         """
         # raise a warning for upscaling
-        # check if the time index of input data is reverse
+        # check if the time index of input data is in reverse order
         if "-" in input_data.index.freqstr:
             # target frequency must be larger than the original frequency
             if pd.Timedelta(target_freq) < -input_data.index.freq:
