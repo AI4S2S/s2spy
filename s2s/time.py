@@ -175,8 +175,13 @@ class AdventCalendar:
 
         return index
 
-    def map_year_to_data(self, input_data, flat: bool = False):
-        """Map the calendar to input data period."""
+    def map_year_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        flat: bool = False
+        ) -> pd.DataFrame:
+        """Map the calendar to input data period.
+        
+        Use ``map_year`` and ``map_years``.
+        """
         # identify how many years, then call map_year or map_years
         first_index_year = input_data.index[0].year
         last_index_year = input_data.index[-1].year
