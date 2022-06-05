@@ -58,6 +58,31 @@ class TestAdventCalendar:
         )
         assert np.array_equal(years, expected)
 
+    def test_map_year_to_data(self):
+        cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
+        time_index = pd.date_range('20200401', '20211231', freq='180d')
+        test_data = np.random.random(len(time_index))
+
+        # timeindex normal order
+        timeseries = pd.Series(test_data, index=time_index)
+        years = cal.map_year_to_data(timeseries)
+        expected = np.array(
+            [
+                [
+                    interval("2021-07-04", "2021-12-31"),
+                    interval("2021-01-05", "2021-07-04"),
+                ],
+                [
+                    interval("2020-07-04", "2020-12-31"),
+                    interval("2020-01-06", "2020-07-04"),  # notice the leap day
+                ],
+            ]
+        )
+
+        assert np.array_equal(years, expected)
+
+        # timeindex reverse order
+
     def test_mark_target_period(self):
         cal = AdventCalendar()
 
