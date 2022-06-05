@@ -216,7 +216,7 @@ class AdventCalendar:
 
         Note that this function is intended for upscaling operations, which means
         the target frequency is larger than the original frequency of input data (e.g. 
-        `target_freq` is "7days" and the input is daily data). It supports downscaling
+        `target_freq` is "7days" and the input is daily data). It supports upscaling
         operations but the user need to be careful since the returned values may contain
         "NaN".
 
@@ -249,17 +249,17 @@ class AdventCalendar:
             2021-11-11    10.0
             Freq: 5D, dtype: float64
         """
-        # raise a warning for downscaling
+        # raise a warning for upscaling
         # check if the time index of input data is reverse
         if "-" in input_data.index.freqstr:
             # target frequency must be larger than the original frequency
             if pd.Timedelta(target_freq) < -input_data.index.freq:
                 warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is downscaling and please check the returned values.")
+                    + "It is upscaling and please check the returned values.")
         else:
             if pd.Timedelta(target_freq) < input_data.index.freq:
                 warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is downscaling and please check the returned values.")
+                    + "It is upscaling and please check the returned values.")
         
         # check if the time index of input data is in reverse order
         if "-" in input_data.index.freqstr:
