@@ -82,6 +82,10 @@ class TestAdventCalendar:
         assert np.array_equal(years, expected)
 
         # timeindex reverse order
+        timeseries = pd.Series(test_data, index=time_index[::-1])
+        years = cal.map_year_to_data(timeseries)
+
+        assert np.array_equal(years, expected)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
