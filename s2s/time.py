@@ -210,9 +210,13 @@ class AdventCalendar:
         props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
         return f"AdventCalendar({props})"
 
-    def discard(self, max_lag):
-        """Only keep indices up to the given max lag."""
-        # or think of a nicer way to discard unneeded info
+    def lag_shift_trim(self, lag, start_target, end_target):
+        """Only keep indices up to the given lag for target time period.
+        """
+        # lag 4 (see mark_target_period in time.py)
+        # intervals.iloc[:,4:4+4] # get lag 4 for t-0 to t-3 function(lag, start_target, end_target)
+        # intervals.iloc[:,4:4+4].stack().reset_index(drop=True)
+        
         raise NotImplementedError
 
     def mark_target_period(self, start=None, end=None, periods=None): # we can drop end since we have anchor date
