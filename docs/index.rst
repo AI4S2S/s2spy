@@ -10,6 +10,13 @@ Welcome to s2s's documentation!
   :maxdepth: 2
   :caption: Contents:
 
+  project_setup.md
+  user_guide.md
+  README.dev.md
+  CHANGELOG.md
+  CONTRIBUTING.md
+  CODE_OF_CONDUCT.md
+
 Indices and tables
 ==================
 
