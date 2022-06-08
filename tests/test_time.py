@@ -74,13 +74,22 @@ class TestAdventCalendar:
             cal.mark_target_period(end="20200101")
 
     def test_resample_with_dataframe(self):
-        cal = AdventCalendar()
+        cal = AdventCalendar(anchor_date=(11, 16), freq='3d')
+        cal.map_year(2011)
+
         time_index = pd.date_range('20211101', '20211116', freq='1d')
         test_data = np.arange(0, 16, 1)
 
+        # (2020-11-27, 2020-11-30]
+
         # timeindex normal order
         timeseries = pd.Series(test_data, index=time_index)
-        bins = cal.resample(timeseries, target_freq='5d')
+
+        timeseries_resampled = cal.resample(timeseries)
+
+        assert timeseries_resampled.index, cal.map_year(2021)
+
+        
         # resample hand calculation
         expected = np.mean(test_data[:15].reshape(-1, 5), axis=1)
         expected = np.append(expected, test_data[-1])
