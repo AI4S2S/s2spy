@@ -45,12 +45,12 @@ help you decide which tool to use for packaging.
   - PyTest is listed as a development dependency
   - This is configured in `setup.cfg`
 - The project uses GitHub action workflows to automatically run tests on GitHub infrastructure against multiple Python versions
-  - Workflows can be found in [`.github/workflows`](../.github/workflows/)
+  - Workflows can be found in `ai4s2s/.github/workflows`
 - [Relevant section in the guide](https://guide.esciencecenter.nl/#/best_practices/language_guides/python?id=testing)
 
 ## Documentation
 
-- Documentation should be put in the [`docs/`](../docs/) directory. The contents have been generated using `sphinx-quickstart` (Sphinx version 1.6.5).
+- Documentation should be put in the `ai4s2s/docs/` directory. The contents have been generated using `sphinx-quickstart` (Sphinx version 1.6.5).
 - We recommend writing the documentation using Restructured Text (reST) and Google style docstrings.
   - [Restructured Text (reST) and Sphinx CheatSheet](https://thomas-cokelaer.info/tutorials/sphinx/rest_syntax.html)
   - [Google style docstring examples](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
