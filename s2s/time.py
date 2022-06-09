@@ -188,17 +188,27 @@ class AdventCalendar:
         Returns:
             Pandas DataFrame filled with Intervals of the calendar's frequency.
         """
-        # identify how many years, then call map_year or map_years
-        first_index_year = input_data.index[0].year
-        last_index_year = input_data.index[-1].year
-        if first_index_year == last_index_year:
-            intervals = self.map_year(first_index_year)
-        else:
-            if first_index_year < last_index_year:
-                intervals = self.map_years(first_index_year, last_index_year, flat)
-            # time index in reverse order
+        # check the datetime order of input data
+        first_timestamp = input_data.index[0]
+        last_timestamp = input_data.index[-1]
+        if first_timestamp < last_timestamp:
+            map_last_year = last_timestamp.year
+            # ensure that the input data could always cover the advent calendar
+            map_first_year = first_timestamp.year + 1
+            # check if the last date(time) is covered by the advent calendar
+            anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+            if anchor_date_with_year > last_timestamp:
+                map_last_year = map_last_year - 1
+
+            if map_last_year > map_first_year:
+                intervals = self.map_years(map_first_year, map_last_year, flat)
+            elif map_last_year == map_first_year:
+                intervals = self.map_year(map_last_year)
             else:
-                intervals = self.map_years(last_index_year, first_index_year, flat)
+                raise ValueError("The input data could not cover the target advent calendar.")
+        # currently this function does not support input data with reverse temporal order
+        else:
+            raise ValueError("The input data should have a datetime index in correct temporal order.")
 
         return intervals
 
