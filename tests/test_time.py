@@ -59,7 +59,7 @@ class TestAdventCalendar:
         assert np.array_equal(years, expected)
 
     def test_map_to_data(self):
-        # test the edge value cases when the input could not cover the anchor date
+        # test the edge value when the input could not cover the anchor date
         cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
         # single year covered
         time_index = pd.date_range('20191020', '20211001', freq='60d')
@@ -75,7 +75,7 @@ class TestAdventCalendar:
 
         assert np.array_equal(year, expected)
 
-        # test the edge value cases when the input covers the anchor date
+        # test the edge value when the input covers the anchor date
         # multiple years covered
         time_index = pd.date_range('20191010', '20211225', freq='60d')
         test_data = np.random.random(len(time_index))
@@ -96,6 +96,18 @@ class TestAdventCalendar:
         )
 
         assert np.array_equal(year, expected)
+        
+        # test when the input data is not sufficient to cover one year 
+        with pytest.raises(ValueError):
+            time_index = pd.date_range('20201020', '20211001', freq='60d')
+            test_data = np.random.random(len(time_index))
+            timeseries = pd.Series(test_data, index=time_index)
+            year = cal.map_to_data(timeseries)
+
+        # test when the input data is given with reverse temporal order
+        with pytest.raises(ValueError):
+            timeseries = pd.Series(test_data[::-1], index=time_index[::-1])
+            year = cal.map_to_data(timeseries)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
