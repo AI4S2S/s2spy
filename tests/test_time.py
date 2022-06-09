@@ -58,13 +58,13 @@ class TestAdventCalendar:
         )
         assert np.array_equal(years, expected)
 
-    def test_map_year_to_data(self):
+    def test_map_to_data(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
         # single year in input data
         time_index = pd.date_range('20210401', '20211231', freq='180d')
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
-        year = cal.map_year_to_data(timeseries)
+        year = cal.map_to_data(timeseries)
 
         expected = np.array(
             [

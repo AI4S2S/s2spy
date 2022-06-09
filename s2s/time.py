@@ -174,13 +174,12 @@ class AdventCalendar:
 
         return index
 
-    def map_year_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
         flat: bool = False
         ) -> pd.DataFrame:
         """Map the calendar to input data period.
         
-        Get time range from input data and generate correpodning interval index 
-        using ``map_year`` and ``map_years`` functions.
+        Get time range from input data and generate correpodning interval index.
 
         Args:
             input_data: Input data for year mapping. Its index must be pandas.DatetimeIndex.
@@ -227,77 +226,6 @@ class AdventCalendar:
         else:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
-
-    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-                 target_freq: str = "7d", **kwargs
-        ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
-        """Resample input data to target frequency.
-
-        Pass in pandas dataframe or xarray object with a datetime axis.
-        It will return the same object with the datetimes resampled onto
-        this DateTimeIndex by calculating the mean of each bins.
-
-        Note that this function is intended for upscaling operations, which means
-        the target frequency is larger than the original frequency of input data (e.g. 
-        `target_freq` is "7days" and the input is daily data). It supports upscaling
-        operations but the user need to be careful since the returned values may contain
-        "NaN".
-
-        Args:
-            input_data: Input data for resampling. Its index must be pandas.DatetimeIndex.
-            target_freq: Target resampling frequency.
-
-        Raises:
-            UserWarning: If `target_freq` is smaller than the frequency of input data
-
-        Returns:
-            Input data resampled based on the target frequency, same data format as given
-            inputs.
-
-        Example:
-            Assuming the input data is pd.DataFrame containing random values with index from 
-            2021-11-11 to 2021-11-01 at daily frequency.
-
-            >>> import s2s.time
-            >>> import pandas as pd
-            >>> import numpy as np
-            >>> cal = s2s.time.AdventCalendar()
-            >>> time_index = pd.date_range('20211101', '20211111', freq='1d')
-            >>> var = np.arange(len(time_index))
-            >>> input_data = pd.Series(var, index=time_index)
-            >>> bins = cal.resample(input_data, target_freq='5d')
-            >>> bins
-            2021-11-01     2.0
-            2021-11-06     7.0
-            2021-11-11    10.0
-            Freq: 5D, dtype: float64
-        """
-        # raise a warning for upscaling
-        # check if the time index of input data is in reverse order
-        if "-" in input_data.index.freqstr:
-            # target frequency must be larger than the original frequency
-            if pd.Timedelta(target_freq) < -input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
-        else:
-            if pd.Timedelta(target_freq) < input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
-        
-        # check if the time index of input data is in reverse order
-        if "-" in input_data.index.freqstr:
-            target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
-            # because pandas resample always process data with sorted order of time
-            bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq, **kwargs).mean()[::-1],
-                              input_data[-(len(input_data)%target_freq_int):].resample(target_freq, **kwargs).mean()[::-1]])
-        else:
-            bins = input_data.resample(target_freq, **kwargs).mean()
-
-        # TBA
-        #xarray.Dataset.resample()
-        #xarray.DataArray.resample()
-
-        return bins
         
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
