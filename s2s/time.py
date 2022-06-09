@@ -199,11 +199,17 @@ class AdventCalendar:
             anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
             if anchor_date_with_year > last_timestamp:
                 map_last_year = map_last_year - 1
-
+            
             if map_last_year > map_first_year:
                 intervals = self.map_years(map_first_year, map_last_year, flat)
+                # check if the input data cover all the intervals
+                if intervals.iloc[-1,-1].left < first_timestamp:
+                    warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
             elif map_last_year == map_first_year:
                 intervals = self.map_year(map_last_year)
+                # check if the input data cover all the intervals
+                if intervals.iloc[-1].left < first_timestamp:
+                    warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
             else:
                 raise ValueError("The input data could not cover the target advent calendar.")
         # currently this function does not support input data with reverse temporal order
