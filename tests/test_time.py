@@ -118,32 +118,6 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.mark_target_period(end="20200101")
 
-    def test_resample_with_dataframe(self):
-        cal = AdventCalendar()
-        time_index = pd.date_range('20211101', '20211116', freq='1d')
-        test_data = np.arange(0, 16, 1)
-
-        # timeindex normal order
-        timeseries = pd.Series(test_data, index=time_index)
-        bins = cal.resample(timeseries, target_freq='5d')
-        # resample hand calculation
-        expected = np.mean(test_data[:15].reshape(-1, 5), axis=1)
-        expected = np.append(expected, test_data[-1])
-
-        assert np.array_equal(bins, expected)
-
-        # timeindex reverse order
-        dataframe = pd.DataFrame({"var_1": test_data[::-1], "var_2": test_data}, index=time_index[::-1])
-        bins = cal.resample(dataframe, target_freq='5d')
-        # resample hand calculation
-        test_data_array = np.array([test_data[::-1], test_data]).T
-        expected = np.mean(test_data_array[:15, :].reshape(-1, 5, 2), axis=1)
-        expected = np.append(expected, test_data_array[-1, :].reshape(-1, 2), axis=0)
-
-        assert np.array_equal(bins, expected)
-
-    # def test_resample_with_dataarray(self):
-
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
 
