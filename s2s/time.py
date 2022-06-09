@@ -179,14 +179,17 @@ class AdventCalendar:
         ) -> pd.DataFrame:
         """Map the calendar to input data period.
         
-        Get time range from input data and generate correpodning interval index.
+        Get datetime range from input data and generate correpodning interval index. This method
+        guarentess that the generated interval (calendar) indices would be covered by the input
+        data.
 
         Args:
-            input_data: Input data for year mapping. Its index must be pandas.DatetimeIndex.
+            input_data: Input data for datetime mapping. Its index must be pandas.DatetimeIndex.
             flat: Same as the argument in ``map_years``.
 
         Returns:
             Pandas DataFrame filled with Intervals of the calendar's frequency.
+            (also see ``map_year`` and ``map_years``)
         """
         # check the datetime order of input data
         first_timestamp = input_data.index[0]
