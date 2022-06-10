@@ -123,7 +123,6 @@ class AdventCalendar:
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(end=anchor, periods=self.n, freq=self.freq)
         intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index = intervals.index.map(lambda i: f"t-{i}")
         return intervals
 
     def map_years(
@@ -217,6 +216,100 @@ class AdventCalendar:
             raise ValueError("The input data could not cover the target advent calendar.")
 
         return intervals
+
+    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+                 **kwargs
+        ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
+        """Resample input data to target frequency.
+
+        Pass a pandas Series/DataFrame or xarray DataArray/Dataset with a datetime axis.
+        It will return the same object with the datetimes resampled onto
+        this DateTimeIndex by calculating the mean of each bins.
+
+        Note that this function is intended for upscaling operations, which means
+        the calendar frequency is larger than the original frequency of input data (e.g. 
+        `freq` is "7days" and the input is daily data). It supports upscaling
+        operations but the user need to be careful since the returned values may contain
+        "NaN".
+
+        Args:
+            input_data: Input data for resampling. For a Pandas object its index must be either a 
+            pandas.DatetimeIndex. An xarray object requires a dimension named 'time' containing
+            datetime values.
+
+        Raises:
+            UserWarning: If the calendar frequency is smaller than the frequency of input data
+
+        Returns:
+            Input data resampled based on the target frequency, same data format as given
+            inputs.
+
+        Example:
+            Assuming the input data is pd.DataFrame containing random values with index from 
+            2021-11-11 to 2021-11-01 at daily frequency.
+
+            >>> import s2s.time
+            >>> import pandas as pd
+            >>> import numpy as np
+            >>> cal = s2s.time.AdventCalendar()
+            >>> time_index = pd.date_range('20211101', '20211111', freq='1d')
+            >>> var = np.arange(len(time_index))
+            >>> input_data = pd.Series(var, index=time_index)
+            >>> bins = cal.resample(input_data, target_freq='5d')
+            >>> bins
+            2021-11-01     2.0
+            2021-11-06     7.0
+            2021-11-11    10.0
+            Freq: 5D, dtype: float64
+        """
+        if isinstance(input_data, (pd.Series, pd.DataFrame)):
+            # raise a warning for upscaling
+            # check if the time index of input data is reverse
+            if "-" in input_data.index.freqstr:
+                # target frequency must be larger than the original frequency
+                if pd.Timedelta(self.freq) < -input_data.index.freq:
+                    warnings.warn("Target frequency is smaller than the original frequency."
+                        + "It is upscaling and please check the returned values.")
+            else:
+                if pd.Timedelta(self.freq) < input_data.index.freq:
+                    warnings.warn("Target frequency is smaller than the original frequency."
+                        + "It is upscaling and please check the returned values.")
+
+            intervals = self.map_to_data(input_data, flat=False)
+            # Make a tidy dataframe where the intervals are linked to the anchor year and lag period
+            if isinstance(intervals, pd.DataFrame):
+                bins = intervals.copy()
+                bins.index.rename('anchor_year', inplace=True)
+                bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
+                bins = bins.sort_values(by=['anchor_year','lag'])
+            else:
+                # Massage the dataframe into the same tidy format for a single year
+                bins = pd.DataFrame(intervals)
+                bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
+                bins.index.rename('lag', inplace=True)
+            bins = bins.reset_index()
+                
+            interval_index = pd.IntervalIndex(bins['interval'])
+            interval_groups = interval_index.get_indexer(input_data.index)
+            interval_means = input_data.groupby(interval_groups).mean()
+
+            # drop the -1 index, as it represents data outside of all intervals
+            interval_means = interval_means.loc[0:]
+            
+            if isinstance(input_data, pd.DataFrame):
+                for name in input_data.keys():
+                    bins[name] = interval_means[name].values
+            else:
+                name = 'mean' if input_data.name is None else input_data.name
+                bins[name] = interval_means.values
+
+        elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
+            raise NotImplementedError
+
+        else:
+            raise ValueError('The input data is neither a pandas or xarray object')
+
+        return bins
 
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
