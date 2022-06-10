@@ -73,7 +73,29 @@ class TestAdventCalendar:
             ]
         )
 
-        assert np.array_equal(year, expected)        
+        assert np.array_equal(year, expected)
+
+        # test the edge value when the input covers the anchor date
+        # multiple years covered
+        time_index = pd.date_range('20191010', '20211225', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        year = cal.map_to_data(timeseries)
+
+        expected = np.array(
+            [
+                [
+                    interval("2021-04-18", "2021-10-15"),
+                    interval("2020-10-20", "2021-04-18"),
+                ],
+                [
+                    interval("2020-04-18", "2020-10-15"),
+                    interval("2019-10-21", "2020-04-18"),  # notice the leap day
+                ],
+            ]
+        )
+
+        assert np.array_equal(year, expected)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
