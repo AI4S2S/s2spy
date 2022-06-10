@@ -263,6 +263,6 @@ class AdventCalendar:
 
     def get_train_test_indices(self, strategy, params):  # noqa
         """Shorthand for getting both train and test indices."""
-        train = self.get_train_sets()
-        test = self.get_test_sets()
-        return train, test
+        # train = self.get_train_indices()
+        # test = self.get_test_indices()
+        raise NotImplementedError

@@ -1,4 +1,4 @@
-"""Tests for the s2s.my_module module.
+"""Tests for the s2s.time module.
 """
 import numpy as np
 import pandas as pd
@@ -58,6 +58,23 @@ class TestAdventCalendar:
         )
         assert np.array_equal(years, expected)
 
+    def test_map_to_data(self):
+        # test the edge value when the input could not cover the anchor date
+        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
+        # single year covered
+        time_index = pd.date_range('20191020', '20211001', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        year = cal.map_to_data(timeseries)
+        expected = np.array(
+            [
+                interval("2020-04-18", "2020-10-15"),
+                interval("2019-10-21", "2020-04-18"),
+            ]
+        )
+
+        assert np.array_equal(year, expected)        
+
     def test_mark_target_period(self):
         cal = AdventCalendar()
 
@@ -106,7 +123,7 @@ class TestAdventCalendar:
         with pytest.raises(NotImplementedError):
             cal.get_test_indices("leave_n_out", {"n": 5})
 
-    def get_train_test_indices(self):
+    def test_get_train_test_indices(self):
         cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
