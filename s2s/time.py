@@ -174,6 +174,50 @@ class AdventCalendar:
 
         return index
 
+    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        flat: bool = False
+        ) -> pd.DataFrame:
+        """Map the calendar to input data period.
+        
+        Get datetime range from input data and generate corresponding interval index. This method
+        guarentees that the generated interval (calendar) indices would be covered by the input
+        data.
+
+        Args:
+            input_data: Input data for datetime mapping. Its index must be pandas.DatetimeIndex.
+            flat: Same as the argument in ``map_years``.
+
+        Returns:
+            Pandas DataFrame filled with Intervals of the calendar's frequency.
+            (also see ``map_year`` and ``map_years``)
+        """
+        # check the datetime order of input data
+        first_timestamp = input_data.index.min()
+        last_timestamp = input_data.index.max()
+
+        map_last_year = last_timestamp.year
+        # ensure that the input data could always cover the advent calendar
+        map_first_year = first_timestamp.year + 1
+        # check if the last date(time) is covered by the advent calendar
+        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+        if anchor_date_with_year > last_timestamp:
+            map_last_year = map_last_year - 1
+            
+        if map_last_year > map_first_year:
+            self.intervals = self.map_years(map_first_year, map_last_year, flat)
+            # check if the input data cover all the intervals
+            if self.intervals.iloc[-1,-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        elif map_last_year == map_first_year:
+            self.intervals = self.map_year(map_last_year)
+            # check if the input data cover all the intervals
+            if self.intervals.iloc[-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        else:
+            raise ValueError("The input data could not cover the target advent calendar.")
+
+        return self.intervals
+
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
 
@@ -181,14 +225,17 @@ class AdventCalendar:
         props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
         return f"AdventCalendar({props})"
 
-    def lag_shift_trim(self, lag, start_target, end_target):
+    def discard(self, lag: int = 1, start: str = "t-1") -> pd.DataFrame:
         """Only keep indices up to the given lag for target time period.
         """
-        # lag 4 (see mark_target_period in time.py)
-        # intervals.iloc[:,4:4+4] # get lag 4 for t-0 to t-3 function(lag, start_target, end_target)
-        # intervals.iloc[:,4:4+4].stack().reset_index(drop=True)
-        
-        raise NotImplementedError
+        # check the dimension of generated datetime intervals
+        start_index = int(start.split("-")[-1])
+
+        if self.intervals.ndim == 2:
+            self.intervals_trim = self.intervals.iloc[:,:start_index+lag+1]
+        # intervals are one dimentional stack
+
+        return self.intervals_trim
 
     def mark_target_period(self, start=None, end=None, periods=None): # we can drop end since we have anchor date
         """Mark indices that fall within the target period."""
