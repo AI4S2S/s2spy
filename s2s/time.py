@@ -191,12 +191,22 @@ class AdventCalendar:
             (also see ``map_year`` and ``map_years``)
         """
         # check the datetime order of input data
-        first_timestamp = input_data.index.min()
-        last_timestamp = input_data.index.max()
+        if isinstance(input_data, (pd.Series, pd.DataFrame)):
+            first_timestamp = input_data.index.min()
+            last_timestamp = input_data.index.max()
+            map_last_year = last_timestamp.year
+            map_first_year = first_timestamp.year
+        elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
+            first_timestamp = input_data.time.min()
+            last_timestamp = input_data.time.max()
+            map_last_year = last_timestamp.dt.year.values
+            map_first_year = first_timestamp.dt.year.values
+        else:
+            raise ValueError('incompatible input data format, please pass a pandas or xarray object')
 
-        map_last_year = last_timestamp.year
         # ensure that the input data could always cover the advent calendar
-        map_first_year = first_timestamp.year + 1
+        map_first_year += 1
+
         # check if the last date(time) is covered by the advent calendar
         anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
         if anchor_date_with_year > last_timestamp:
@@ -251,16 +261,17 @@ class AdventCalendar:
             >>> import s2s.time
             >>> import pandas as pd
             >>> import numpy as np
-            >>> cal = s2s.time.AdventCalendar()
-            >>> time_index = pd.date_range('20211101', '20211111', freq='1d')
+            >>> cal = s2s.time.AdventCalendar(freq='180d')
+            >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
             >>> var = np.arange(len(time_index))
             >>> input_data = pd.Series(var, index=time_index)
-            >>> bins = cal.resample(input_data, target_freq='5d')
+            >>> bins = cal.resample(input_data)
             >>> bins
-            2021-11-01     2.0
-            2021-11-06     7.0
-            2021-11-11    10.0
-            Freq: 5D, dtype: float64
+                  anchor_year  lag                  interval   mean
+                0        2020    0  (2020-06-03, 2020-11-30]  275.5
+                1        2020    1  (2019-12-06, 2020-06-03]   95.5
+                2        2021    0  (2021-06-03, 2021-11-30]  640.5
+                3        2021    1  (2020-12-05, 2021-06-03]  460.5
         """
         if isinstance(input_data, (pd.Series, pd.DataFrame)):
             # raise a warning for upscaling
@@ -304,8 +315,44 @@ class AdventCalendar:
                 bins[name] = interval_means.values
 
         elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
-            raise NotImplementedError
+            if not 'time' in input_data.dims:
+                raise ValueError('The input DataArray/Dataset does not contain a `time` dimension')
+            elif not xr.core.common._contains_datetime_like_objects(input_data['time']):
+                raise ValueError('The `time` dimension is not of a datetime format')
 
+            intervals = self.map_to_data(input_data)
+
+            if isinstance(intervals, pd.DataFrame):
+                bins = intervals.copy()
+                bins.index.rename('anchor_year', inplace=True)
+                bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
+                bins = bins.sort_values(by=['anchor_year','lag'])
+            else:
+                # Massage the dataframe into the same tidy format for a single year
+                bins = pd.DataFrame(intervals)
+                bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
+                bins.index.rename('lag', inplace=True)
+            bins = bins.reset_index()
+
+            # Create the indexer to connect the input data with the intervals
+            interval_index = pd.IntervalIndex(bins['interval'])
+            interval_groups = interval_index.get_indexer(input_data['time'])
+            interval_means = input_data.groupby(
+                xr.IndexVariable('time', interval_groups)
+                ).mean()
+            interval_means = interval_means.rename({'time': 'index'})
+
+            # drop the indices below 0, as it represents data outside of all intervals
+            interval_means = interval_means.sel(index=slice(0, None))
+
+            bins = bins.to_xarray()
+            if isinstance(input_data, xr.Dataset):
+                for name in interval_means.keys():
+                    bins[name] = ('index', interval_means[name].values)
+            else:
+                name = 'mean' if input_data.name is None else input_data.name
+                bins[name] = ('index', interval_means.values)
+            bins['anchor_year'] = bins['anchor_year'].astype(int)
         else:
             raise ValueError('The input data is neither a pandas or xarray object')
 
