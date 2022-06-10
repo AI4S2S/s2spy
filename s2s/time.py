@@ -180,7 +180,7 @@ class AdventCalendar:
         """Map the calendar to input data period.
         
         Get datetime range from input data and generate corresponding interval index. This method
-        guarentess that the generated interval (calendar) indices would be covered by the input
+        guarentees that the generated interval (calendar) indices would be covered by the input
         data.
 
         Args:
