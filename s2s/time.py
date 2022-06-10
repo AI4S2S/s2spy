@@ -179,7 +179,7 @@ class AdventCalendar:
         ) -> pd.DataFrame:
         """Map the calendar to input data period.
         
-        Get datetime range from input data and generate correpodning interval index. This method
+        Get datetime range from input data and generate corresponding interval index. This method
         guarentess that the generated interval (calendar) indices would be covered by the input
         data.
 
@@ -192,32 +192,29 @@ class AdventCalendar:
             (also see ``map_year`` and ``map_years``)
         """
         # check the datetime order of input data
-        first_timestamp = input_data.index[0]
-        last_timestamp = input_data.index[-1]
-        if first_timestamp < last_timestamp:
-            map_last_year = last_timestamp.year
-            # ensure that the input data could always cover the advent calendar
-            map_first_year = first_timestamp.year + 1
-            # check if the last date(time) is covered by the advent calendar
-            anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
-            if anchor_date_with_year > last_timestamp:
-                map_last_year = map_last_year - 1
+        first_timestamp = input_data.index.min()
+        last_timestamp = input_data.index.max()
+
+        map_last_year = last_timestamp.year
+        # ensure that the input data could always cover the advent calendar
+        map_first_year = first_timestamp.year + 1
+        # check if the last date(time) is covered by the advent calendar
+        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+        if anchor_date_with_year > last_timestamp:
+            map_last_year = map_last_year - 1
             
-            if map_last_year > map_first_year:
-                intervals = self.map_years(map_first_year, map_last_year, flat)
-                # check if the input data cover all the intervals
-                if intervals.iloc[-1,-1].left < first_timestamp:
-                    warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
-            elif map_last_year == map_first_year:
-                intervals = self.map_year(map_last_year)
-                # check if the input data cover all the intervals
-                if intervals.iloc[-1].left < first_timestamp:
-                    warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
-            else:
-                raise ValueError("The input data could not cover the target advent calendar.")
-        # currently this function does not support input data with reverse temporal order
+        if map_last_year > map_first_year:
+            intervals = self.map_years(map_first_year, map_last_year, flat)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1,-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        elif map_last_year == map_first_year:
+            intervals = self.map_year(map_last_year)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
         else:
-            raise ValueError("The input data should have a datetime index in correct temporal order.")
+            raise ValueError("The input data could not cover the target advent calendar.")
 
         return intervals
 
