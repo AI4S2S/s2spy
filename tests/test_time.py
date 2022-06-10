@@ -110,6 +110,78 @@ class TestAdventCalendar:
             timeseries = pd.Series(test_data, index=time_index)
             year = cal.map_to_data(timeseries)
 
+    def test_resample(self):
+        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
+        time_index = pd.date_range('20191020', '20211001', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        
+        # test pandas Series without name
+        resampled_data = cal.resample(timeseries)
+
+        assert np.array_equal(
+            resampled_data['mean'].values,
+            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
+            )
+
+        # test pandas Series with name
+        timeseries = timeseries.rename('data1')
+        resampled_data = cal.resample(timeseries)
+
+        assert np.array_equal(
+            resampled_data['data1'].values,
+            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
+            )
+
+        # test pandas DataFrame
+        dataframe = timeseries.to_dataframe()
+        dataframe['data2'] = dataframe['data1']
+        resampled_data = cal.resample(dataframe)
+        
+        assert np.array_equal(
+            resampled_data['data1'].values,
+            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
+            )
+
+        # test for multi-year pandas input
+        time_index = pd.date_range('20151020', '20211001', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries_my = pd.Series(test_data, index=time_index)
+        resampled_data = cal.resample(timeseries_my)
+
+        # test for non-time index failure
+        series = pd.Series(test_data)
+        with pytest.raises(ValueError):
+            cal.resample(series)
+        
+        # test xarray DataArray
+        data_array = timeseries.to_xarray()
+        data_array = data_array.rename({'index':'time'})
+        resampled_data = cal.resample(data_array)
+
+        # test xarray Dataset
+        dataset = dataframe.to_xarray()
+        dataset = dataset.rename({'index':'time'})
+        resampled_data = cal.resample(dataset)
+
+        # test for missing time dimension failure
+        dataset = dataframe.to_xarray()
+        with pytest.raises(ValueError):
+            resampled_data = cal.resample(dataset)
+
+        # test for time dimension without time data failure
+        data_array = series.to_xarray()
+        data_array = data_array.rename({'index': 'time'})
+        with pytest.raises(ValueError):
+            resampled_data = cal.resample(data_array)
+
+        # test that variables without time dimension should be dropped
+
+        # test multi-year xr input
+        data_array_my = timeseries_my.to_xarray()
+        data_array_my = data_array_my.rename({'index': 'time'})
+        resampled_data = cal.resample(data_array_my)
+
     def test_mark_target_period(self):
         cal = AdventCalendar()
 
