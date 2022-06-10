@@ -58,6 +58,58 @@ class TestAdventCalendar:
         )
         assert np.array_equal(years, expected)
 
+    def test_map_to_data(self):
+        # test the edge value when the input could not cover the anchor date
+        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
+        # single year covered
+        time_index = pd.date_range('20191020', '20211001', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        year = cal.map_to_data(timeseries)
+        expected = np.array(
+            [
+                interval("2020-04-18", "2020-10-15"),
+                interval("2019-10-21", "2020-04-18"),
+            ]
+        )
+
+        assert np.array_equal(year, expected)
+
+        # test the edge value when the input covers the anchor date
+        # multiple years covered
+        time_index = pd.date_range('20191010', '20211225', freq='60d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        year = cal.map_to_data(timeseries)
+
+        expected = np.array(
+            [
+                [
+                    interval("2021-04-18", "2021-10-15"),
+                    interval("2020-10-20", "2021-04-18"),
+                ],
+                [
+                    interval("2020-04-18", "2020-10-15"),
+                    interval("2019-10-21", "2020-04-18"),  # notice the leap day
+                ],
+            ]
+        )
+
+        assert np.array_equal(year, expected)
+
+        # test the input with time index in backward order
+        timeseries = pd.Series(test_data, index=time_index[::-1])
+        year = cal.map_to_data(timeseries)
+
+        assert np.array_equal(year, expected)
+        
+        # test when the input data is not sufficient to cover one year 
+        with pytest.raises(ValueError):
+            time_index = pd.date_range('20201020', '20211001', freq='60d')
+            test_data = np.random.random(len(time_index))
+            timeseries = pd.Series(test_data, index=time_index)
+            year = cal.map_to_data(timeseries)
+
     def test_mark_target_period(self):
         cal = AdventCalendar()
 
@@ -72,41 +124,6 @@ class TestAdventCalendar:
 
         with pytest.raises(ValueError):
             cal.mark_target_period(end="20200101")
-
-    def test_resample_with_dataframe(self):
-        cal = AdventCalendar(anchor_date=(11, 16), freq='3d')
-        cal.map_year(2011)
-
-        time_index = pd.date_range('20211101', '20211116', freq='1d')
-        test_data = np.arange(0, 16, 1)
-
-        # (2020-11-27, 2020-11-30]
-
-        # timeindex normal order
-        timeseries = pd.Series(test_data, index=time_index)
-
-        timeseries_resampled = cal.resample(timeseries)
-
-        assert timeseries_resampled.index, cal.map_year(2021)
-
-        
-        # resample hand calculation
-        expected = np.mean(test_data[:15].reshape(-1, 5), axis=1)
-        expected = np.append(expected, test_data[-1])
-
-        assert np.array_equal(bins, expected)
-
-        # timeindex reverse order
-        dataframe = pd.DataFrame({"var_1": test_data[::-1], "var_2": test_data}, index=time_index[::-1])
-        bins = cal.resample(dataframe, target_freq='5d')
-        # resample hand calculation
-        test_data_array = np.array([test_data[::-1], test_data]).T
-        expected = np.mean(test_data_array[:15, :].reshape(-1, 5, 2), axis=1)
-        expected = np.append(expected, test_data_array[-1, :].reshape(-1, 2), axis=0)
-
-        assert np.array_equal(bins, expected)
-
-    # def test_resample_with_dataarray(self):
 
     def test_get_lagged_indices(self):
         cal = AdventCalendar()

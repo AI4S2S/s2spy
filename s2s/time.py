@@ -174,11 +174,49 @@ class AdventCalendar:
 
         return index
 
-    # def map_year_to_data(input_data):
-    #     """Map the calendar to input data period."""
-    #     # identify how many years, then call map_year or map_years
+    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        flat: bool = False
+        ) -> pd.DataFrame:
+        """Map the calendar to input data period.
+        
+        Get datetime range from input data and generate corresponding interval index. This method
+        guarentees that the generated interval (calendar) indices would be covered by the input
+        data.
 
-    #     raise NotImplementedError
+        Args:
+            input_data: Input data for datetime mapping. Its index must be pandas.DatetimeIndex.
+            flat: Same as the argument in ``map_years``.
+
+        Returns:
+            Pandas DataFrame filled with Intervals of the calendar's frequency.
+            (also see ``map_year`` and ``map_years``)
+        """
+        # check the datetime order of input data
+        first_timestamp = input_data.index.min()
+        last_timestamp = input_data.index.max()
+
+        map_last_year = last_timestamp.year
+        # ensure that the input data could always cover the advent calendar
+        map_first_year = first_timestamp.year + 1
+        # check if the last date(time) is covered by the advent calendar
+        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+        if anchor_date_with_year > last_timestamp:
+            map_last_year = map_last_year - 1
+            
+        if map_last_year > map_first_year:
+            intervals = self.map_years(map_first_year, map_last_year, flat)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1,-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        elif map_last_year == map_first_year:
+            intervals = self.map_year(map_last_year)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        else:
+            raise ValueError("The input data could not cover the target advent calendar.")
+
+        return intervals
 
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -204,77 +242,6 @@ class AdventCalendar:
         else:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
-
-    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-                 target_freq: str = "7d", **kwargs
-        ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
-        """Resample input data to target frequency.
-
-        Pass in pandas dataframe or xarray object with a datetime axis.
-        It will return the same object with the datetimes resampled onto
-        this DateTimeIndex by calculating the mean of each bins.
-
-        Note that this function is intended for upscaling operations, which means
-        the target frequency is larger than the original frequency of input data (e.g. 
-        `target_freq` is "7days" and the input is daily data). It supports upscaling
-        operations but the user need to be careful since the returned values may contain
-        "NaN".
-
-        Args:
-            input_data: Input data for resampling. Its index must be pandas.DatetimeIndex.
-            target_freq: Target resampling frequency.
-
-        Raises:
-            UserWarning: If `target_freq` is smaller than the frequency of input data
-
-        Returns:
-            Input data resampled based on the target frequency, same data format as given
-            inputs.
-
-        Example:
-            Assuming the input data is pd.DataFrame containing random values with index from 
-            2021-11-11 to 2021-11-01 at daily frequency.
-
-            >>> import s2s.time
-            >>> import pandas as pd
-            >>> import numpy as np
-            >>> cal = s2s.time.AdventCalendar()
-            >>> time_index = pd.date_range('20211101', '20211111', freq='1d')
-            >>> var = np.arange(len(time_index))
-            >>> input_data = pd.Series(var, index=time_index)
-            >>> bins = cal.resample(input_data, target_freq='5d')
-            >>> bins
-            2021-11-01     2.0
-            2021-11-06     7.0
-            2021-11-11    10.0
-            Freq: 5D, dtype: float64
-        """
-        # raise a warning for upscaling
-        # check if the time index of input data is reverse
-        if "-" in input_data.index.freqstr:
-            # target frequency must be larger than the original frequency
-            if pd.Timedelta(target_freq) < -input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
-        else:
-            if pd.Timedelta(target_freq) < input_data.index.freq:
-                warnings.warn("Target frequency is smaller than the original frequency."
-                    + "It is upscaling and please check the returned values.")
-        
-        # check if the time index of input data is in reverse order
-        if "-" in input_data.index.freqstr:
-            target_freq_int = int(''.join(filter(str.isdigit, target_freq)))
-            # because pandas resample always process data with sorted order of time
-            bins = pd.concat([input_data[:-(len(input_data)%target_freq_int)].resample(target_freq, **kwargs).mean()[::-1],
-                              input_data[-(len(input_data)%target_freq_int):].resample(target_freq, **kwargs).mean()[::-1]])
-        else:
-            bins = input_data.resample(target_freq, **kwargs).mean()
-
-        # TBA
-        #xarray.Dataset.resample()
-        #xarray.DataArray.resample()
-
-        return bins
         
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
