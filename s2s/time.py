@@ -50,8 +50,11 @@ Example:
     dtype: interval
 
 """
+import warnings
 from typing import Tuple
+from typing import Union
 import pandas as pd
+import xarray as xr
 
 
 class AdventCalendar:
@@ -68,8 +71,8 @@ class AdventCalendar:
 
         Args:
             anchor_date: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date. freq:
-                Frequency of the calendar.
+                of the calendar. It will countdown until this date. 
+            freq: Frequency of the calendar.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -169,6 +172,48 @@ class AdventCalendar:
             return index.stack().reset_index(drop=True)
 
         return index
+
+    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        flat: bool = False
+        ) -> pd.DataFrame:
+        """Map the calendar to input data period.
+        
+        Get datetime range from input data and generate corresponding interval index. This method
+        guarentees that the generated interval (calendar) indices would be covered by the input
+        data.
+        Args:
+            input_data: Input data for datetime mapping. Its index must be pandas.DatetimeIndex.
+            flat: Same as the argument in ``map_years``.
+        Returns:
+            Pandas DataFrame filled with Intervals of the calendar's frequency.
+            (also see ``map_year`` and ``map_years``)
+        """
+        # check the datetime order of input data
+        first_timestamp = input_data.index.min()
+        last_timestamp = input_data.index.max()
+
+        map_last_year = last_timestamp.year
+        # ensure that the input data could always cover the advent calendar
+        map_first_year = first_timestamp.year + 1
+        # check if the last date(time) is covered by the advent calendar
+        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+        if anchor_date_with_year > last_timestamp:
+            map_last_year = map_last_year - 1
+
+        if map_last_year > map_first_year:
+            intervals = self.map_years(map_first_year, map_last_year, flat)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1,-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        elif map_last_year == map_first_year:
+            intervals = self.map_year(map_last_year)
+            # check if the input data cover all the intervals
+            if intervals.iloc[-1].left < first_timestamp:
+                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+        else:
+            raise ValueError("The input data could not cover the target advent calendar.")
+
+        return intervals
 
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
