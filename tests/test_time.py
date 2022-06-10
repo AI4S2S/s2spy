@@ -111,9 +111,30 @@ class TestAdventCalendar:
             year = cal.map_to_data(timeseries)
 
     def test_discard(self):
-        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
-        time_index = pd.date_range('20191010', '20211225', freq='60d')
+        # test intervals in 2D
+        cal = AdventCalendar(anchor_date=(11, 30), freq='10d')
+        time_index = pd.date_range('20191110', '20211211', freq='10d')
+        test_data = np.random.random(len(time_index))
+        timeseries = pd.Series(test_data, index=time_index)
+        cal.map_to_data(timeseries)
+        year_trim = cal.discard(lag=1, start="t-1")
 
+        expected = np.array(
+            [
+                [
+                    interval("2021-11-20", "2021-11-30"),
+                    interval("2021-11-10", "2021-11-20"),
+                    interval("2021-10-31", "2021-11-10"),
+                ],
+                [
+                    interval("2020-11-20", "2020-11-30"),
+                    interval("2020-11-10", "2020-11-20"),
+                    interval("2020-10-31", "2020-11-10"),
+                ]
+            ]
+        )        
+
+        assert np.array_equal(year_trim, expected)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
