@@ -1,6 +1,6 @@
 # `s2s` developer documentation
 
-If you're looking for user documentation, go [here](README.md).
+If you're looking for user documentation, go [here](readme_link.rst).
 
 ## Development install
 
