@@ -118,30 +118,22 @@ class TestAdventCalendar:
         
         # test pandas Series without name
         resampled_data = cal.resample(timeseries)
+        expected = np.array([test_data[4:7].mean(), test_data[1:4].mean()])
 
-        assert np.array_equal(
-            resampled_data['mean'].values,
-            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
-            )
+        assert np.array_equal(resampled_data['mean_data'].values, expected)
 
         # test pandas Series with name
         timeseries = timeseries.rename('data1')
         resampled_data = cal.resample(timeseries)
 
-        assert np.array_equal(
-            resampled_data['data1'].values,
-            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
-            )
+        assert np.array_equal(resampled_data['data1'].values, expected)
 
         # test pandas DataFrame
-        dataframe = timeseries.to_dataframe()
+        dataframe = pd.DataFrame(timeseries)
         dataframe['data2'] = dataframe['data1']
         resampled_data = cal.resample(dataframe)
-        
-        assert np.array_equal(
-            resampled_data['data1'].values,
-            np.array([test_data[4:7].mean(), test_data[1:4].mean()])
-            )
+
+        assert np.array_equal(resampled_data['data1'].values, expected)
 
         # test for multi-year pandas input
         time_index = pd.date_range('20151020', '20211001', freq='60d')

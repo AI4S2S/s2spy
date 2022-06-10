@@ -274,6 +274,9 @@ class AdventCalendar:
                 3        2021    1  (2020-12-05, 2021-06-03]  460.5
         """
         if isinstance(input_data, (pd.Series, pd.DataFrame)):
+            if not isinstance(input_data.index, pd.DatetimeIndex):
+                raise ValueError('The input data does not have a datetime index.')
+
             # raise a warning for upscaling
             # check if the time index of input data is reverse
             if "-" in input_data.index.freqstr:
@@ -311,7 +314,7 @@ class AdventCalendar:
                 for name in input_data.keys():
                     bins[name] = interval_means[name].values
             else:
-                name = 'mean' if input_data.name is None else input_data.name
+                name = 'mean_data' if input_data.name is None else input_data.name
                 bins[name] = interval_means.values
 
         elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
