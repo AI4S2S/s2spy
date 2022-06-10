@@ -103,6 +103,13 @@ class TestAdventCalendar:
 
         assert np.array_equal(year, expected)
 
+        # test when the input data is not sufficient to cover one year 
+        with pytest.raises(ValueError):
+            time_index = pd.date_range('20201020', '20211001', freq='60d')
+            test_data = np.random.random(len(time_index))
+            timeseries = pd.Series(test_data, index=time_index)
+            year = cal.map_to_data(timeseries)        
+
     def test_mark_target_period(self):
         cal = AdventCalendar()
 
