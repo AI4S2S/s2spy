@@ -229,15 +229,15 @@ class AdventCalendar:
 
     def _resample_bins_constructor(self, intervals: Union[pd.Series, pd.DataFrame]
         ) -> pd.DataFrame:
-        '''
+        """
         Restructures the interval object into a tidy DataFrame.
 
         Args:
-            intervals
+            intervals: the output interval `pd.Series` or `pd.DataFrame` from the `map_to_data` function.
         
         Returns:
-            bins
-        '''
+            Pandas DataFrame with 'anchor_year', 'lag', and 'interval' as columns.
+        """
         # Make a tidy dataframe where the intervals are linked to the anchor year and lag period
         if isinstance(intervals, pd.DataFrame):
             bins = intervals.copy()
@@ -253,12 +253,12 @@ class AdventCalendar:
 
         return bins
 
-    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-                 **kwargs
-        ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
-        """Resample input data to target frequency.
+    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]
+        ) -> Union[pd.DataFrame, xr.Dataset]:
+        """Resample input data to the calendar frequency.
 
-        Pass a pandas Series/DataFrame or xarray DataArray/Dataset with a datetime axis.
+        Pass a pandas Series/DataFrame with a datetime axis, or an
+        xarray DataArray/Dataset with a datetime coordinate called 'time'.
         It will return the same object with the datetimes resampled onto
         this DateTimeIndex by calculating the mean of each bins.
 
@@ -277,7 +277,7 @@ class AdventCalendar:
             UserWarning: If the calendar frequency is smaller than the frequency of input data
 
         Returns:
-            Input data resampled based on the target frequency, same data format as given
+            Input data resampled based on the calendar frequency, similar data format as given
             inputs.
 
         Example:
@@ -333,9 +333,9 @@ class AdventCalendar:
                 bins[name] = interval_means.values
 
         elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
-            if not 'time' in input_data.dims:
+            if 'time' not in input_data.dims:
                 raise ValueError('The input DataArray/Dataset does not contain a `time` dimension')
-            elif not xr.core.common._contains_datetime_like_objects(input_data['time']):
+            if not xr.core.common.is_np_datetime_like(input_data['time'].dtype):
                 raise ValueError('The `time` dimension is not of a datetime format')
 
             intervals = self.map_to_data(input_data)
