@@ -138,8 +138,11 @@ class TestAdventCalendar:
         # test for multi-year pandas input
         time_index = pd.date_range('20151020', '20211001', freq='60d')
         test_data = np.random.random(len(time_index))
-        timeseries_my = pd.Series(test_data, index=time_index)
+        expected_my = np.array([test_data[4:7].mean(), test_data[1:4].mean()])
+        timeseries_my = pd.Series(test_data, index=time_index).rename('data1')
         resampled_data = cal.resample(timeseries_my)
+
+        assert np.array_equal(resampled_data['data1'].iloc[:2].values, expected_my)
 
         # test for non-time index failure
         series = pd.Series(test_data)
@@ -151,10 +154,14 @@ class TestAdventCalendar:
         data_array = data_array.rename({'index':'time'})
         resampled_data = cal.resample(data_array)
 
+        assert np.array_equal(resampled_data['data1'].values, expected)
+
         # test xarray Dataset
         dataset = dataframe.to_xarray()
         dataset = dataset.rename({'index':'time'})
         resampled_data = cal.resample(dataset)
+
+        assert np.array_equal(resampled_data['data1'].values, expected)
 
         # test for missing time dimension failure
         dataset = dataframe.to_xarray()
@@ -166,13 +173,13 @@ class TestAdventCalendar:
         data_array = data_array.rename({'index': 'time'})
         with pytest.raises(ValueError):
             resampled_data = cal.resample(data_array)
-
-        # test that variables without time dimension should be dropped
-
+        
         # test multi-year xr input
         data_array_my = timeseries_my.to_xarray()
         data_array_my = data_array_my.rename({'index': 'time'})
         resampled_data = cal.resample(data_array_my)
+
+        assert np.array_equal(resampled_data['data1'].isel(index=slice(None, 2)).values, expected_my)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
