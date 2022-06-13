@@ -50,9 +50,10 @@ Example:
     dtype: interval
 
 """
-from typing import Tuple
+from typing import Optional, Tuple
 import pandas as pd
 
+from s2s import traintest
 
 class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
@@ -177,22 +178,21 @@ class AdventCalendar:
         props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
         return f"AdventCalendar({props})"
 
-    def discard(self, max_lag):
+    def discard(self, max_lag):   # or "set_max_lag"
         """Only keep indices up to the given max lag."""
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, end=None, periods=None):
+    def mark_target_period(self, start=None, periods=None):
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
-        if start and end:
+        if start is not None:
             pass
-        elif start and periods:
-            pass
-        elif end and periods:
+        elif periods:
             pass
         else:
             raise ValueError("Of start/end/periods, specify exactly 2")
+
         raise NotImplementedError
 
     def resample(self, input_data):
@@ -208,16 +208,35 @@ class AdventCalendar:
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
-    def get_train_indices(self, strategy, params):  # noqa
+    def get_traintest(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
+        """Shorthand for getting both train and test indices.
+
+        Args:
+            method: one of the methods available in s2s.traintest
+            method_kwargs: keyword arguments that will be passed to `method`
+
+        Returns:
+            Pandas DataFrame with an column specifying whether the interval is
+                part of the train or test datasets.
+
+        Example:
+
+            >>> import s2s.time
+            >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+
+
+        """
+        # TODO: overwrite if method is different?
+        # TODO: need to store self._df internally after calling map_years/map_data
+        # TODO: implement tests
+        if self._traintest is not None:
+            self._traintest = traintest.ALL_METHODS[method](self._df, **method_kwargs)
+        return self._traintest
+
+    def get_train(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
         """Return indices for training data indices using given strategy."""
-        raise NotImplementedError
+        return self.get_traintest.query(label='train')
 
-    def get_test_indices(self, strategy, params):  # noqa
+    def get_test(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
         """Return indices for test data indices using given strategy."""
-        raise NotImplementedError
-
-    def get_train_test_indices(self, strategy, params):  # noqa
-        """Shorthand for getting both train and test indices."""
-        train = self.get_train_sets()
-        test = self.get_test_sets()
-        return train, test
+        return self.get_traintest.query(label='test')
