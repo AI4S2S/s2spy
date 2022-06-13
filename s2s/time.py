@@ -227,6 +227,32 @@ class AdventCalendar:
 
         return intervals
 
+    def _resample_bins_constructor(self, intervals: Union[pd.Series, pd.DataFrame]
+        ) -> pd.DataFrame:
+        '''
+        Restructures the interval object into a tidy DataFrame.
+
+        Args:
+            intervals
+        
+        Returns:
+            bins
+        '''
+        # Make a tidy dataframe where the intervals are linked to the anchor year and lag period
+        if isinstance(intervals, pd.DataFrame):
+            bins = intervals.copy()
+            bins.index.rename('anchor_year', inplace=True)
+            bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
+            bins = bins.sort_values(by=['anchor_year','lag'])
+        else:
+            # Massage the dataframe into the same tidy format for a single year
+            bins = pd.DataFrame(intervals)
+            bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
+            bins.index.rename('lag', inplace=True)
+        bins = bins.reset_index()
+
+        return bins
+
     def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
                  **kwargs
         ) -> Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]:
@@ -290,26 +316,15 @@ class AdventCalendar:
                         + "It is upscaling and please check the returned values.")
 
             intervals = self.map_to_data(input_data, flat=False)
-            # Make a tidy dataframe where the intervals are linked to the anchor year and lag period
-            if isinstance(intervals, pd.DataFrame):
-                bins = intervals.copy()
-                bins.index.rename('anchor_year', inplace=True)
-                bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
-                bins = bins.sort_values(by=['anchor_year','lag'])
-            else:
-                # Massage the dataframe into the same tidy format for a single year
-                bins = pd.DataFrame(intervals)
-                bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
-                bins.index.rename('lag', inplace=True)
-            bins = bins.reset_index()
-                
+            bins = self._resample_bins_constructor(intervals)
+
             interval_index = pd.IntervalIndex(bins['interval'])
             interval_groups = interval_index.get_indexer(input_data.index)
             interval_means = input_data.groupby(interval_groups).mean()
 
             # drop the -1 index, as it represents data outside of all intervals
             interval_means = interval_means.loc[0:]
-            
+
             if isinstance(input_data, pd.DataFrame):
                 for name in input_data.keys():
                     bins[name] = interval_means[name].values
@@ -324,18 +339,7 @@ class AdventCalendar:
                 raise ValueError('The `time` dimension is not of a datetime format')
 
             intervals = self.map_to_data(input_data)
-
-            if isinstance(intervals, pd.DataFrame):
-                bins = intervals.copy()
-                bins.index.rename('anchor_year', inplace=True)
-                bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
-                bins = bins.sort_values(by=['anchor_year','lag'])
-            else:
-                # Massage the dataframe into the same tidy format for a single year
-                bins = pd.DataFrame(intervals)
-                bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
-                bins.index.rename('lag', inplace=True)
-            bins = bins.reset_index()
+            bins = self._resample_bins_constructor(intervals)
 
             # Create the indexer to connect the input data with the intervals
             interval_index = pd.IntervalIndex(bins['interval'])
@@ -356,6 +360,7 @@ class AdventCalendar:
                 name = 'mean' if input_data.name is None else input_data.name
                 bins[name] = ('index', interval_means.values)
             bins['anchor_year'] = bins['anchor_year'].astype(int)
+
         else:
             raise ValueError('The input data is neither a pandas or xarray object')
 
