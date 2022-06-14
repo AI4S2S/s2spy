@@ -208,6 +208,15 @@ class AdventCalendar:
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
+    def get_cv_groups(self, intervals):
+        """Group intervals into bins.
+
+        Group intervals into bins for each anchor year by labelling.
+        args:
+            intervals: output of ``map_years``.
+        """
+        raise NotImplementedError
+
     def get_traintest(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
         """Shorthand for getting both train and test indices.
 
