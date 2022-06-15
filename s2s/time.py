@@ -208,7 +208,7 @@ class AdventCalendar:
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
-    def get_cv_groups(self, intervals):
+    def get_cv_groups(self):
         """Group intervals into bins.
 
         Group intervals into bins for each anchor year by labelling.
@@ -217,7 +217,7 @@ class AdventCalendar:
         """
         raise NotImplementedError
 
-    def get_traintest(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
+    def get_traintest(self) -> pd.DataFrame:
         """Shorthand for getting both train and test indices.
 
         Args:
@@ -238,14 +238,25 @@ class AdventCalendar:
         # TODO: overwrite if method is different?
         # TODO: need to store self._df internally after calling map_years/map_data
         # TODO: implement tests
+
+        # checker if the method is configured.
+
         if self._traintest is not None:
             self._traintest = traintest.ALL_METHODS[method](self._df, **method_kwargs)
         return self._traintest
 
-    def get_train(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
-        """Return indices for training data indices using given strategy."""
+    def set_traintest_method(self, method: str, method_kwargs: Optional[dict]):
+        """
+        The user must choose a method here. And the method will be used by
+        all traintest splitting methods.
+        """
+
+    def get_train(self) -> pd.DataFrame:
+        """Return indices for training data indices using given strategy.
+        """
         return self.get_traintest.query(label='train')
 
-    def get_test(self, method: str, method_kwargs: Optional[dict]) -> pd.DataFrame:
-        """Return indices for test data indices using given strategy."""
+    def get_test(self) -> pd.DataFrame:
+        """Return indices for test data indices using given strategy.
+        """
         return self.get_traintest.query(label='test')
