@@ -194,7 +194,10 @@ class AdventCalendar:
 
         map_last_year = last_timestamp.year
         # ensure that the input data could always cover the advent calendar
-        map_first_year = first_timestamp.year + 1
+        if self.map_year(first_timestamp.year).iloc[-1].left > first_timestamp:
+            map_first_year = first_timestamp.year
+        else:
+            map_first_year = first_timestamp.year + 1
         # check if the last date(time) is covered by the advent calendar
         anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
         if anchor_date_with_year > last_timestamp:
