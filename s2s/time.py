@@ -80,7 +80,7 @@ class AdventCalendar:
             >>> import s2s.time
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
             >>> calendar
-            AdventCalendar(month=12, day=31, freq=7d, n=52)
+            AdventCalendar(month=12, day=31, freq=7d)
             >>> print(calendar)
             "52 periods of 7d leading up to 12/31."
 
