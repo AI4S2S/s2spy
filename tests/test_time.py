@@ -18,7 +18,7 @@ class TestAdventCalendar:
 
     def test_repr(self):
         cal = AdventCalendar()
-        assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d, n=52)"
+        assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d)"
 
     def test_str(self):
         cal = AdventCalendar()

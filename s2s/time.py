@@ -50,7 +50,6 @@ Example:
     dtype: interval
 
 """
-import warnings
 from typing import Tuple
 from typing import Union
 import pandas as pd
@@ -89,7 +88,8 @@ class AdventCalendar:
         self.month = anchor_date[0]
         self.day = anchor_date[1]
         self.freq = freq
-        self.n = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        self._n_target = 1
 
     def map_year(self, year: int) -> pd.Series:
         """Return a concrete IntervalIndex for the given year.
@@ -120,7 +120,7 @@ class AdventCalendar:
             Name: 2020, dtype: interval
         """
         anchor = pd.Timestamp(year, self.month, self.day)
-        intervals = pd.interval_range(end=anchor, periods=self.n, freq=self.freq)
+        intervals = pd.interval_range(end=anchor, periods=self._n_intervals, freq=self.freq)
         intervals = pd.Series(intervals[::-1], name=str(year))
         intervals.index = intervals.index.map(lambda i: f"t-{i}")
         return intervals
@@ -192,37 +192,33 @@ class AdventCalendar:
         first_timestamp = input_data.index.min()
         last_timestamp = input_data.index.max()
 
-        map_last_year = last_timestamp.year
         # ensure that the input data could always cover the advent calendar
-        if self.map_year(first_timestamp.year).iloc[-1].left > first_timestamp:
-            map_first_year = first_timestamp.year
+        # last date check
+        if self.map_year(last_timestamp.year).iloc[0].right > last_timestamp:
+            map_last_year = last_timestamp.year - 1
         else:
+            map_last_year = last_timestamp.year
+        # first date check
+        if self.map_year(first_timestamp.year).iloc[-1].left < first_timestamp:
             map_first_year = first_timestamp.year + 1
-        # check if the last date(time) is covered by the advent calendar
-        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
-        if anchor_date_with_year > last_timestamp:
-            map_last_year = map_last_year - 1
+        else:
+            map_first_year = first_timestamp.year
 
+        # map year(s) and generate year realized advent calendar
         if map_last_year > map_first_year:
             intervals = self.map_years(map_first_year, map_last_year, flat)
-            # check if the input data cover all the intervals
-            if intervals.iloc[-1,-1].left < first_timestamp:
-                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
         elif map_last_year == map_first_year:
             intervals = self.map_year(map_last_year)
-            # check if the input data cover all the intervals
-            if intervals.iloc[-1].left < first_timestamp:
-                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
         else:
             raise ValueError("The input data could not cover the target advent calendar.")
 
         return intervals
 
     def __str__(self):
-        return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
+        return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
-        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items()])
+        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if '_' not in k])
         return f"AdventCalendar({props})"
 
     def discard(self, max_lag):
