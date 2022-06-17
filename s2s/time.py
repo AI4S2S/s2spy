@@ -218,7 +218,7 @@ class AdventCalendar:
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
-        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if '_' not in k])
+        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
         return f"AdventCalendar({props})"
 
     def discard(self, max_lag):
