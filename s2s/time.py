@@ -54,6 +54,7 @@ from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
+import warnings
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -221,6 +222,195 @@ class AdventCalendar:
 
         return intervals
 
+    def _resample_bins_constructor(
+        self, intervals: Union[pd.Series, pd.DataFrame]
+    ) -> pd.DataFrame:
+        """
+        Restructures the interval object into a tidy DataFrame.
+
+        Args:
+            intervals: the output interval `pd.Series` or `pd.DataFrame` from the
+                `map_to_data` function.
+
+        Returns:
+            Pandas DataFrame with 'anchor_year', 'i_interval', and 'interval' as
+                columns.
+        """
+        # Make a tidy dataframe where the intervals are linked to the anchor year
+        if isinstance(intervals, pd.DataFrame):
+            bins = intervals.copy()
+            bins.index.rename("anchor_year", inplace=True)
+            bins = bins.melt(
+                var_name="i_interval", value_name="interval", ignore_index=False
+            )
+            bins = bins.sort_values(by=["anchor_year", "i_interval"])
+        else:
+            # Massage the dataframe into the same tidy format for a single year
+            bins = pd.DataFrame(intervals)
+            bins = bins.melt(
+                var_name="anchor_year", value_name="interval", ignore_index=False
+            )
+            bins.index.rename("i_interval", inplace=True)
+        bins = bins.reset_index()
+
+        return bins
+
+    def _resample_pandas(
+        self, input_data: Union[pd.Series, pd.DataFrame]
+    ) -> pd.DataFrame:
+        """Internal function to handle resampling of Pandas data.
+
+        Args:
+            input_data (pd.Series or pd.DataFrame): Data provided by the user to the
+                `resample` function
+
+        Returns:
+            pd.DataFrame: DataFrame containing the intervals and data resampled to
+                these intervals."""
+
+        intervals = self.map_to_data(input_data, flat=False)
+        bins = self._resample_bins_constructor(intervals)
+
+        interval_index = pd.IntervalIndex(bins["interval"])
+        interval_groups = interval_index.get_indexer(input_data.index)
+        interval_means = input_data.groupby(interval_groups).mean()
+
+        # drop the -1 index, as it represents data outside of all intervals
+        interval_means = interval_means.loc[0:]
+
+        if isinstance(input_data, pd.DataFrame):
+            for name in input_data.keys():
+                bins[name] = interval_means[name].values
+        else:
+            name = "mean_data" if input_data.name is None else input_data.name
+            bins[name] = interval_means.values
+
+        return bins
+
+    def _resample_xarray(
+        self, input_data: Union[xr.DataArray, xr.Dataset]
+    ) -> xr.Dataset:
+        """Internal function to handle resampling of xarray data.
+
+        Args:
+            input_data (xr.DataArray or xr.Dataset): Data provided by the user to the
+                `resample` function
+
+        Returns:
+            xr.Dataset: Dataset containing the intervals and data resampled to
+                these intervals."""
+
+        intervals = self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(intervals)
+
+        # Create the indexer to connect the input data with the intervals
+        interval_index = pd.IntervalIndex(bins["interval"])
+        interval_groups = interval_index.get_indexer(input_data["time"])
+        interval_means = input_data.groupby(
+            xr.IndexVariable("time", interval_groups)
+        ).mean()
+        interval_means = interval_means.rename({"time": "index"})
+
+        # drop the indices below 0, as it represents data outside of all intervals
+        interval_means = interval_means.sel(index=slice(0, None))
+
+        # Turn the bins dataframe into an xarray object and merge the data means into it
+        bins = bins.to_xarray()
+        if isinstance(input_data, xr.Dataset):
+            bins = xr.merge([bins, interval_means])
+        else:
+            if interval_means.name is None:
+                interval_means = interval_means.rename("mean_values")
+            bins = xr.merge([bins, interval_means])
+        bins["anchor_year"] = bins["anchor_year"].astype(int)
+
+        # Turn the anchor year and interval count into coordinates
+        bins = bins.assign_coords(
+            {"anchor_year": bins["anchor_year"], "i_interval": bins["i_interval"]}
+        )
+
+        return bins
+
+    def resample(
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset]
+    ) -> Union[pd.DataFrame, xr.Dataset]:
+        """Resample input data to the calendar frequency.
+
+        Pass a pandas Series/DataFrame with a datetime axis, or an
+        xarray DataArray/Dataset with a datetime coordinate called 'time'.
+        It will return the same object with the datetimes resampled onto
+        the Calendar's Index by binning the data into the Calendar's intervals
+        and calculating the mean of each bin.
+
+        Note: this function is intended for upscaling operations, which means
+        the calendar frequency is larger than the original frequency of input data (e.g.
+        `freq` is "7days" and the input is daily data). It supports upscaling
+        operations but the user need to be careful since the returned values may contain
+        "NaN".
+
+        Args:
+            input_data: Input data for resampling. For a Pandas object its index must be
+                either a pandas.DatetimeIndex. An xarray object requires a dimension
+                named 'time' containing datetime values.
+
+        Raises:
+            UserWarning: If the calendar frequency is smaller than the frequency of
+                input data
+
+        Returns:
+            Input data resampled based on the calendar frequency, similar data format as
+                given inputs.
+
+        Example:
+            Assuming the input data is pd.DataFrame containing random values with index
+            from 2021-11-11 to 2021-11-01 at daily frequency.
+
+            >>> import s2s.time
+            >>> import pandas as pd
+            >>> import numpy as np
+            >>> cal = s2s.time.AdventCalendar(freq='180d')
+            >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
+            >>> var = np.arange(len(time_index))
+            >>> input_data = pd.Series(var, index=time_index)
+            >>> bins = cal.resample(input_data)
+            >>> bins
+            anchor_year  i_interval                  interval  mean_data
+            0        2020           0  (2020-06-03, 2020-11-30]      275.5
+            1        2020           1  (2019-12-06, 2020-06-03]       95.5
+            2        2021           0  (2021-06-03, 2021-11-30]      640.5
+            3        2021           1  (2020-12-05, 2021-06-03]      460.5
+        """
+        if not isinstance(input_data, PandasData + XArrayData):
+            raise ValueError("The input data is neither a pandas or xarray object")
+
+        if isinstance(input_data, PandasData):
+            if not isinstance(input_data.index, pd.DatetimeIndex):
+                raise ValueError("The input data does not have a datetime index.")
+
+            # raise a warning for upscaling
+            # target frequency must be larger than the (absolute) input frequency
+            if input_data.index.freq:
+                input_freq = input_data.index.freq
+                input_freq = input_freq if input_freq.n > 0 else -input_freq
+                if pd.Timedelta(self.freq) < input_freq:
+                    warnings.warn(
+                        """Target frequency is smaller than the original frequency.
+                        The resampled data will contain NaN values, as there is no data
+                        available within all intervals."""
+                    )
+
+            return self._resample_pandas(input_data)
+
+        # Data must be xarray
+        if "time" not in input_data.dims:
+            raise ValueError(
+                "The input DataArray/Dataset does not contain a `time` dimension"
+            )
+        if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
+            raise ValueError("The `time` dimension is not of a datetime format")
+
+        return self._resample_xarray(input_data)
+
     def __str__(self):
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
@@ -244,15 +434,6 @@ class AdventCalendar:
             pass
         else:
             raise ValueError("Of start/end/periods, specify exactly 2")
-        raise NotImplementedError
-
-    def resample(self, input_data):
-        """Resample input data onto this Index' axis.
-
-        Pass in pandas dataframe or xarray object with a datetime axis.
-        It will return the same object with the datetimes resampled onto
-        this DateTimeIndex.
-        """
         raise NotImplementedError
 
     def get_lagged_indices(self, lag=1):  # noqa
