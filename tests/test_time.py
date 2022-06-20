@@ -2,6 +2,7 @@
 """
 import numpy as np
 import pandas as pd
+import xarray as xr
 import pytest
 from s2s.time import AdventCalendar
 
@@ -32,7 +33,7 @@ class TestAdventCalendar:
 
     def test_map_year(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
-        year = cal.map_year(2020)
+        year = cal._map_year(2020)
         expected = np.array(
             [
                 interval("2020-07-04", "2020-12-31"),
@@ -56,7 +57,7 @@ class TestAdventCalendar:
                 ],
             ]
         )
-        assert np.array_equal(years, expected)
+        assert np.array_equal(years.values, expected)
 
     def test_map_to_data_edge_case_last_year(self):
         # test the edge value when the input could not cover the anchor date
@@ -73,7 +74,7 @@ class TestAdventCalendar:
             ]
         )
 
-        assert np.array_equal(year, expected)
+        assert np.all(year.values == expected)
 
     def test_map_to_data_single_year_coverage(self):
         # test the single year coverage
@@ -91,7 +92,7 @@ class TestAdventCalendar:
             ]
         )
 
-        assert np.array_equal(year, expected)
+        assert np.all(year.values == expected)
 
     def test_map_to_data_edge_case_first_year(self):
         # test the edge value when the input covers the anchor date
@@ -115,7 +116,7 @@ class TestAdventCalendar:
             ]
         )
 
-        assert np.array_equal(year, expected)
+        assert np.all(year.values == expected)
 
     def test_map_to_data_value_error(self):
         # test when the input data is not sufficient to cover one year
@@ -124,7 +125,7 @@ class TestAdventCalendar:
             time_index = pd.date_range('20201020', '20211001', freq='60d')
             test_data = np.random.random(len(time_index))
             timeseries = pd.Series(test_data, index=time_index)
-            cal.map_to_data(timeseries)     
+            cal.map_to_data(timeseries)
 
     def test_map_to_data_input_time_backward(self):
         # test when the input data has reverse order time index
@@ -139,9 +140,28 @@ class TestAdventCalendar:
                 interval("2021-04-18", "2021-10-15"),
                 interval("2020-10-20", "2021-04-18"),
             ]
-        )        
+        )
 
-        assert np.array_equal(year, expected)
+        assert np.all(year.values == expected)
+
+    def test_map_to_data_xarray_input(self):
+        # test when the input data has reverse order time index
+        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
+        time_index = pd.date_range('20201010', '20211225', freq='60d')
+        test_data = np.random.random(len(time_index))
+        da = xr.DataArray(
+            data=test_data,
+            coords={'time': time_index})
+        year = cal.map_to_data(da)
+
+        expected = np.array(
+            [
+                interval("2021-04-18", "2021-10-15"),
+                interval("2020-10-20", "2021-04-18"),
+            ]
+        )
+
+        assert np.all(year.values == expected)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()

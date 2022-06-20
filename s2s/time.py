@@ -56,6 +56,10 @@ import pandas as pd
 import xarray as xr
 
 
+PandasData = (pd.Series, pd.DataFrame)
+XArrayData = (xr.DataArray, xr.Dataset)
+
+
 class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
@@ -70,7 +74,7 @@ class AdventCalendar:
 
         Args:
             anchor_date: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date. 
+                of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
 
         Example:
@@ -91,8 +95,8 @@ class AdventCalendar:
         self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
 
-    def map_year(self, year: int) -> pd.Series:
-        """Return a concrete IntervalIndex for the given year.
+    def _map_year(self, year: int) -> pd.Series:
+        """Internal routine to return a concrete IntervalIndex for the given year.
 
         Since the AdventCalendar represents a periodic event, it is first
         instantiated without a specific year. This method adds a specific year
@@ -105,32 +109,20 @@ class AdventCalendar:
         Returns:
             Pandas Series filled with Intervals of the calendar's frequency, counting
             backwards from the calendar's anchor_date.
-
-        Example:
-
-            >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='60d')
-            >>> calendar.map_year(2020)
-            t-0    (2020-11-01, 2020-12-31]
-            t-1    (2020-09-02, 2020-11-01]
-            t-2    (2020-07-04, 2020-09-02]
-            t-3    (2020-05-05, 2020-07-04]
-            t-4    (2020-03-06, 2020-05-05]
-            t-5    (2020-01-06, 2020-03-06]
-            Name: 2020, dtype: interval
         """
         anchor = pd.Timestamp(year, self.month, self.day)
-        intervals = pd.interval_range(end=anchor, periods=self._n_intervals, freq=self.freq)
+        intervals = pd.interval_range(
+            end=anchor, periods=self._n_intervals, freq=self.freq)
         intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index = intervals.index.map(lambda i: f"t-{i}")
+        intervals.index.name = 'i_interval'
         return intervals
 
     def map_years(
         self, start: int = 1979, end: int = 2020, flat: bool = False
     ) -> pd.DataFrame:
         """Return a periodic IntervalIndex for the given years.
-
-        Like ``map_year``, but for multiple years.
+        If the start and end years are the same, the Intervals for only that single
+        year are returned.
 
         Args:
             start: The first year for which the calendar will be realized
@@ -149,10 +141,11 @@ class AdventCalendar:
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
             >>> # note the leap year:
             >>> calendar.map_years(2020, 2022)
-                                       t-0                       t-1
-            2022  (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
-            2021  (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
-            2020  (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
+            i_interval                          0                         1
+            anchor_year
+            2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
+            2021         (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
+            2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
             >>> # To get a stacked representation:
             >>> calendar.map_years(2020, 2022, flat=True)
@@ -165,52 +158,66 @@ class AdventCalendar:
             dtype: interval
         """
         index = pd.concat(
-            [self.map_year(year) for year in range(start, end + 1)], axis=1
+            [self._map_year(year) for year in range(start, end + 1)], axis=1
         ).T[::-1]
+
+        index.index.name = 'anchor_year'
 
         if flat:
             return index.stack().reset_index(drop=True)
 
         return index
 
-    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+    def map_to_data(
+        self,
+        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
         flat: bool = False
-        ) -> pd.DataFrame:
+        ) -> Union[pd.DataFrame, xr.Dataset]:
         """Map the calendar to input data period.
-        
-        Get datetime range from input data and generate corresponding interval index. This method
-        guarentees that the generated interval (calendar) indices would be covered by the input
+
+        Get datetime range from input data and generate corresponding interval index.
+        This method guarantees that the generated interval (calendar) indices would be
+        covered by the input
         data.
         Args:
-            input_data: Input data for datetime mapping. Its index must be pandas.DatetimeIndex.
+            input_data: Input data for datetime mapping. Its index must be either
+                pandas.DatetimeIndex, or an xarray `time` coordinate with datetime
+                data.
             flat: Same as the argument in ``map_years``.
         Returns:
-            Pandas DataFrame filled with Intervals of the calendar's frequency.
-            (also see ``map_year`` and ``map_years``)
+            Pandas DataFrame or xarray DataSet filled with Intervals of the calendar's
+            frequency. (see also ``map_years``)
         """
         # check the datetime order of input data
-        first_timestamp = input_data.index.min()
-        last_timestamp = input_data.index.max()
+        if isinstance(input_data, PandasData):
+            first_timestamp = input_data.index.min()
+            last_timestamp = input_data.index.max()
+            map_last_year = last_timestamp.year
+            map_first_year = first_timestamp.year
+        elif isinstance(input_data, XArrayData):
+            first_timestamp = input_data.time.min()
+            last_timestamp = input_data.time.max()
+            map_last_year = last_timestamp.dt.year.values
+            map_first_year = first_timestamp.dt.year.values
+        else:
+            raise ValueError(
+                "incompatible input data format, please pass a pandas or xarray object"
+            )
 
         # ensure that the input data could always cover the advent calendar
         # last date check
-        if self.map_year(last_timestamp.year).iloc[0].right > last_timestamp:
-            map_last_year = last_timestamp.year - 1
-        else:
-            map_last_year = last_timestamp.year
+        if self._map_year(map_last_year).iloc[0].right > last_timestamp:
+            map_last_year -= 1
         # first date check
-        if self.map_year(first_timestamp.year).iloc[-1].left < first_timestamp:
-            map_first_year = first_timestamp.year + 1
-        else:
-            map_first_year = first_timestamp.year
+        if self._map_year(map_first_year).iloc[-1].left < first_timestamp:
+            map_first_year += 1
 
         # map year(s) and generate year realized advent calendar
-        if map_last_year > map_first_year:
+        if map_last_year >= map_first_year:
             intervals = self.map_years(map_first_year, map_last_year, flat)
-        elif map_last_year == map_first_year:
-            intervals = self.map_year(map_last_year)
         else:
-            raise ValueError("The input data could not cover the target advent calendar.")
+            raise ValueError(
+                "The input data could not cover the target advent calendar.")
 
         return intervals
 
