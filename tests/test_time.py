@@ -60,9 +60,9 @@ class TestAdventCalendar:
 
     def test_map_to_data(self):
         # test the edge value when the input could not cover the anchor date
-        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
+        cal = AdventCalendar(anchor_date=(10, 15), freq="180d")
         # single year covered
-        time_index = pd.date_range('20191020', '20211001', freq='60d')
+        time_index = pd.date_range("20191020", "20211001", freq="60d")
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
         year = cal.map_to_data(timeseries)
@@ -77,7 +77,7 @@ class TestAdventCalendar:
 
         # test the edge value when the input covers the anchor date
         # multiple years covered
-        time_index = pd.date_range('20191010', '20211225', freq='60d')
+        time_index = pd.date_range("20191010", "20211225", freq="60d")
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
         year = cal.map_to_data(timeseries)
@@ -102,84 +102,13 @@ class TestAdventCalendar:
         year = cal.map_to_data(timeseries)
 
         assert np.array_equal(year, expected)
-        
-        # test when the input data is not sufficient to cover one year 
+
+        # test when the input data is not sufficient to cover one year
         with pytest.raises(ValueError):
-            time_index = pd.date_range('20201020', '20211001', freq='60d')
+            time_index = pd.date_range("20201020", "20211001", freq="60d")
             test_data = np.random.random(len(time_index))
             timeseries = pd.Series(test_data, index=time_index)
             year = cal.map_to_data(timeseries)
-
-    def test_resample(self):
-        cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
-        time_index = pd.date_range('20191020', '20211001', freq='60d')
-        test_data = np.random.random(len(time_index))
-        timeseries = pd.Series(test_data, index=time_index)
-        
-        # test pandas Series without name
-        resampled_data = cal.resample(timeseries)
-        expected = np.array([test_data[4:7].mean(), test_data[1:4].mean()])
-
-        assert np.array_equal(resampled_data['mean_data'].values, expected)
-
-        # test pandas Series with name
-        timeseries = timeseries.rename('data1')
-        resampled_data = cal.resample(timeseries)
-
-        assert np.array_equal(resampled_data['data1'].values, expected)
-
-        # test pandas DataFrame
-        dataframe = pd.DataFrame(timeseries)
-        dataframe['data2'] = dataframe['data1']
-        resampled_data = cal.resample(dataframe)
-
-        assert np.array_equal(resampled_data['data1'].values, expected)
-
-        # test for multi-year pandas input
-        time_index = pd.date_range('20151020', '20211001', freq='60d')
-        test_data = np.random.random(len(time_index))
-        expected_my = np.array([test_data[4:7].mean(), test_data[1:4].mean()])
-        timeseries_my = pd.Series(test_data, index=time_index).rename('data1')
-        resampled_data = cal.resample(timeseries_my)
-
-        assert np.array_equal(resampled_data['data1'].iloc[:2].values, expected_my)
-
-        # test for non-time index failure
-        series = pd.Series(test_data)
-        with pytest.raises(ValueError):
-            cal.resample(series)
-        
-        # test xarray DataArray
-        data_array = timeseries.to_xarray()
-        data_array = data_array.rename({'index':'time'})
-        resampled_data = cal.resample(data_array)
-
-        assert np.array_equal(resampled_data['data1'].values, expected)
-
-        # test xarray Dataset
-        dataset = dataframe.to_xarray()
-        dataset = dataset.rename({'index':'time'})
-        resampled_data = cal.resample(dataset)
-
-        assert np.array_equal(resampled_data['data1'].values, expected)
-
-        # test for missing time dimension failure
-        dataset = dataframe.to_xarray()
-        with pytest.raises(ValueError):
-            resampled_data = cal.resample(dataset)
-
-        # test for time dimension without time data failure
-        data_array = series.to_xarray()
-        data_array = data_array.rename({'index': 'time'})
-        with pytest.raises(ValueError):
-            resampled_data = cal.resample(data_array)
-        
-        # test multi-year xr input
-        data_array_my = timeseries_my.to_xarray()
-        data_array_my = data_array_my.rename({'index': 'time'})
-        resampled_data = cal.resample(data_array_my)
-
-        assert np.array_equal(resampled_data['data1'].isel(index=slice(None, 2)).values, expected_my)
 
     def test_mark_target_period(self):
         cal = AdventCalendar()
@@ -219,3 +148,83 @@ class TestAdventCalendar:
 
         with pytest.raises(NotImplementedError):
             cal.get_train_test_indices("leave_n_out", {"n": 5})
+
+class TestResample:
+    # Define all required inputs as fixtures:
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        return AdventCalendar(anchor_date=(10, 15), freq="180d")
+
+    @pytest.fixture(params=["20151020", "20191020"])
+    def dummy_series(self, request):
+        time_index = pd.date_range(request.param, "20211001", freq="60d")
+        test_data = np.random.random(len(time_index))
+        expected = np.array([test_data[4:7].mean(), test_data[1:4].mean()])
+        series = pd.Series(test_data, index=time_index, name='data1')
+        return series, expected
+
+    @pytest.fixture
+    def dummy_dataframe(self, dummy_series):
+        series, expected = dummy_series
+        return pd.DataFrame(series), expected
+
+    @pytest.fixture
+    def dummy_dataarray(self, dummy_series):
+        series, expected = dummy_series
+        da = series.to_xarray()
+        da = da.rename({'index': 'time'})
+        return da, expected
+
+    @pytest.fixture
+    def dummy_dataset(self, dummy_dataframe):
+        dataframe, expected = dummy_dataframe
+        ds = dataframe.to_xarray().rename({'index': 'time'})
+        return ds, expected
+
+    # Tests start here:
+    def test_nontime_index(self, dummy_calendar, dummy_series):
+        series, _ = dummy_series
+        series = series.reset_index()
+        with pytest.raises(ValueError):
+            dummy_calendar.resample(series)
+
+    def test_series(self, dummy_calendar, dummy_series):
+        series, expected = dummy_series
+        resampled_data = dummy_calendar.resample(series)
+        np.testing.assert_allclose(
+            resampled_data['data1'].iloc[:2], expected)
+
+    def test_unnamed_series(self, dummy_calendar, dummy_series):
+        series, expected = dummy_series
+        series.name = None
+        resampled_data = dummy_calendar.resample(series)
+        np.testing.assert_allclose(
+            resampled_data["mean_data"].iloc[:2], expected)
+
+    def test_dataframe(self, dummy_calendar, dummy_dataframe):
+        dataframe, expected = dummy_dataframe
+        resampled_data = dummy_calendar.resample(dataframe)
+        np.testing.assert_allclose(resampled_data["data1"].iloc[:2], expected)
+
+    def test_dataarray(self, dummy_calendar, dummy_dataarray):
+        da, expected = dummy_dataarray
+        resampled_data = dummy_calendar.resample(da)
+        testing_vals = resampled_data["data1"].isel(index=range(2))
+        np.testing.assert_allclose(testing_vals, expected)
+
+    def test_dataset(self, dummy_calendar, dummy_dataset):
+        ds, expected = dummy_dataset
+        resampled_data = dummy_calendar.resample(ds)
+        testing_vals = resampled_data["data1"].isel(index=range(2))
+        np.testing.assert_allclose(testing_vals, expected)
+
+    def test_missing_time_dim(self, dummy_calendar, dummy_dataset):
+        ds, _ = dummy_dataset
+        with pytest.raises(ValueError):
+            dummy_calendar.resample(ds.rename({'time': 'index'}))
+
+    def test_non_time_dim(self, dummy_calendar, dummy_dataset):
+        ds, _ = dummy_dataset
+        ds['time'] = np.arange(ds['time'].size)
+        with pytest.raises(ValueError):
+            dummy_calendar.resample(ds)

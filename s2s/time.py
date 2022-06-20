@@ -57,6 +57,10 @@ import pandas as pd
 import xarray as xr
 
 
+PandasData = (pd.Series, pd.DataFrame)
+XArrayData = (xr.DataArray, xr.Dataset)
+
+
 class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
@@ -71,8 +75,8 @@ class AdventCalendar:
 
         Args:
             anchor_date: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date. 
-            freq: Frequency of the calendar datetime. The input string must follow 
+                of the calendar. It will countdown until this date.
+            freq: Frequency of the calendar datetime. The input string must follow
                 the same format as pandas.DatetimeIndex.
 
         Example:
@@ -123,10 +127,14 @@ class AdventCalendar:
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(end=anchor, periods=self.n, freq=self.freq)
         intervals = pd.Series(intervals[::-1], name=str(year))
+        intervals.index.name = 'i_interval'
         return intervals
 
     def map_years(
-        self, start: int = 1979, end: int = 2020, flat: bool = False
+        self,
+        start: int = 1979,
+        end: int = 2020,
+        flat: bool = False
     ) -> pd.DataFrame:
         """Return a periodic IntervalIndex for the given years.
 
@@ -165,19 +173,24 @@ class AdventCalendar:
             dtype: interval
         """
         index = pd.concat(
-            [self.map_year(year) for year in range(start, end + 1)], axis=1
+            [self.map_year(year) for year in range(start, end + 1)],
+            axis=1,
         ).T[::-1]
+
+        index.index.name = 'anchor_year'
 
         if flat:
             return index.stack().reset_index(drop=True)
 
         return index
 
-    def map_to_data(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-        flat: bool = False
-        ) -> pd.DataFrame:
+    def map_to_data(
+        self,
+        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        flat: bool = False,
+    ) -> pd.DataFrame:
         """Map the calendar to input data period.
-        
+
         Get datetime range from input data and generate corresponding interval index. This method
         guarentees that the generated interval (calendar) indices would be covered by the input
         data.
@@ -191,98 +204,198 @@ class AdventCalendar:
             (also see ``map_year`` and ``map_years``)
         """
         # check the datetime order of input data
-        if isinstance(input_data, (pd.Series, pd.DataFrame)):
+        if isinstance(input_data, PandasData):
             first_timestamp = input_data.index.min()
             last_timestamp = input_data.index.max()
             map_last_year = last_timestamp.year
             map_first_year = first_timestamp.year
-        elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
+        elif isinstance(input_data, XArrayData):
             first_timestamp = input_data.time.min()
             last_timestamp = input_data.time.max()
             map_last_year = last_timestamp.dt.year.values
             map_first_year = first_timestamp.dt.year.values
         else:
-            raise ValueError('incompatible input data format, please pass a pandas or xarray object')
+            raise ValueError(
+                "incompatible input data format, please pass a pandas or xarray object"
+            )
 
         # ensure that the input data could always cover the advent calendar
         map_first_year += 1
 
         # check if the last date(time) is covered by the advent calendar
-        anchor_date_with_year = pd.Timestamp(year=map_last_year, month=self.month, day=self.day)
+        anchor_date_with_year = pd.Timestamp(
+            year=map_last_year, month=self.month, day=self.day
+        )
         if anchor_date_with_year > last_timestamp:
             map_last_year = map_last_year - 1
-            
+
         if map_last_year > map_first_year:
-            intervals = self.map_years(map_first_year, map_last_year, flat)
+            intervals = self.map_years(
+                map_first_year, map_last_year, flat
+            )
             # check if the input data cover all the intervals
-            if intervals.iloc[-1,-1].left < first_timestamp:
-                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+            if intervals.iloc[-1, -1].left < first_timestamp:
+                warnings.warn(
+                    "The last few intervals are not fully covered by the input data.",
+                    UserWarning,
+                )
         elif map_last_year == map_first_year:
             intervals = self.map_year(map_last_year)
             # check if the input data cover all the intervals
             if intervals.iloc[-1].left < first_timestamp:
-                warnings.warn("The last few intervals are not fully covered by the input data.", UserWarning)
+                warnings.warn(
+                    "The last few intervals are not fully covered by the input data.",
+                    UserWarning,
+                )
         else:
-            raise ValueError("The input data could not cover the target advent calendar.")
+            raise ValueError(
+                "The input data could not cover the target advent calendar."
+            )
 
         return intervals
 
-    def _resample_bins_constructor(self, intervals: Union[pd.Series, pd.DataFrame]
-        ) -> pd.DataFrame:
+    def _resample_bins_constructor(
+        self, intervals: Union[pd.Series, pd.DataFrame]
+    ) -> pd.DataFrame:
         """
         Restructures the interval object into a tidy DataFrame.
 
         Args:
-            intervals: the output interval `pd.Series` or `pd.DataFrame` from the `map_to_data` function.
-        
+            intervals: the output interval `pd.Series` or `pd.DataFrame` from the
+                `map_to_data` function.
+
         Returns:
-            Pandas DataFrame with 'anchor_year', 'lag', and 'interval' as columns.
+            Pandas DataFrame with 'anchor_year', 'i_interval', and 'interval' as
+                columns.
         """
-        # Make a tidy dataframe where the intervals are linked to the anchor year and lag period
+        # Make a tidy dataframe where the intervals are linked to the anchor year
         if isinstance(intervals, pd.DataFrame):
             bins = intervals.copy()
-            bins.index.rename('anchor_year', inplace=True)
-            bins = bins.melt(var_name='lag', value_name='interval', ignore_index=False)
-            bins = bins.sort_values(by=['anchor_year','lag'])
+            bins.index.rename("anchor_year", inplace=True)
+            bins = bins.melt(
+                var_name="i_interval", value_name="interval", ignore_index=False
+            )
+            bins = bins.sort_values(by=["anchor_year", "i_interval"])
         else:
             # Massage the dataframe into the same tidy format for a single year
             bins = pd.DataFrame(intervals)
-            bins = bins.melt(var_name='anchor_year', value_name='interval', ignore_index=False)
-            bins.index.rename('lag', inplace=True)
+            bins = bins.melt(
+                var_name="anchor_year", value_name="interval", ignore_index=False
+            )
+            bins.index.rename("i_interval", inplace=True)
         bins = bins.reset_index()
 
         return bins
 
-    def resample(self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray]
-        ) -> Union[pd.DataFrame, xr.Dataset]:
+    def _resample_pandas(
+        self, input_data: Union[pd.Series, pd.DataFrame]
+    ) -> pd.DataFrame:
+        """Internal function to handle resampling of Pandas data.
+
+        Args:
+            input_data (pd.Series or pd.DataFrame): Data provided by the user to the
+                `resample` function
+
+        Returns:
+            pd.DataFrame: DataFrame containing the intervals and data resampled to
+                these intervals."""
+
+        intervals = self.map_to_data(input_data, flat=False)
+        bins = self._resample_bins_constructor(intervals)
+
+        interval_index = pd.IntervalIndex(bins["interval"])
+        interval_groups = interval_index.get_indexer(input_data.index)
+        interval_means = input_data.groupby(interval_groups).mean()
+
+        # drop the -1 index, as it represents data outside of all intervals
+        interval_means = interval_means.loc[0:]
+
+        if isinstance(input_data, pd.DataFrame):
+            for name in input_data.keys():
+                bins[name] = interval_means[name].values
+        else:
+            name = "mean_data" if input_data.name is None else input_data.name
+            bins[name] = interval_means.values
+
+        return bins
+
+    def _resample_xarray(
+        self, input_data: Union[xr.DataArray, xr.Dataset]
+    ) -> xr.Dataset:
+        """Internal function to handle resampling of xarray data.
+
+        Args:
+            input_data (xr.DataArray or xr.Dataset): Data provided by the user to the
+                `resample` function
+
+        Returns:
+            xr.Dataset: Dataset containing the intervals and data resampled to
+                these intervals."""
+
+        intervals = self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(intervals)
+
+        # Create the indexer to connect the input data with the intervals
+        interval_index = pd.IntervalIndex(bins["interval"])
+        interval_groups = interval_index.get_indexer(input_data["time"])
+        interval_means = input_data.groupby(
+            xr.IndexVariable("time", interval_groups)
+        ).mean()
+        interval_means = interval_means.rename({"time": "index"})
+
+        # drop the indices below 0, as it represents data outside of all intervals
+        interval_means = interval_means.sel(index=slice(0, None))
+
+        # Turn the bins dataframe into an xarray object and merge the data means into it
+        bins = bins.to_xarray()
+        if isinstance(input_data, xr.Dataset):
+            bins = xr.merge([bins, interval_means])
+        else:
+            if interval_means.name is None:
+                interval_means = interval_means.rename("mean_values")
+            bins = xr.merge([bins, interval_means])
+        bins["anchor_year"] = bins["anchor_year"].astype(int)
+
+        # Turn the anchor year and interval count into coordinates
+        bins = bins.assign_coords(
+            {"anchor_year": bins["anchor_year"], "i_interval": bins["i_interval"]}
+        )
+
+        return bins
+
+    def resample(
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset]
+    ) -> Union[pd.DataFrame, xr.Dataset]:
         """Resample input data to the calendar frequency.
 
         Pass a pandas Series/DataFrame with a datetime axis, or an
         xarray DataArray/Dataset with a datetime coordinate called 'time'.
         It will return the same object with the datetimes resampled onto
-        this DateTimeIndex by calculating the mean of each bins.
+        the Calendar's Index by binning the data into the Calendar's intervals
+        and calculating the mean of each bin.
 
-        Note that this function is intended for upscaling operations, which means
-        the calendar frequency is larger than the original frequency of input data (e.g. 
+        Note: this function is intended for upscaling operations, which means
+        the calendar frequency is larger than the original frequency of input data (e.g.
         `freq` is "7days" and the input is daily data). It supports upscaling
         operations but the user need to be careful since the returned values may contain
         "NaN".
 
         Args:
-            input_data: Input data for resampling. For a Pandas object its index must be either a 
-            pandas.DatetimeIndex. An xarray object requires a dimension named 'time' containing
-            datetime values.
+            input_data: Input data for resampling. For a Pandas object its index must be
+                either a pandas.DatetimeIndex. An xarray object requires a dimension
+                named 'time' containing datetime values.
 
         Raises:
-            UserWarning: If the calendar frequency is smaller than the frequency of input data
+            UserWarning: If the calendar frequency is smaller than the frequency of
+                input data
 
         Returns:
-            Input data resampled based on the calendar frequency, similar data format as given
-            inputs.
+            Input data resampled based on the calendar frequency, similar data format as
+                given inputs.
 
         Example:
-            Assuming the input data is pd.DataFrame containing random values with index from 
-            2021-11-11 to 2021-11-01 at daily frequency.
+            Assuming the input data is pd.DataFrame containing random values with index
+            from 2021-11-11 to 2021-11-01 at daily frequency.
 
             >>> import s2s.time
             >>> import pandas as pd
@@ -299,72 +412,36 @@ class AdventCalendar:
                 2        2021    0  (2021-06-03, 2021-11-30]  640.5
                 3        2021    1  (2020-12-05, 2021-06-03]  460.5
         """
-        if isinstance(input_data, (pd.Series, pd.DataFrame)):
+        if not isinstance(input_data, PandasData + XArrayData):
+            raise ValueError("The input data is neither a pandas or xarray object")
+
+        if isinstance(input_data, PandasData):
             if not isinstance(input_data.index, pd.DatetimeIndex):
-                raise ValueError('The input data does not have a datetime index.')
+                raise ValueError("The input data does not have a datetime index.")
 
             # raise a warning for upscaling
-            # check if the time index of input data is reverse
-            if "-" in input_data.index.freqstr:
-                # target frequency must be larger than the original frequency
-                if pd.Timedelta(self.freq) < -input_data.index.freq:
-                    warnings.warn("Target frequency is smaller than the original frequency."
-                        + "It is upscaling and please check the returned values.")
-            else:
-                if pd.Timedelta(self.freq) < input_data.index.freq:
-                    warnings.warn("Target frequency is smaller than the original frequency."
-                        + "It is upscaling and please check the returned values.")
+            # target frequency must be larger than the (absolute) input frequency
+            if input_data.index.freq:
+                input_freq = input_data.index.freq
+                input_freq = input_freq if input_freq.n > 0 else -input_freq
+                if pd.Timedelta(self.freq) < input_freq:
+                    warnings.warn(
+                        """Target frequency is smaller than the original frequency.
+                        The resampled data will contain NaN values, as there is no data
+                        available within all intervals."""
+                    )
 
-            intervals = self.map_to_data(input_data, flat=False)
-            bins = self._resample_bins_constructor(intervals)
+            return self._resample_pandas(input_data)
 
-            interval_index = pd.IntervalIndex(bins['interval'])
-            interval_groups = interval_index.get_indexer(input_data.index)
-            interval_means = input_data.groupby(interval_groups).mean()
+        # Data must be xarray
+        if "time" not in input_data.dims:
+            raise ValueError(
+                "The input DataArray/Dataset does not contain a `time` dimension"
+            )
+        if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
+            raise ValueError("The `time` dimension is not of a datetime format")
 
-            # drop the -1 index, as it represents data outside of all intervals
-            interval_means = interval_means.loc[0:]
-
-            if isinstance(input_data, pd.DataFrame):
-                for name in input_data.keys():
-                    bins[name] = interval_means[name].values
-            else:
-                name = 'mean_data' if input_data.name is None else input_data.name
-                bins[name] = interval_means.values
-
-        elif isinstance(input_data, (xr.DataArray, xr.Dataset)):
-            if 'time' not in input_data.dims:
-                raise ValueError('The input DataArray/Dataset does not contain a `time` dimension')
-            if not xr.core.common.is_np_datetime_like(input_data['time'].dtype):
-                raise ValueError('The `time` dimension is not of a datetime format')
-
-            intervals = self.map_to_data(input_data)
-            bins = self._resample_bins_constructor(intervals)
-
-            # Create the indexer to connect the input data with the intervals
-            interval_index = pd.IntervalIndex(bins['interval'])
-            interval_groups = interval_index.get_indexer(input_data['time'])
-            interval_means = input_data.groupby(
-                xr.IndexVariable('time', interval_groups)
-                ).mean()
-            interval_means = interval_means.rename({'time': 'index'})
-
-            # drop the indices below 0, as it represents data outside of all intervals
-            interval_means = interval_means.sel(index=slice(0, None))
-
-            bins = bins.to_xarray()
-            if isinstance(input_data, xr.Dataset):
-                for name in interval_means.keys():
-                    bins[name] = ('index', interval_means[name].values)
-            else:
-                name = 'mean' if input_data.name is None else input_data.name
-                bins[name] = ('index', interval_means.values)
-            bins['anchor_year'] = bins['anchor_year'].astype(int)
-
-        else:
-            raise ValueError('The input data is neither a pandas or xarray object')
-
-        return bins
+        return self._resample_xarray(input_data)
 
     def __str__(self):
         return f"{self.n} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -378,7 +455,9 @@ class AdventCalendar:
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, end=None, periods=None): # we can drop end since we have anchor date
+    def mark_target_period(
+        self, start=None, end=None, periods=None
+    ):  # we can drop end since we have anchor date
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
         if start and end:
@@ -390,7 +469,7 @@ class AdventCalendar:
         else:
             raise ValueError("Of start/end/periods, specify exactly 2")
         raise NotImplementedError
-        
+
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
