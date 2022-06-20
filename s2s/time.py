@@ -19,25 +19,22 @@ Example:
     >>> print(calendar)
     52 periods of 7d leading up to 12/31.
 
-    >>> # Get the 60-day periods leading up to New Year's eve for the year 2020
-    >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='60d')
-    >>> calendar.map_year(2020)
-    t-0    (2020-11-01, 2020-12-31]
-    t-1    (2020-09-02, 2020-11-01]
-    t-2    (2020-07-04, 2020-09-02]
-    t-3    (2020-05-05, 2020-07-04]
-    t-4    (2020-03-06, 2020-05-05]
-    t-5    (2020-01-06, 2020-03-06]
-    Name: 2020, dtype: interval
+    >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
+    >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+    >>> calendar.map_years(2020, 2020)
+    i_interval                          0                         1
+    anchor_year
+    2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
     >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
     >>> calendar.map_years(2020, 2022)
-                               t-0                       t-1
-    2022  (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
-    2021  (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
-    2020  (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
+    i_interval                          0                         1
+    anchor_year
+    2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
+    2021         (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
+    2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
     >>> # To get a stacked representation:
     >>> calendar.map_years(2020, 2022, flat=True)
@@ -157,6 +154,7 @@ class AdventCalendar:
             4    (2020-07-04, 2020-12-31]
             5    (2020-01-06, 2020-07-04]
             dtype: interval
+
         """
         index = pd.concat(
             [self._map_year(year) for year in range(start, end + 1)], axis=1
@@ -379,6 +377,7 @@ class AdventCalendar:
             1        2020           1  (2019-12-06, 2020-06-03]       95.5
             2        2021           0  (2021-06-03, 2021-11-30]      640.5
             3        2021           1  (2020-12-05, 2021-06-03]      460.5
+
         """
         if not isinstance(input_data, PandasData + XArrayData):
             raise ValueError("The input data is neither a pandas or xarray object")
