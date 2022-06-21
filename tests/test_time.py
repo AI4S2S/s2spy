@@ -2,8 +2,8 @@
 """
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
+import xarray as xr
 from s2s.time import AdventCalendar
 
 

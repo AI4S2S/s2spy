@@ -47,11 +47,11 @@ Example:
     dtype: interval
 
 """
+import warnings
 from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
-import warnings
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -372,7 +372,7 @@ class AdventCalendar:
             >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data)
             >>> bins
-            anchor_year  i_interval                  interval  mean_data
+              anchor_year  i_interval                  interval  mean_data
             0        2020           0  (2020-06-03, 2020-11-30]      275.5
             1        2020           1  (2019-12-06, 2020-06-03]       95.5
             2        2021           0  (2021-06-03, 2021-11-30]      640.5
