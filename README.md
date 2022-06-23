@@ -1,6 +1,9 @@
+# AI4S2S
+
 ## Badges
 
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
+[![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/ai4s2s/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/ai4s2s/actions/workflows/build.yml)
 [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
 [![sonarcloud](https://github.com/AI4S2S/ai4s2s/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/ai4s2s/actions/workflows/sonarcloud.yml)
@@ -11,11 +14,11 @@
 <!-- [![workflow pypi badge](https://img.shields.io/pypi/v/s2s.svg?colorB=blue)](https://pypi.python.org/project/s2s/) -->
 <!-- [![DOI](https://zenodo.org/badge/DOI/<replace-with-created-DOI>.svg)](https://doi.org/<replace-with-created-DOI>) -->
 
-## How to use s2s
+## AI4S2S
 
-python package for s2s forecasts with ai
+A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
 
-The project setup is documented in [project_setup.md](project_setup.md). Feel free to remove this document (and/or the link to this document) if you don't need it.
+About how to use the `s2s` package, check the [documentation](https://ai4s2s.readthedocs.io/en/latest/index.html).
 
 ## Installation
 
@@ -45,7 +48,7 @@ Include a link to your project's full documentation here.
 ## Contributing
 
 If you want to contribute to the development of s2s,
-have a look at the [contribution guidelines](CONTRIBUTING.md).
+have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## Credits
 
