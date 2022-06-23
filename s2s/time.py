@@ -184,7 +184,7 @@ class AdventCalendar:
                 data.
             flat: Same as the argument in ``map_years``.
         Returns:
-            Pandas DataFrame or xarray DataSet filled with Intervals of the calendar's
+            Pandas DataFrame or xarray Dataset filled with Intervals of the calendar's
             frequency. (see also ``map_years``)
         """
         # check the datetime order of input data
@@ -342,7 +342,7 @@ class AdventCalendar:
 
         Note: this function is intended for upscaling operations, which means
         the calendar frequency is larger than the original frequency of input data (e.g.
-        `freq` is "7days" and the input is daily data). It supports upscaling
+        `freq` is "7days" and the input is daily data). It supports downscaling
         operations but the user need to be careful since the returned values may contain
         "NaN".
 
