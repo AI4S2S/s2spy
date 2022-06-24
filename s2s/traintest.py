@@ -1,15 +1,30 @@
-def random_strat(n):
-  return None
+"""AI4S2S train/test splitting methods.
 
-def timeseries_split(n):
-  return None
+A collection of train/test splitting approaches.
+"""
+#from sklearn.model_selection import KFold
+import pandas as pd
 
+
+def kfold(intervals_df: pd.DataFrame, **kwargs):
+  """
+  K-Folds cross-validator, which splits provided intervals into k
+  consecutive folds.
+  """
+  return intervals_df
+
+def random_strat(intervals_df: pd.DataFrame):
+  raise NotImplementedError
+
+def timeseries_split(intervals_df: pd.DataFrame):
+  raise NotImplementedError
 
 ALL_METHODS = {
-    "leave_n_out": s2s.traintest.leave_n_out,
-    "randstrat": s2s.traintest.rand_strat,
-    "random": s2s.traintest.random,
-    "split": s2s.traintest.split,
-    "timeseriessplit": s2s.traintest.timeseries_split,
-    "repeated_kfold": s2s.traintest.repeated_kfold,
+  "kfold": kfold,
+  "rand_strat": random_strat,
+  "timeseries_split": timeseries_split,
+  # "leave_n_out": leave_n_out,
+  # "random": random,
+  # "repeated_kfold": repeated_kfold,
+  # "split": split,
 }

@@ -47,13 +47,10 @@ Example:
     dtype: interval
 
 """
-<<<<<<< HEAD
-from typing import Optional, Tuple
-=======
 import warnings
+from typing import Optional
 from typing import Tuple
 from typing import Union
->>>>>>> main
 import pandas as pd
 import xarray as xr
 
@@ -161,16 +158,17 @@ class AdventCalendar:
             dtype: interval
 
         """
-        index = pd.concat(
+        self.intervals = pd.concat(
             [self._map_year(year) for year in range(start, end + 1)], axis=1
         ).T[::-1]
 
-        index.index.name = 'anchor_year'
+        self.intervals.index.name = 'anchor_year'
 
         if flat:
-            return index.stack().reset_index(drop=True)
+            self.intervals = self.intervals.stack().reset_index(drop=True)
+            return self.intervals
 
-        return index
+        return self.intervals
 
     def map_to_data(
         self,
@@ -218,12 +216,12 @@ class AdventCalendar:
 
         # map year(s) and generate year realized advent calendar
         if map_last_year >= map_first_year:
-            intervals = self.map_years(map_first_year, map_last_year, flat)
+            self.intervals = self.map_years(map_first_year, map_last_year, flat)
         else:
             raise ValueError(
                 "The input data could not cover the target advent calendar.")
 
-        return intervals
+        return self.intervals
 
     def _resample_bins_constructor(
         self, intervals: Union[pd.Series, pd.DataFrame]
@@ -464,27 +462,29 @@ class AdventCalendar:
                 part of the train or test datasets.
 
         Example:
-
             >>> import s2s.time
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
 
-
         """
-        # TODO: overwrite if method is different?
-        # TODO: need to store self._df internally after calling map_years/map_data
         # TODO: implement tests
 
+        # checker if generated intervals are flat.
+        if self.intervals.ndim != 1:
+            raise ValueError("Please set `flat = True` when calling `map_years` or `map_data`")
+
         # checker if the method is configured.
+        if self._traintest_method is not None:
+            self.traintest = traintest.ALL_METHODS[self._traintest_method](self.intervals,
+                **self._method_kwargs)
+        return self.traintest
 
-        if self._traintest is not None:
-            self._traintest = traintest.ALL_METHODS[method](self._df, **method_kwargs)
-        return self._traintest
-
-    def set_traintest_method(self, method: str, method_kwargs: Optional[dict]):
+    def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
         """
         The user must choose a method here. And the method will be used by
         all traintest splitting methods.
         """
+        self._traintest_method = method
+        self._method_kwargs = method_kwargs
 
     def get_train(self) -> pd.DataFrame:
         """Return indices for training data indices using given strategy.
@@ -495,6 +495,7 @@ class AdventCalendar:
         """Return indices for test data indices using given strategy.
         """
         return self.get_traintest.query(label='test')
+    
     def get_train_test_indices(self, strategy, params):  # noqa
         """Shorthand for getting both train and test indices."""
         # train = self.get_train_indices()
