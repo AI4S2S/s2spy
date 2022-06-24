@@ -51,6 +51,7 @@ import warnings
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -462,6 +463,7 @@ class AdventCalendar:
                 part of the train or test datasets.
 
         Example:
+
             >>> import s2s.time
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
 
@@ -472,9 +474,18 @@ class AdventCalendar:
         if self.intervals.ndim != 1:
             raise ValueError("Please set `flat = True` when calling `map_years` or `map_data`")
 
+        # infer anchor years from give intervals
+        anchor_years = [timestamp.right.year for timestamp in self.intervals[::self._n_intervals]]
+        # Create DataFrame from intervals Series to store the train/test groups
+        traintest_base = pd.DataFrame(data = {
+        'anchor_year': np.repeat(anchor_years, self._n_intervals),
+        'i_intervals': np.tile(range(self._n_intervals), len(anchor_years)),
+        'intervals': self.intervals,
+        })        
+
         # checker if the method is configured.
         if self._traintest_method is not None:
-            self.traintest = traintest.ALL_METHODS[self._traintest_method](self.intervals,
+            self.traintest = traintest.ALL_METHODS[self._traintest_method](traintest_base,
                 **self._method_kwargs)
         return self.traintest
 
