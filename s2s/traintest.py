@@ -1,6 +1,6 @@
 """AI4S2S train/test splitting methods.
 
-A collection of train/test splitting approaches.
+A collection of train/test splitting approaches used for cross-validation.
 """
 from sklearn.model_selection import KFold
 import numpy as np
@@ -36,10 +36,10 @@ def kfold(intervals_df: pd.DataFrame, n_splits: int=2, **kwargs):
 
     return intervals_df
 
-def random_strat(intervals_df: pd.DataFrame):
+def random_strat():
     raise NotImplementedError
 
-def timeseries_split(intervals_df: pd.DataFrame):
+def timeseries_split():
     raise NotImplementedError
 
 ALL_METHODS = {
