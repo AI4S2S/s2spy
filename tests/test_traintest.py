@@ -39,5 +39,3 @@ class TestTrainTest:
     def test_timeseries_split(self):
         with pytest.raises(NotImplementedError):
             s2s.traintest.timeseries_split()
-
-    

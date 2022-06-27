@@ -35,40 +35,13 @@ class TestAdventCalendar:
         cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
-            cal.mark_target_period(end="20200101", periods=5)
-
-        with pytest.raises(NotImplementedError):
             cal.mark_target_period(start="20200101", periods=5)
-
-        with pytest.raises(NotImplementedError):
-            cal.mark_target_period(start="20190101", end="20200101")
-
-        with pytest.raises(ValueError):
-            cal.mark_target_period(end="20200101")
 
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
 
         with pytest.raises(NotImplementedError):
             cal.get_lagged_indices()
-
-    def test_get_train_indices(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.get_train_indices("leave_n_out", {"n": 5})
-
-    def test_get_test_indices(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.get_test_indices("leave_n_out", {"n": 5})
-
-    def test_get_train_test_indices(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.get_train_test_indices("leave_n_out", {"n": 5})
 
 class TestMap:
     def test_map_years(self):
@@ -281,3 +254,33 @@ class TestResample:
         ds['time'] = np.arange(ds['time'].size)
         with pytest.raises(ValueError):
             dummy_calendar.resample(ds)
+
+class TestTrainTest:
+    # Define all required inputs as fixtures:
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        return AdventCalendar(anchor_date=(10, 15), freq="180d")
+
+    def set_traintest_method(self, dummy_calendar):
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        assert dummy_calendar._traintest_method == "kfold"
+        assert dummy_calendar._method_kwargs["n_splits"] == 2
+
+    # def test_get_traintest(self):
+    #     cal = AdventCalendar()
+    #     cal.map_years(2019, 2021, flat=True)
+
+    #     with pytest.raises(NotImplementedError):
+    #         cal.get_train_test_indices("leave_n_out", {"n": 5})    
+
+    def test_get_train(self):
+        cal = AdventCalendar()
+
+        with pytest.raises(NotImplementedError):
+            cal.get_train()
+
+    def test_get_test(self):
+        cal = AdventCalendar()
+
+        with pytest.raises(NotImplementedError):
+            cal.get_test()

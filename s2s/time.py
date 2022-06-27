@@ -500,15 +500,10 @@ class AdventCalendar:
     def get_train(self) -> pd.DataFrame:
         """Return indices for training data indices using given strategy.
         """
-        return self.get_traintest.query(label='train')
+        raise NotImplementedError
 
     def get_test(self) -> pd.DataFrame:
         """Return indices for test data indices using given strategy.
         """
-        return self.get_traintest.query(label='test')
-    
-    def get_train_test_indices(self, strategy, params):  # noqa
-        """Shorthand for getting both train and test indices."""
-        # train = self.get_train_indices()
-        # test = self.get_test_indices()
         raise NotImplementedError
+
