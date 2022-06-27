@@ -470,6 +470,7 @@ class AdventCalendar:
             1    (2020-10-20, 2021-04-18]
             2    (2020-04-18, 2020-10-15]
             3    (2019-10-21, 2020-04-18]
+            dtype: interval
             
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> calendar.get_traintest()
