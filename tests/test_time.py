@@ -266,12 +266,13 @@ class TestTrainTest:
         assert dummy_calendar._traintest_method == "kfold"
         assert dummy_calendar._method_kwargs["n_splits"] == 2
 
-    # def test_get_traintest(self):
-    #     cal = AdventCalendar()
-    #     cal.map_years(2019, 2021, flat=True)
-
-    #     with pytest.raises(NotImplementedError):
-    #         cal.get_train_test_indices("leave_n_out", {"n": 5})    
+    def test_get_traintest(self, dummy_calendar):
+        dummy_calendar.map_years(2019, 2021, flat=True)
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        traintest_group = dummy_calendar.get_traintest()
+        # check the first fold
+        expected_group = ['train', 'train', 'test', 'test', 'test', 'test']
+        assert np.array_equal(traintest_group["fold_0"].values, expected_group)        
 
     def test_get_train(self):
         cal = AdventCalendar()
