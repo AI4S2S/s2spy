@@ -47,6 +47,7 @@ Example:
     dtype: interval
 
 """
+from s2s import traintest
 import warnings
 from typing import Optional
 from typing import Tuple
@@ -58,8 +59,6 @@ import xarray as xr
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
-
-from s2s import traintest
 
 class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
@@ -268,7 +267,8 @@ class AdventCalendar:
 
         Returns:
             pd.DataFrame: DataFrame containing the intervals and data resampled to
-                these intervals."""
+                these intervals.
+        """
 
         intervals = self.map_to_data(input_data, flat=False)
         bins = self._resample_bins_constructor(intervals)
@@ -454,19 +454,25 @@ class AdventCalendar:
     def get_traintest(self) -> pd.DataFrame:
         """Shorthand for getting both train and test indices.
 
-        Args:
-            method: one of the methods available in s2s.traintest
-            method_kwargs: keyword arguments that will be passed to `method`
+        The user will get a flat intervals list similar to the output of `map_years`
+        or `map_data`, but with extra columns containing `train` and `test` labels.
 
         Returns:
-            Pandas DataFrame with an column specifying whether the interval is
+            Pandas DataFrame with columns specifying whether the interval is
                 part of the train or test datasets.
 
         Example:
 
             >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
-
+            >>> calendar = s2s.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
+            >>> calendar.map_years(2020, 2021, flat=True)
+            >>> calendar.set_traintest_method("kfold", n_splits = 2)
+            >>> calendar.get_traintest()
+               anchor_year  i_intervals                 intervals fold_0 fold_1
+            0         2021            0  (2021-04-18, 2021-10-15]  train   test
+            1         2021            1  (2020-10-20, 2021-04-18]  train   test
+            2         2020            0  (2020-04-18, 2020-10-15]   test  train
+            3         2020            1  (2019-10-21, 2020-04-18]   test  train
         """
         # checker if generated intervals are flat.
         if self.intervals.ndim != 1:
@@ -493,6 +499,10 @@ class AdventCalendar:
         """
         The user must choose a method here. And the method will be used by
         all traintest splitting methods.
+
+        Args:
+            method: one of the methods available in `s2s.traintest`
+            method_kwargs: keyword arguments that will be passed to `method`
         """
         self._traintest_method = method
         self._method_kwargs = method_kwargs
@@ -506,4 +516,3 @@ class AdventCalendar:
         """Return indices for test data indices using given strategy.
         """
         raise NotImplementedError
-

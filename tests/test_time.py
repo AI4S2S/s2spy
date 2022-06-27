@@ -263,8 +263,8 @@ class TestTrainTest:
 
     def set_traintest_method(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
-        assert dummy_calendar._traintest_method == "kfold"
-        assert dummy_calendar._method_kwargs["n_splits"] == 2
+        assert dummy_calendar._traintest_method == "kfold" # pylint: disable=protected-access
+        assert dummy_calendar._method_kwargs["n_splits"] == 2 # pylint: disable=protected-access
 
     def test_get_traintest(self, dummy_calendar):
         dummy_calendar.map_years(2019, 2021, flat=True)

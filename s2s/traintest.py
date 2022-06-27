@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-def kfold(intervals_df: pd.DataFrame, n_splits: int=2, **kwargs):
+def kfold(intervals_df: pd.DataFrame, n_splits: int = 2, **kwargs):
     """
     K-Folds cross-validator, which splits provided intervals into k
     consecutive folds.
@@ -49,6 +49,7 @@ def random_strat():
 
 def timeseries_split():
     raise NotImplementedError
+
 
 ALL_METHODS = {
   "kfold": kfold,
