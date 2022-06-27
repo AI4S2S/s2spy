@@ -468,8 +468,6 @@ class AdventCalendar:
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
 
         """
-        # TODO: implement tests
-
         # checker if generated intervals are flat.
         if self.intervals.ndim != 1:
             raise ValueError("Please set `flat = True` when calling `map_years` or `map_data`")
@@ -481,12 +479,14 @@ class AdventCalendar:
         'anchor_year': np.repeat(anchor_years, self._n_intervals),
         'i_intervals': np.tile(range(self._n_intervals), len(anchor_years)),
         'intervals': self.intervals,
-        })        
+        })
 
         # checker if the method is configured.
         if self._traintest_method is not None:
             self.traintest = traintest.ALL_METHODS[self._traintest_method](traintest_base,
                 **self._method_kwargs)
+        else:
+            raise RuntimeError("Please choose a method using `set_traintest_method`.")
         return self.traintest
 
     def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
