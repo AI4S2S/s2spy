@@ -466,6 +466,11 @@ class AdventCalendar:
             >>> import s2s.time
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
             >>> calendar.map_years(2020, 2021, flat=True)
+            0    (2021-04-18, 2021-10-15]
+            1    (2020-10-20, 2021-04-18]
+            2    (2020-04-18, 2020-10-15]
+            3    (2019-10-21, 2020-04-18]
+            
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> calendar.get_traintest()
                anchor_year  i_intervals                 intervals fold_0 fold_1
@@ -504,7 +509,7 @@ class AdventCalendar:
             method_kwargs: keyword arguments that will be passed to `method`
         """
         # checker if the given method is supported in `s2s.traintest`
-        if method not in traintest.ALL_METHODS.keys():
+        if method not in [key for key, _ in traintest.ALL_METHODS.items()]:
             raise ValueError("The given method is not supported by `s2s.traintest`.")
         self._traintest_method = method
         self._method_kwargs = method_kwargs
