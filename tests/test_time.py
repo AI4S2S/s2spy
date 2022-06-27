@@ -261,10 +261,15 @@ class TestTrainTest:
     def dummy_calendar(self):
         return AdventCalendar(anchor_date=(10, 15), freq="180d")
 
-    def set_traintest_method(self, dummy_calendar):
+    def test_set_traintest_method(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
         assert dummy_calendar._traintest_method == "kfold" # pylint: disable=protected-access
         assert dummy_calendar._method_kwargs["n_splits"] == 2 # pylint: disable=protected-access
+
+    def test_set_traintest_method_not_support(self, dummy_calendar):
+        # test when the given method is not supported
+        with pytest.raises(ValueError):
+            dummy_calendar.set_traintest_method("not_a_real_method")
 
     def test_get_traintest(self, dummy_calendar):
         dummy_calendar.map_years(2019, 2021, flat=True)
@@ -272,7 +277,14 @@ class TestTrainTest:
         traintest_group = dummy_calendar.get_traintest()
         # check the first fold
         expected_group = ['train', 'train', 'test', 'test', 'test', 'test']
-        assert np.array_equal(traintest_group["fold_0"].values, expected_group)        
+        assert np.array_equal(traintest_group["fold_0"].values, expected_group)
+    
+    def test_get_traintest_intervals_not_flat(self, dummy_calendar):
+        dummy_calendar.map_years(2019, 2021, flat=False)
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        # test when the generated intervals are not flat
+        with pytest.raises(ValueError):
+            dummy_calendar.get_traintest()
 
     def test_get_train(self):
         cal = AdventCalendar()

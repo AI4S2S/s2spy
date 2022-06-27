@@ -47,7 +47,6 @@ Example:
     dtype: interval
 
 """
-from s2s import traintest
 import warnings
 from typing import Optional
 from typing import Tuple
@@ -55,6 +54,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+from s2s import traintest
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -491,8 +491,7 @@ class AdventCalendar:
         if self._traintest_method is not None:
             self.traintest = traintest.ALL_METHODS[self._traintest_method](traintest_base,
                 **self._method_kwargs)
-        else:
-            raise RuntimeError("Please choose a method using `set_traintest_method`.")
+
         return self.traintest
 
     def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
@@ -504,6 +503,9 @@ class AdventCalendar:
             method: one of the methods available in `s2s.traintest`
             method_kwargs: keyword arguments that will be passed to `method`
         """
+        # checker if the given method is supported in `s2s.traintest`
+        if method not in traintest.ALL_METHODS.keys():
+            raise ValueError("The given method is not supported by `s2s.traintest`.")
         self._traintest_method = method
         self._method_kwargs = method_kwargs
 

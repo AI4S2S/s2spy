@@ -2,9 +2,9 @@
 
 A collection of train/test splitting approaches used for cross-validation.
 """
-from sklearn.model_selection import KFold
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import KFold
 
 
 def kfold(intervals_df: pd.DataFrame, n_splits: int = 2, **kwargs):
