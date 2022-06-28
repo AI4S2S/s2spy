@@ -16,7 +16,7 @@ Welcome to s2spy's documentation!
   Developer Readme <README.dev.md>
   Contributing <CONTRIBUTING.md>
   Code of Conduct <CODE_OF_CONDUCT.md>
-  Changelog <CHANGELOG.md>
+  Changelog <changelog_link>
 
 Indices and tables
 ==================
