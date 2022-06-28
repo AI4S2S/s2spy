@@ -1,10 +1,10 @@
-"""Tests for the s2s.time module.
+"""Tests for the s2spy.time module.
 """
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from s2s.time import AdventCalendar
+from s2spy.time import AdventCalendar
 
 
 def interval(start, end):
