@@ -51,7 +51,6 @@ import warnings
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import numpy as np
 import pandas as pd
 import xarray as xr
 from s2s import traintest
@@ -95,7 +94,8 @@ class AdventCalendar:
         self.freq = freq
         self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
-        self.traintest = None
+        self._traintest = None
+        self.intervals = None
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -421,8 +421,17 @@ class AdventCalendar:
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
+        if self.intervals is not None:
+            return str(self.intervals)
+
         props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
         return f"AdventCalendar({props})"
+
+    @property
+    def flat(self):
+        if self.intervals is not None:
+            return self.intervals.stack()
+        raise ValueError("The calendar is not initialized with intervals yet.")
 
     def discard(self, max_lag):   # or "set_max_lag"
         """Only keep indices up to the given max lag."""
@@ -445,16 +454,8 @@ class AdventCalendar:
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
-    def get_cv_groups(self):
-        """Group intervals into bins.
-
-        Group intervals into bins for each anchor year by labelling.
-        args:
-            intervals: output of ``map_years``.
-        """
-        raise NotImplementedError
-
-    def get_traintest(self, fold='fold_0') -> pd.DataFrame:
+    @property
+    def traintest(self) -> pd.DataFrame:
         """Shorthand for getting both train and test indices.
 
         The user will get a flat intervals list similar to the output of `map_years`
@@ -483,8 +484,8 @@ class AdventCalendar:
             2         2020            0  (2020-04-18, 2020-10-15]   test  train
             3         2020            1  (2019-10-21, 2020-04-18]   test  train
         """
-        df_combined = self.intervals.join(self.traintest)
-        new_index_cols = [self.intervals.index.name] + list(self.traintest.columns)
+        df_combined = self.intervals.join(self._traintest)
+        new_index_cols = [self.intervals.index.name] + list(self._traintest.columns)
         return df_combined.reset_index().set_index(new_index_cols)  #.stack()
 
     def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
@@ -496,7 +497,7 @@ class AdventCalendar:
             method: one of the methods available in `s2s.traintest`
             method_kwargs: keyword arguments that will be passed to `method`
         """
-        if self.traintest is not None:
+        if self._traintest is not None:
             # TODO: provide option to overwrite
             raise ValueError("The traintest method has already been set.")
 
@@ -504,15 +505,4 @@ class AdventCalendar:
         if not func:
             raise ValueError("The given method is not supported by `s2s.traintest`.")
 
-        self.traintest = func(self.intervals, **method_kwargs)
-        return self  # This way you could do self.set_traintest_method(...).get_traintest()
-
-    def get_train(self) -> pd.DataFrame:
-        """Return indices for training data indices using given strategy.
-        """
-        raise NotImplementedError
-
-    def get_test(self) -> pd.DataFrame:
-        """Return indices for test data indices using given strategy.
-        """
-        raise NotImplementedError
+        self._traintest = func(self.intervals, **method_kwargs)
