@@ -2,12 +2,11 @@
 
 A collection of train/test splitting approaches used for cross-validation.
 """
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
 
 
-def kfold(intervals_df: pd.DataFrame, n_splits: int = 2, **kwargs):
+def kfold(df: pd.DataFrame, n_splits: int = 2, **kwargs):
     """
     K-Folds cross-validator, which splits provided intervals into k
     consecutive folds.
@@ -17,9 +16,6 @@ def kfold(intervals_df: pd.DataFrame, n_splits: int = 2, **kwargs):
     args:
         intervals_df: DataFrame to store the train/test groups.
         n_splits: number of train/test splits.
-        # To do
-        Gap_prior: skip n groups/years prior to every test group/year
-        Gap_after: skip n groups/years after every test group/year
 
     Other keyword arguments: see the documentation for sklearn.model_selection.KFold:
     https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html
@@ -27,25 +23,23 @@ def kfold(intervals_df: pd.DataFrame, n_splits: int = 2, **kwargs):
     Returns:
         Pandas DataFrame with columns containing train/test label in each fold.
     """
-    # instantiate kfold cross-validator
     cv = KFold(n_splits, **kwargs)
-    anchor_years = np.unique(intervals_df.anchor_year.values)
-    folds = cv.split(anchor_years)
+    folds = cv.split(df)
 
+    # Map folds to a new dataframe
+    output = pd.DataFrame(index=df.index)
     for i, (train_index, test_index) in enumerate(folds):
-        # get train year index and test year index
-        train_years = [anchor_years[index] for index in train_index]
-        test_years = [anchor_years[index] for index in test_index]
-        # label train/test group
-        col_name = 'fold_' + str(i)
-        intervals_df[col_name] = 'skip'
-        intervals_df.loc[intervals_df['anchor_year'].isin(train_years), col_name] = 'train'
-        intervals_df.loc[intervals_df['anchor_year'].isin(test_years), col_name] = 'test'
+        col_name = f'fold_{i}'
+        output[col_name] = 'skip'
+        output[col_name].iloc[train_index] = 'train'
+        output[col_name].iloc[test_index] = 'test'
 
-    return intervals_df
+    return output
+
 
 def random_strat():
     raise NotImplementedError
+
 
 def timeseries_split():
     raise NotImplementedError

@@ -60,6 +60,7 @@ from s2s import traintest
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
+
 class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
@@ -94,6 +95,7 @@ class AdventCalendar:
         self.freq = freq
         self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
+        self.traintest = None
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -164,9 +166,10 @@ class AdventCalendar:
 
         self.intervals.index.name = 'anchor_year'
 
+        # TODO: perhaps we don't need the flat keyword after all? Users can
+        # stack it themselves and we can provide some examples
         if flat:
-            self.intervals = self.intervals.stack().reset_index(drop=True)
-            return self.intervals
+            return self.intervals.stack()
 
         return self.intervals
 
@@ -451,7 +454,7 @@ class AdventCalendar:
         """
         raise NotImplementedError
 
-    def get_traintest(self) -> pd.DataFrame:
+    def get_traintest(self, fold='fold_0') -> pd.DataFrame:
         """Shorthand for getting both train and test indices.
 
         The user will get a flat intervals list similar to the output of `map_years`
@@ -471,7 +474,7 @@ class AdventCalendar:
             2    (2020-04-18, 2020-10-15]
             3    (2019-10-21, 2020-04-18]
             dtype: interval
-            
+
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> calendar.get_traintest()
                anchor_year  i_intervals                 intervals fold_0 fold_1
@@ -480,25 +483,9 @@ class AdventCalendar:
             2         2020            0  (2020-04-18, 2020-10-15]   test  train
             3         2020            1  (2019-10-21, 2020-04-18]   test  train
         """
-        # checker if generated intervals are flat.
-        if self.intervals.ndim != 1:
-            raise ValueError("Please set `flat = True` when calling `map_years` or `map_data`")
-
-        # infer anchor years from give intervals
-        anchor_years = [timestamp.right.year for timestamp in self.intervals[::self._n_intervals]]
-        # Create DataFrame from intervals Series to store the train/test groups
-        traintest_base = pd.DataFrame(data = {
-        'anchor_year': np.repeat(anchor_years, self._n_intervals),
-        'i_intervals': np.tile(range(self._n_intervals), len(anchor_years)),
-        'intervals': self.intervals,
-        })
-
-        # checker if the method is configured.
-        if self._traintest_method is not None:
-            self.traintest = traintest.ALL_METHODS[self._traintest_method](traintest_base,
-                **self._method_kwargs)
-
-        return self.traintest
+        df_combined = self.intervals.join(self.traintest)
+        new_index_cols = [self.intervals.index.name] + list(self.traintest.columns)
+        return df_combined.reset_index().set_index(new_index_cols)  #.stack()
 
     def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
         """
@@ -509,11 +496,16 @@ class AdventCalendar:
             method: one of the methods available in `s2s.traintest`
             method_kwargs: keyword arguments that will be passed to `method`
         """
-        # checker if the given method is supported in `s2s.traintest`
-        if method not in [key for key, _ in traintest.ALL_METHODS.items()]:
+        if self.traintest is not None:
+            # TODO: provide option to overwrite
+            raise ValueError("The traintest method has already been set.")
+
+        func = traintest.ALL_METHODS.get(method)
+        if not func:
             raise ValueError("The given method is not supported by `s2s.traintest`.")
-        self._traintest_method = method
-        self._method_kwargs = method_kwargs
+
+        self.traintest = func(self.intervals, **method_kwargs)
+        return self  # This way you could do self.set_traintest_method(...).get_traintest()
 
     def get_train(self) -> pd.DataFrame:
         """Return indices for training data indices using given strategy.
