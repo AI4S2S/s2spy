@@ -23,6 +23,107 @@ def sort_d_by_vals(d, reverse=False):
 from typing import List, Tuple, Union
 
 #%%
+
+def wrapper_calc_spatcov(field: xr.DataArray):
+    '''
+    Wrapper around calc_spatcov
+    Should be able to loop over dimesions other then latitude longitude, e.g. ('split', 'lag')
+    # in proto, split was often done in Paralle
+    '''
+    raise NotImplementedError
+
+def wrapper_spatial_mean_regions(field: xr.DataArray):
+    '''
+    Wrapper around spatial_mean_regions
+    Should be able to loop over dimesions other then latitude longitude, e.g. ('split', 'lag')
+    # in proto, split was often done in Paralle
+    '''
+    raise NotImplementedError
+
+def single_split_spatial_mean_regions(precur_arr: np.ndarray,
+                                      corr: np.ndarray,
+                                      labels: np.ndarray, 
+                                      a_wghts: np.ndarray,
+                                      lags: np.ndarray,
+                                      use_coef_wghts: bool,
+                                      name: str):
+    '''
+    precur_arr : np.ndarray
+        of shape (time, lat, lon). If lags define period_means;
+        of shape (lag, time, lat, lon).
+    corr : np.ndarray
+        if shape (lag, lat, lon).
+    labels : np.ndarray
+        of shape (lag, lat, lon).
+    a_wghts : np.ndarray
+        if shape (lat, lon).
+    use_coef_wghts : bool
+        Use correlation coefficient as weights for spatial mean.
+
+    Returns
+    -------
+    ts_list : list of splits with numpy timeseries
+    '''
+    ts_list = np.zeros( (lags.size), dtype=list )
+    track_names = []
+    for l_idx, lag in enumerate(lags):
+        labels_lag = labels[l_idx]
+
+        # # if lag represents aggregation period:
+        # if precur.period_means_array == True:
+        #     precur_arr = precur.precur_arr[:,l_idx].values
+
+        regions_for_ts = list(np.unique(labels_lag[~np.isnan(labels_lag)]))
+
+        if use_coef_wghts:
+            coef_wghts = abs(corr[l_idx]) / abs(np.nanmax(corr[l_idx]))
+            wghts = a_wghts * coef_wghts # area & corr. value weighted
+        else:
+            wghts = a_wghts
+
+        # this array will be the time series for each feature
+        ts_regions_lag_i = np.zeros((precur_arr.shape[0], len(regions_for_ts)))
+
+        # track sign of eacht region
+
+        # calculate area-weighted mean over features
+        for r in regions_for_ts:
+            idx = regions_for_ts.index(r)
+            # start with empty lonlat array
+            B = np.zeros(labels_lag.shape)
+            # Mask everything except region of interest
+            B[labels_lag == r] = 1
+            # Calculates how values inside region vary over time
+            ts = np.nanmean(precur_arr[:,B==1] * wghts[B==1], axis =1)
+
+            # check for nans
+            if ts[np.isnan(ts)].size !=0:
+                print(ts)
+                perc_nans = ts[np.isnan(ts)].size / ts.size
+                if perc_nans == 1:
+                    # all NaNs
+                    print(f'All timesteps were NaNs for split'
+                        f' for region {r} at lag {lag}')
+
+                else:
+                    print(f'{perc_nans} NaNs for split'
+                        f' for region {r} at lag {lag}')
+
+            track_names.append(f'{lag}..{int(r)}..{name}')
+
+            ts_regions_lag_i[:,idx] = ts
+            # get sign of region
+            # sign_ts_regions[idx] = np.sign(np.mean(corr.isel(lag=l_idx).values[B==1]))
+
+        ts_list[l_idx] = ts_regions_lag_i
+    tsCorr = np.concatenate(tuple(ts_list), axis = 1)
+    df_tscorr = pd.DataFrame(tsCorr, columns=track_names)
+                        
+    return df_tscorr
+
+
+##### Code below copied and slightly adapted from proto
+
 def cluster_DBSCAN_regions(corr_xr: xr.DataArray, 
                            distance_eps: float=600, 
                            min_area_in_degrees2: int=3,
@@ -59,7 +160,7 @@ def cluster_DBSCAN_regions(corr_xr: xr.DataArray,
     aver_area_km2 = 7939     # np.mean(area_grid) with latitude 0-90 / 1E6
     wght_area = area_grid / aver_area_km2
     min_area_km2 = min_area_in_degrees2 * 111.131 * min_area_in_degrees2 * 78.85
-    min_area_samples = min_area_km2 / aver_area_km2
+    min_area_samples = int(min_area_km2 / aver_area_km2)
 
 
     prec_labels_np = np.zeros( (n_spl, n_lags, lats.size, lons.size), dtype=int )
@@ -127,8 +228,6 @@ def cluster_DBSCAN_regions(corr_xr: xr.DataArray,
                 prec_labels_s = prec_labels_np[s]
                 prec_labels_ord[s] = relabel(prec_labels_s, reassign)
 
-
-
     prec_labels = xr.DataArray(data=prec_labels_ord, coords=[range(n_spl), lags, lats, lons],
                         dims=['split', 'lag','latitude','longitude'],
                         name='labels_init',
@@ -157,8 +256,10 @@ def get_area(ds):
     #    A_mean = np.mean(A_gridcell2D)
     return A_gridcell2D
 
-
-def mask_sig_to_cluster(mask_and_data_s, wght_area, distance_eps, min_area_samples,
+def mask_sig_to_cluster(mask_and_data_s, 
+                        wght_area, 
+                        distance_eps: Union[float, int], 
+                        min_area_samples: int,
                         n_jobs=-1):
 
 
@@ -384,7 +485,6 @@ def relabel(prec_labels_s, reassign):
     for i, reg in enumerate(reassign.keys()):
         prec_labels_ord[prec_labels_s == reg] = reassign[reg]
     return prec_labels_ord
-
 
 def xrmask_by_latlon(xarray,
                      upper_right: Tuple[float, float]=None,
