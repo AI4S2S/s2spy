@@ -416,6 +416,9 @@ class AdventCalendar:
         props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
         return f"AdventCalendar({props})"
 
+    def _repr_html_(self):
+        return self._intervals._repr_html_()
+
     @property
     def flat(self):
         if self._intervals is not None:
