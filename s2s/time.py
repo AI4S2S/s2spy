@@ -208,7 +208,7 @@ class AdventCalendar:
 
         # map year(s) and generate year realized advent calendar
         if map_last_year >= map_first_year:
-            self._intervals = self.map_years(map_first_year, map_last_year)
+            self.map_years(map_first_year, map_last_year)
         else:
             raise ValueError(
                 "The input data could not cover the target advent calendar.")
@@ -417,7 +417,12 @@ class AdventCalendar:
         return f"AdventCalendar({props})"
 
     def _repr_html_(self):
-        return self._intervals._repr_html_()
+        # for jupyter notebook
+        if self._intervals is not None:
+            return self._intervals._repr_html_()
+        
+        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
+        return f"AdventCalendar({props})"        
 
     @property
     def flat(self):
