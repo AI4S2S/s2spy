@@ -37,7 +37,7 @@ def kfold(df: pd.DataFrame, n_splits: int = 2, **kwargs):
     return output
 
 
-def random_strat():
+def random_strat(df: pd.DataFrame, **kwargs):
     raise NotImplementedError
 
 
@@ -47,7 +47,7 @@ def timeseries_split():
 
 ALL_METHODS = {
   "kfold": kfold,
-  "rand_strat": random_strat,
+  "random_strat": random_strat,
   "timeseries_split": timeseries_split,
   # "leave_n_out": leave_n_out,
   # "random": random,

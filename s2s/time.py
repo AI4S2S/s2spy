@@ -52,6 +52,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import pandas as pd
+from pyrsistent import s
 import xarray as xr
 from s2s import traintest
 
@@ -485,7 +486,8 @@ class AdventCalendar:
         new_index_cols = [self._intervals.index.name] + list(self._traintest.columns)
         return df_combined.reset_index().set_index(new_index_cols)  #.stack()
 
-    def set_traintest_method(self, method: str, **method_kwargs: Optional[dict]):
+    def set_traintest_method(
+        self, method: str, overwrite: bool= False, **method_kwargs: Optional[dict]):
         """
         The user must choose a method here. And the method will be used by
         all traintest splitting methods.
@@ -495,8 +497,10 @@ class AdventCalendar:
             method_kwargs: keyword arguments that will be passed to `method`
         """
         if self._traintest is not None:
-            # TODO: provide option to overwrite
-            raise ValueError("The traintest method has already been set.")
+            if overwrite:
+                pass
+            else:
+                raise ValueError("The traintest method has already been set. Set `overwrite = True` if you want to overwrite it.")
 
         func = traintest.ALL_METHODS.get(method)
         if not func:
