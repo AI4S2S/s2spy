@@ -262,8 +262,8 @@ class AdventCalendar:
                 these intervals.
         """
 
-        intervals = self.map_to_data(input_data)
-        bins = self._resample_bins_constructor(intervals)
+        self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(self._intervals)
 
         interval_index = pd.IntervalIndex(bins["interval"])
         interval_groups = interval_index.get_indexer(input_data.index)
@@ -294,8 +294,8 @@ class AdventCalendar:
             xr.Dataset: Dataset containing the intervals and data resampled to
                 these intervals."""
 
-        intervals = self.map_to_data(input_data)
-        bins = self._resample_bins_constructor(intervals)
+        self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(self._intervals)
 
         # Create the indexer to connect the input data with the intervals
         interval_index = pd.IntervalIndex(bins["interval"])
