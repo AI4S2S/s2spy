@@ -46,7 +46,7 @@ class TestAdventCalendar:
 class TestMap:
     def test_map_years(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
-        years = cal.map_years(2020, 2021)
+        cal.map_years(2020, 2021)
         expected = np.array(
             [
                 [
@@ -59,18 +59,18 @@ class TestMap:
                 ],
             ]
         )
-        assert np.array_equal(years, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_years_single(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
-        year = cal.map_years(2020, 2020)
+        cal.map_years(2020, 2020)
         expected = np.array([
             [
                 interval("2020-07-04", "2020-12-31"),
                 interval("2020-01-06", "2020-07-04"),
             ]
         ])
-        assert np.array_equal(year, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_to_data_edge_case_last_year(self):
         # test the edge value when the input could not cover the anchor date
@@ -79,14 +79,14 @@ class TestMap:
         time_index = pd.date_range('20191020', '20211001', freq='60d')
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
-        year = cal.map_to_data(timeseries)
+        cal.map_to_data(timeseries)
         expected = np.array([
             [
                 interval("2020-04-18", "2020-10-15"),
                 interval("2019-10-21", "2020-04-18"),
             ]
         ])
-        assert np.array_equal(year, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_to_data_single_year_coverage(self):
         # test the single year coverage
@@ -95,7 +95,7 @@ class TestMap:
         time_index = pd.date_range('20210101', '20211231', freq='7d')
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
-        year = cal.map_to_data(timeseries)
+        cal.map_to_data(timeseries)
 
         expected = np.array([
             [
@@ -104,7 +104,7 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(year, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_to_data_edge_case_first_year(self):
         # test the edge value when the input covers the anchor date
@@ -113,7 +113,7 @@ class TestMap:
         time_index = pd.date_range('20191010', '20211225', freq='60d')
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index)
-        year = cal.map_to_data(timeseries)
+        cal.map_to_data(timeseries)
 
         expected = np.array(
             [
@@ -128,7 +128,7 @@ class TestMap:
             ]
         )
 
-        assert np.array_equal(year, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_to_data_value_error(self):
         # test when the input data is not sufficient to cover one year
@@ -145,7 +145,7 @@ class TestMap:
         time_index = pd.date_range('20201010', '20211225', freq='60d')
         test_data = np.random.random(len(time_index))
         timeseries = pd.Series(test_data, index=time_index[::-1])
-        year = cal.map_to_data(timeseries)
+        cal.map_to_data(timeseries)
 
         expected = np.array([
             [
@@ -154,7 +154,7 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(year, expected)
+        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
 
     def test_map_to_data_xarray_input(self):
         # test when the input data has reverse order time index
@@ -164,7 +164,7 @@ class TestMap:
         da = xr.DataArray(
             data=test_data,
             coords={'time': time_index})
-        year = cal.map_to_data(da)
+        cal.map_to_data(da)
 
         expected = np.array(
             [
@@ -173,7 +173,7 @@ class TestMap:
             ]
         )
 
-        assert np.all(year.values == expected)
+        assert np.all(cal._intervals == expected) # pylint: disable=protected-access
 
 class TestResample:
     # Define all required inputs as fixtures:
@@ -259,41 +259,32 @@ class TestTrainTest:
     # Define all required inputs as fixtures:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        return AdventCalendar(anchor_date=(10, 15), freq="180d")
+        cal = AdventCalendar(anchor_date=(10, 15), freq="180d")
+        return cal.map_years(2019, 2021)
 
     def test_set_traintest_method(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
-        assert dummy_calendar._traintest_method == "kfold" # pylint: disable=protected-access
-        assert dummy_calendar._method_kwargs["n_splits"] == 2 # pylint: disable=protected-access
+        # check the first fold
+        expected_group = ['test', 'test', 'train']
+        assert np.array_equal(dummy_calendar._traintest["fold_0"].values, expected_group) # pylint: disable=protected-access
 
     def test_set_traintest_method_not_support(self, dummy_calendar):
         # test when the given method is not supported
         with pytest.raises(ValueError):
             dummy_calendar.set_traintest_method("not_a_real_method")
 
-    def test_get_traintest(self, dummy_calendar):
-        dummy_calendar.map_years(2019, 2021, flat=True)
-        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
-        traintest_group = dummy_calendar.get_traintest()
-        # check the first fold
-        expected_group = ['train', 'train', 'test', 'test', 'test', 'test']
-        assert np.array_equal(traintest_group["fold_0"].values, expected_group)
-    
-    def test_get_traintest_intervals_not_flat(self, dummy_calendar):
-        dummy_calendar.map_years(2019, 2021, flat=False)
+    def test_get_traintest_exist(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
         # test when the generated intervals are not flat
         with pytest.raises(ValueError):
-            dummy_calendar.get_traintest()
+            dummy_calendar.set_traintest_method("kfold", n_splits = 3)
 
-    def test_get_train(self):
-        cal = AdventCalendar()
+    def test_get_traintest_overwrite(self, dummy_calendar):
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        dummy_calendar.set_traintest_method("kfold", n_splits = 3, overwrite = True)
+        expected_group = ['train', 'test', 'train']
+        assert np.array_equal(dummy_calendar._traintest["fold_1"].values, expected_group) # pylint: disable=protected-access
 
-        with pytest.raises(NotImplementedError):
-            cal.get_train()
-
-    def test_get_test(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.get_test()
+    # def test_traintest(self, dummy_calendar):
+    #     dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+    #     traintest_group = dummy_calendar.traintest

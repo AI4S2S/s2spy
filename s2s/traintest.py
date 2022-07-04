@@ -37,7 +37,7 @@ def kfold(df: pd.DataFrame, n_splits: int = 2, **kwargs):
     return output
 
 
-def random_strat(df: pd.DataFrame, **kwargs):
+def random_strat():
     raise NotImplementedError
 
 
