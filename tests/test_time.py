@@ -285,6 +285,24 @@ class TestTrainTest:
         expected_group = ['train', 'test', 'train']
         assert np.array_equal(dummy_calendar._traintest["fold_1"].values, expected_group) # pylint: disable=protected-access
 
-    # def test_traintest(self, dummy_calendar):
-    #     dummy_calendar.set_traintest_method("kfold", n_splits = 2)
-    #     traintest_group = dummy_calendar.traintest
+    def test_traintest(self, dummy_calendar):
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        traintest_group = dummy_calendar.traintest
+        expected = np.array(
+            [
+                [
+                    interval("2021-04-18", "2021-10-15"),
+                    interval("2020-10-20", "2021-04-18"),
+                ],
+                [
+                    interval("2020-04-18", "2020-10-15"),
+                    interval("2019-10-21", "2020-04-18"),
+                ],
+                [
+                    interval("2019-04-18", "2019-10-15"),
+                    interval("2018-10-20", "2019-04-18"),
+                ],
+            ]
+        )
+
+        assert np.array_equal(traintest_group, expected)

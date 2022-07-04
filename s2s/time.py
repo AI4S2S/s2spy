@@ -38,12 +38,13 @@ Example:
 
     >>> # To get a stacked representation:
     >>> calendar.map_years(2020, 2022).flat
-    0    (2022-07-04, 2022-12-31]
-    1    (2022-01-05, 2022-07-04]
-    2    (2021-07-04, 2021-12-31]
-    3    (2021-01-05, 2021-07-04]
-    4    (2020-07-04, 2020-12-31]
-    5    (2020-01-06, 2020-07-04]
+    anchor_year  i_interval
+    2022         0             (2022-07-04, 2022-12-31]
+                 1             (2022-01-05, 2022-07-04]
+    2021         0             (2021-07-04, 2021-12-31]
+                 1             (2021-01-05, 2021-07-04]
+    2020         0             (2020-07-04, 2020-12-31]
+                 1             (2020-01-06, 2020-07-04]
     dtype: interval
 
 """
@@ -52,7 +53,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import pandas as pd
-from pyrsistent import s
 import xarray as xr
 from s2s import traintest
 
@@ -148,12 +148,13 @@ class AdventCalendar:
 
             >>> # To get a stacked representation:
             >>> calendar.map_years(2020, 2022).flat
-            0    (2022-07-04, 2022-12-31]
-            1    (2022-01-05, 2022-07-04]
-            2    (2021-07-04, 2021-12-31]
-            3    (2021-01-05, 2021-07-04]
-            4    (2020-07-04, 2020-12-31]
-            5    (2020-01-06, 2020-07-04]
+            anchor_year  i_interval
+            2022         0             (2022-07-04, 2022-12-31]
+                         1             (2022-01-05, 2022-07-04]
+            2021         0             (2021-07-04, 2021-12-31]
+                         1             (2021-01-05, 2021-07-04]
+            2020         0             (2020-07-04, 2020-12-31]
+                         1             (2020-01-06, 2020-07-04]
             dtype: interval
 
         """
@@ -468,19 +469,20 @@ class AdventCalendar:
             >>> import s2s.time
             >>> calendar = s2s.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
             >>> calendar.map_years(2020, 2021).flat
-            0    (2021-04-18, 2021-10-15]
-            1    (2020-10-20, 2021-04-18]
-            2    (2020-04-18, 2020-10-15]
-            3    (2019-10-21, 2020-04-18]
+            anchor_year  i_interval
+            2021         0             (2021-04-18, 2021-10-15]
+                         1             (2020-10-20, 2021-04-18]
+            2020         0             (2020-04-18, 2020-10-15]
+                         1             (2019-10-21, 2020-04-18]
             dtype: interval
 
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
-            >>> calendar.get_traintest()
-               anchor_year  i_intervals                 intervals fold_0 fold_1
-            0         2021            0  (2021-04-18, 2021-10-15]  train   test
-            1         2021            1  (2020-10-20, 2021-04-18]  train   test
-            2         2020            0  (2020-04-18, 2020-10-15]   test  train
-            3         2020            1  (2019-10-21, 2020-04-18]   test  train
+            >>> traintest_group = calendar.traintest
+            >>> traintest_group
+                                                              0                         1
+            anchor_year fold_0 fold_1                                                    
+            2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
+            2020        train  test    (2020-04-18, 2020-10-15]  (2019-10-21, 2020-04-18]
         """
         df_combined = self._intervals.join(self._traintest)
         new_index_cols = [self._intervals.index.name] + list(self._traintest.columns)
