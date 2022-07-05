@@ -52,6 +52,7 @@ from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
+import numpy as np
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -62,7 +63,8 @@ class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(
-        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d"
+        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
+        n_targets: int = 1
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -74,6 +76,7 @@ class AdventCalendar:
             anchor_date: Tuple of the form (month, day). Effectively the origin
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
+            n_targets: integer specifying the number of target intervals in a period.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -91,7 +94,7 @@ class AdventCalendar:
         self.day = anchor_date[1]
         self.freq = freq
         self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
-        self._n_target = 1
+        self._n_targets = n_targets
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -422,18 +425,64 @@ class AdventCalendar:
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, end=None, periods=None):
-        """Mark indices that fall within the target period."""
-        # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
-        if start and end:
-            pass
-        elif start and periods:
-            pass
-        elif end and periods:
-            pass
+    def mark_target_period(
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset]
+    ) -> Union[pd.DataFrame, xr.Dataset]:
+        """Mark interval periods that fall within the given number of target periods.
+        
+        Pass a pandas Series/DataFrame with an 'i_interval' column, or an xarray 
+        DataArray/Dataset with an 'i_interval' coordinate axis. It will return an
+        object with an added column in the Series/DataFrame or an
+        added coordinate axis in the DataSet called 'target'. This is a boolean
+        indicating whether the index time interval is a target period or not. This is
+        determined by the instance variable 'n_targets'.
+        
+        Args:
+            input_data: Input data for resampling. For a Pandas object, one of its 
+            columns must be called 'i_interval'. An xarray object requires a coordinate
+            axis named 'i_interval' containing an interval counter for every period.
+
+        Returns:
+            Input data with boolean marked target periods, similar data format as
+                given inputs.
+
+        Example:
+            Assuming the input data is pd.DataFrame with anchor date 05-10 on a 100 day 
+            frequency.
+
+            >>> import s2s.time
+            >>> import numpy as np
+            >>> import pandas as pd
+            >>> calendar = s2s.time.AdventCalendar(anchor_date=(5, 10), freq='100D', n_targets = 2)
+            >>> df = calendar.map_years(2018, 2020).melt(
+                var_name="i_interval", value_name="interval", ignore_index=False
+                ).sort_values(by=["anchor_year", "i_interval"])
+            >>> calendar.mark_target_periods(df)
+            >>> calendar
+                        i_interval                  interval  target
+            anchor_year                                              
+            2018                  0  (2018-01-30, 2018-05-10]    True
+            2018                  1  (2017-10-22, 2018-01-30]    True
+            2018                  2  (2017-07-14, 2017-10-22]   False
+            2019                  0  (2019-01-30, 2019-05-10]    True
+            2019                  1  (2018-10-22, 2019-01-30]    True
+            2019                  2  (2018-07-14, 2018-10-22]   False
+            2020                  0  (2020-01-31, 2020-05-10]    True
+            2020                  1  (2019-10-23, 2020-01-31]    True
+            2020                  2  (2019-07-15, 2019-10-23]   False
+        """
+
+        if isinstance(input_data, PandasData):
+            input_data['target'] = np.zeros(input_data.index.size, dtype=bool)
+            input_data['target'] = input_data['target'].where(
+               input_data['i_interval'] >= self._n_targets, other=True)
+
         else:
-            raise ValueError("Of start/end/periods, specify exactly 2")
-        raise NotImplementedError
+            #input data is xr.DataArray or xr.Dataset
+            target = input_data['i_interval'] < self._n_targets
+            input_data = input_data.assign_coords(coords={'target': target})
+        
+        return input_data
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
