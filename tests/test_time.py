@@ -13,6 +13,7 @@ def interval(start, end):
 
 
 class TestAdventCalendar:
+    """Test AdventCalendar methods."""
     def test_init(self):
         cal = AdventCalendar()
         assert isinstance(cal, AdventCalendar)
@@ -44,6 +45,7 @@ class TestAdventCalendar:
             cal.get_lagged_indices()
 
 class TestMap:
+    """Test map to year(s)/data methods"""
     def test_map_years(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
         cal.map_years(2020, 2021)
@@ -176,6 +178,7 @@ class TestMap:
         assert np.all(cal._intervals == expected) # pylint: disable=protected-access
 
 class TestResample:
+    """Test resample methods."""
     # Define all required inputs as fixtures:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
@@ -256,6 +259,7 @@ class TestResample:
             dummy_calendar.resample(ds)
 
 class TestTrainTest:
+    """Test train test methods."""
     # Define all required inputs as fixtures:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
@@ -263,7 +267,7 @@ class TestTrainTest:
         return cal.map_years(2019, 2021)
 
     def test_set_traintest_method(self, dummy_calendar):
-        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2, shuffle = False)
         # check the first fold
         expected_group = ['test', 'test', 'train']
         assert np.array_equal(dummy_calendar._traintest["fold_0"].values, expected_group) # pylint: disable=protected-access
@@ -286,7 +290,7 @@ class TestTrainTest:
         assert np.array_equal(dummy_calendar._traintest["fold_1"].values, expected_group) # pylint: disable=protected-access
 
     def test_traintest(self, dummy_calendar):
-        dummy_calendar.set_traintest_method("kfold", n_splits = 2)
+        dummy_calendar.set_traintest_method("kfold", n_splits = 2, shuffle = False)
         traintest_group = dummy_calendar.traintest
         expected = np.array(
             [

@@ -115,13 +115,13 @@ class AdventCalendar:
         """
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq)
+            end=anchor, periods=self._n_intervals, freq=self.freq
+        )
         intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index.name = 'i_interval'
+        intervals.index.name = "i_interval"
         return intervals
 
-    def map_years(
-        self, start: int = 1979, end: int = 2020) -> pd.DataFrame:
+    def map_years(self, start: int = 1979, end: int = 2020) -> pd.DataFrame:
         """Return a periodic IntervalIndex for the given years.
         If the start and end years are the same, the Intervals for only that single
         year are returned.
@@ -162,14 +162,13 @@ class AdventCalendar:
             [self._map_year(year) for year in range(start, end + 1)], axis=1
         ).T[::-1]
 
-        self._intervals.index.name = 'anchor_year'
+        self._intervals.index.name = "anchor_year"
 
         return self
 
     def map_to_data(
-        self,
-        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-        ) -> Union[pd.DataFrame, xr.Dataset]:
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+    ) -> Union[pd.DataFrame, xr.Dataset]:
         """Map the calendar to input data period.
 
         Get datetime range from input data and generate corresponding interval index.
@@ -213,7 +212,8 @@ class AdventCalendar:
             self.map_years(map_first_year, map_last_year)
         else:
             raise ValueError(
-                "The input data could not cover the target advent calendar.")
+                "The input data could not cover the target advent calendar."
+            )
 
         return self
 
@@ -415,16 +415,20 @@ class AdventCalendar:
         if self._intervals is not None:
             return str(self._intervals)
 
-        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
+        props = ", ".join(
+            [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
+        )
         return f"AdventCalendar({props})"
 
     def _repr_html_(self):
-        # for jupyter notebook
+        """For jupyter notebook to load html compatiable version of __repr__."""
         if self._intervals is not None:
-            return self._intervals._repr_html_()
-        
-        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
-        return f"AdventCalendar({props})"        
+            return self._intervals._repr_html_() # pylint: disable=protected-access
+
+        props = ", ".join(
+            [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
+        )
+        return f"AdventCalendar({props})"
 
     @property
     def flat(self):
@@ -432,7 +436,7 @@ class AdventCalendar:
             return self._intervals.stack()
         raise ValueError("The calendar is not initialized with intervals yet.")
 
-    def discard(self, max_lag):   # or "set_max_lag"
+    def discard(self, max_lag):  # or "set_max_lag"
         """Only keep indices up to the given max lag."""
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
@@ -488,13 +492,13 @@ class AdventCalendar:
             raise RuntimeError("The train/test splitting method has not been set yet.")
         df_combined = self._intervals.join(self._traintest)
         new_index_cols = [self._intervals.index.name] + list(self._traintest.columns)
-        return df_combined.reset_index().set_index(new_index_cols)  #.stack()
+        return df_combined.reset_index().set_index(new_index_cols)  # .stack()
 
     def set_traintest_method(
-        self, method: str, overwrite: bool = False, **method_kwargs: Optional[dict]):
+        self, method: str, overwrite: bool = False, **method_kwargs: Optional[dict]
+    ):
         """
-        The user must choose a method here. And the method will be used by
-        all traintest splitting methods.
+        Configure the train/test splitting strategy for this calendar instance.
 
         Args:
             method: one of the methods available in `s2s.traintest`
@@ -504,7 +508,9 @@ class AdventCalendar:
             if overwrite:
                 pass
             else:
-                raise ValueError("The traintest method has already been set. Set `overwrite = True` if you want to overwrite it.")
+                raise ValueError(
+                    "The traintest method has already been set. Set `overwrite = True` if you want to overwrite it."
+                )
 
         func = traintest.ALL_METHODS.get(method)
         if not func:

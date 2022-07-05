@@ -2,12 +2,12 @@
 
 ## Badges
 
-[![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
+[![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/s2spy)
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/ai4s2s/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/ai4s2s/actions/workflows/build.yml)
 [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
 [![sonarcloud](https://github.com/AI4S2S/ai4s2s/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/ai4s2s/actions/workflows/sonarcloud.yml)
-[![github license badge](https://img.shields.io/github/license/AI4S2S/ai4s2s)](https://github.com/AI4S2S/ai4s2s)
+[![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
 <!-- [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest) -->
 <!-- [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s) -->
 <!-- [![RSD](https://img.shields.io/badge/rsd-s2s-00a3e3.svg)](https://www.research-software.nl/software/s2s) -->
@@ -18,15 +18,15 @@
 
 A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
 
-About how to use the `s2s` package, check the [documentation](https://ai4s2s.readthedocs.io/en/latest/index.html).
+About how to use the `s2spy` package, check the [documentation](https://ai4s2s.readthedocs.io/en/latest/index.html).
 
 ## Installation
 
-To install s2s from GitHub repository, do:
+To install s2spy from GitHub repository, do:
 
 ```console
-git clone https://github.com/AI4S2S/ai4s2s.git
-cd ai4s2s
+git clone https://github.com/AI4S2S/s2spy.git
+cd s2spy
 python3 -m pip install .
 ```
 
@@ -47,7 +47,7 @@ Include a link to your project's full documentation here.
 
 ## Contributing
 
-If you want to contribute to the development of s2s,
+If you want to contribute to the development of s2spy,
 have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## Credits

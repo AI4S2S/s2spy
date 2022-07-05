@@ -1,7 +1,6 @@
 """Tests for the s2s.traintest module.
 """
 import numpy as np
-import pandas as pd
 import pytest
 import s2s.traintest
 from s2s.time import AdventCalendar
