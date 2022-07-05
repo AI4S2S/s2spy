@@ -1,6 +1,6 @@
 """AI4S2S train/test splitting methods.
 
-A collection of train/test splitting approaches used for cross-validation.
+A collection of train/test splitting approaches for cross-validation.
 """
 import pandas as pd
 from sklearn.model_selection import KFold

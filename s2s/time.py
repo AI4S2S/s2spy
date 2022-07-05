@@ -445,7 +445,7 @@ class AdventCalendar:
         elif periods:
             pass
         else:
-            raise ValueError("Of start/end/periods, specify exactly 2")
+            raise ValueError("Specify either start or periods, not both.")
 
         raise NotImplementedError
 
@@ -484,12 +484,14 @@ class AdventCalendar:
             2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
             2020        train  test    (2020-04-18, 2020-10-15]  (2019-10-21, 2020-04-18]
         """
+        if self._traintest is None:
+            raise RuntimeError("The train/test splitting method has not been set yet.")
         df_combined = self._intervals.join(self._traintest)
         new_index_cols = [self._intervals.index.name] + list(self._traintest.columns)
         return df_combined.reset_index().set_index(new_index_cols)  #.stack()
 
     def set_traintest_method(
-        self, method: str, overwrite: bool= False, **method_kwargs: Optional[dict]):
+        self, method: str, overwrite: bool = False, **method_kwargs: Optional[dict]):
         """
         The user must choose a method here. And the method will be used by
         all traintest splitting methods.
