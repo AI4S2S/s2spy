@@ -336,6 +336,7 @@ class AdventCalendar:
         bins = bins.swap_dims({'index': 'anchor_year'})
         bins = bins.set_index(ai=('anchor_year', 'i_interval'))
         bins = bins.unstack()
+        bins = bins.transpose("anchor_year", "i_interval", ...)
 
         return bins
 
