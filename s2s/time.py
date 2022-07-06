@@ -50,9 +50,9 @@ Example:
 import warnings
 from typing import Tuple
 from typing import Union
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -401,17 +401,21 @@ class AdventCalendar:
                         available within all intervals."""
                     )
 
-            return self._resample_pandas(input_data)
+            resampled_data = self._resample_pandas(input_data)
 
         # Data must be xarray
-        if "time" not in input_data.dims:
-            raise ValueError(
-                "The input DataArray/Dataset does not contain a `time` dimension"
-            )
-        if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
-            raise ValueError("The `time` dimension is not of a datetime format")
+        else:
+            if "time" not in input_data.dims:
+                raise ValueError(
+                    "The input DataArray/Dataset does not contain a `time` dimension"
+                )
+            if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
+                raise ValueError("The `time` dimension is not of a datetime format")
 
-        return self._resample_xarray(input_data)
+            resampled_data = self._resample_xarray(input_data)
+
+        # mark target periods before returning the resampled data
+        return self._mark_target_period(resampled_data)
 
     def __str__(self):
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -425,8 +429,8 @@ class AdventCalendar:
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(
-        self, input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset]
+    def _mark_target_period(
+        self, input_data: Union[pd.DataFrame, xr.Dataset]
     ) -> Union[pd.DataFrame, xr.Dataset]:
         """Mark interval periods that fall within the given number of target periods.
         
@@ -453,10 +457,11 @@ class AdventCalendar:
             >>> import s2s.time
             >>> import numpy as np
             >>> import pandas as pd
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(5, 10), freq='100D', n_targets = 2)
+            >>> calendar = s2s.time.AdventCalendar(
+                    anchor_date=(5, 10), freq='100D', n_targets = 2)
             >>> df = calendar.map_years(2018, 2020).melt(
-                var_name="i_interval", value_name="interval", ignore_index=False
-                ).sort_values(by=["anchor_year", "i_interval"])
+                        var_name="i_interval", value_name="interval", ignore_index=False
+                    ).sort_values(by=["anchor_year", "i_interval"])
             >>> calendar.mark_target_periods(df)
             >>> calendar
                         i_interval                  interval  target
@@ -478,7 +483,7 @@ class AdventCalendar:
                input_data['i_interval'] >= self._n_targets, other=True)
 
         else:
-            #input data is xr.DataArray or xr.Dataset
+            #input data is xr.Dataset
             target = input_data['i_interval'] < self._n_targets
             input_data = input_data.assign_coords(coords={'target': target})
         
