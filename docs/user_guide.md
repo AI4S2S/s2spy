@@ -5,22 +5,22 @@ This documentation is a handbook for us to keep tracking our thoughts and decisi
 -------------------
 
 ## Time utils
-[Link to PR](https://github.com/AI4S2S/ai4s2s/pull/7)
+[Link to PR](https://github.com/AI4S2S/s2spy/pull/7)
 
 
 Main design code:
 
 * Essentially, the main datastructure resembles the dataframe (`df_splits`) in the proto repo. However, this dataframe is not particularly intuitive to the user, so it will be hidden from the public API.
-* It might be nice to use pandas' interval_range or something like that, so that it is unambiguous whether the time stamps mark the beginning or end of the period they denote. 
+* It might be nice to use pandas' interval_range or something like that, so that it is unambiguous whether the time stamps mark the beginning or end of the period they denote.
 * We try to keep it simple and make one method do one thing.
 
 Using the timeindex could then look somewhat like this:
 
 ```py
-import s2s.time
+import s2spy.time
 
 # Ideally, the constructor (`__init__` method) should be simple.
-timeindex = s2s.time.TimeIndex(anchor_date="2020-11-30", freq="7d")
+timeindex = s2spy.time.TimeIndex(anchor_date="2020-11-30", freq="7d")
 print(timeindex)
 >> IntervalIndex([(2019-12-02, 2019-12-09], (2019-12-09, 2019-12-16], (2019-12-16, 2019-12-23], (2019-12-23, 2019-12-30], (2019-12-30, 2020-01-06] ... (2020-10-26, 2020-11-02], (2020-11-02, 2020-11-09], (2020-11-09, 2020-11-16], (2020-11-16, 2020-11-23], (2020-11-23, 2020-11-30]], dtype='interval[datetime64[ns], right]', length=52)
 

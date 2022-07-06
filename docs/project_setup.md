@@ -45,12 +45,12 @@ help you decide which tool to use for packaging.
   - PyTest is listed as a development dependency
   - This is configured in `setup.cfg`
 - The project uses GitHub action workflows to automatically run tests on GitHub infrastructure against multiple Python versions
-  - Workflows can be found in `ai4s2s/.github/workflows`
+  - Workflows can be found in `s2spy/.github/workflows`
 - [Relevant section in the guide](https://guide.esciencecenter.nl/#/best_practices/language_guides/python?id=testing)
 
 ## Documentation
 
-- Documentation should be put in the `ai4s2s/docs/` directory. The contents have been generated using `sphinx-quickstart` (Sphinx version 1.6.5).
+- Documentation should be put in the `s2spy/docs/` directory. The contents have been generated using `sphinx-quickstart` (Sphinx version 1.6.5).
 - We recommend writing the documentation using Restructured Text (reST) and Google style docstrings.
   - [Restructured Text (reST) and Sphinx CheatSheet](https://thomas-cokelaer.info/tutorials/sphinx/rest_syntax.html)
   - [Google style docstring examples](http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
@@ -74,7 +74,7 @@ help you decide which tool to use for packaging.
 ## Package version number
 
 - We recommend using [semantic versioning](https://guide.esciencecenter.nl/#/best_practices/releases?id=semantic-versioning).
-- For convenience, the package version is stored in a single place: `ai4s2s/.bumpversion.cfg`.
+- For convenience, the package version is stored in a single place: `s2spy/.bumpversion.cfg`.
 - Don't forget to update the version number before [making a release](https://guide.esciencecenter.nl/#/best_practices/releases)!
 
 ## Logging
