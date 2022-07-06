@@ -279,4 +279,11 @@ class TestResample:
         for i in range(dummy_calendar_targets._n_targets): 
             expected[i::3] = True
         np.testing.assert_array_equal(resampled_data['target'].values, expected)
-        
+    
+    def test_target_period_dataset(self, dummy_calendar_targets, dummy_dataset):
+        ds, _ = dummy_dataset
+        resampled_data = dummy_calendar_targets.resample(ds)
+        expected = np.zeros(3, dtype=bool)
+        # pylint: disable=protected-access
+        expected[:dummy_calendar_targets._n_targets] = True
+        np.testing.assert_array_equal(resampled_data['target'].values, expected)
