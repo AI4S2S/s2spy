@@ -37,21 +37,24 @@ Example:
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
     >>> # To get a stacked representation:
-    >>> calendar.map_years(2020, 2022, flat=True)
-    0    (2022-07-04, 2022-12-31]
-    1    (2022-01-05, 2022-07-04]
-    2    (2021-07-04, 2021-12-31]
-    3    (2021-01-05, 2021-07-04]
-    4    (2020-07-04, 2020-12-31]
-    5    (2020-01-06, 2020-07-04]
+    >>> calendar.map_years(2020, 2022).flat
+    anchor_year  i_interval
+    2022         0             (2022-07-04, 2022-12-31]
+                 1             (2022-01-05, 2022-07-04]
+    2021         0             (2021-07-04, 2021-12-31]
+                 1             (2021-01-05, 2021-07-04]
+    2020         0             (2020-07-04, 2020-12-31]
+                 1             (2020-01-06, 2020-07-04]
     dtype: interval
 
 """
 import warnings
+from typing import Optional
 from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
+from s2spy import traintest
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -92,6 +95,8 @@ class AdventCalendar:
         self.freq = freq
         self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
+        self._traintest = None
+        self._intervals = None
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -110,14 +115,13 @@ class AdventCalendar:
         """
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq)
+            end=anchor, periods=self._n_intervals, freq=self.freq
+        )
         intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index.name = 'i_interval'
+        intervals.index.name = "i_interval"
         return intervals
 
-    def map_years(
-        self, start: int = 1979, end: int = 2020, flat: bool = False
-    ) -> pd.DataFrame:
+    def map_years(self, start: int = 1979, end: int = 2020) -> pd.DataFrame:
         """Return a periodic IntervalIndex for the given years.
         If the start and end years are the same, the Intervals for only that single
         year are returned.
@@ -125,9 +129,6 @@ class AdventCalendar:
         Args:
             start: The first year for which the calendar will be realized
             end: The last year for which the calendar will be realized
-            flat: If False, years are rows and lag times are columns in the
-                dataframe. If True, years and lags are stacked to form a
-                continous index.
 
         Returns:
             Pandas DataFrame filled with Intervals of the calendar's frequency,
@@ -146,32 +147,28 @@ class AdventCalendar:
             2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
             >>> # To get a stacked representation:
-            >>> calendar.map_years(2020, 2022, flat=True)
-            0    (2022-07-04, 2022-12-31]
-            1    (2022-01-05, 2022-07-04]
-            2    (2021-07-04, 2021-12-31]
-            3    (2021-01-05, 2021-07-04]
-            4    (2020-07-04, 2020-12-31]
-            5    (2020-01-06, 2020-07-04]
+            >>> calendar.map_years(2020, 2022).flat
+            anchor_year  i_interval
+            2022         0             (2022-07-04, 2022-12-31]
+                         1             (2022-01-05, 2022-07-04]
+            2021         0             (2021-07-04, 2021-12-31]
+                         1             (2021-01-05, 2021-07-04]
+            2020         0             (2020-07-04, 2020-12-31]
+                         1             (2020-01-06, 2020-07-04]
             dtype: interval
 
         """
-        index = pd.concat(
+        self._intervals = pd.concat(
             [self._map_year(year) for year in range(start, end + 1)], axis=1
         ).T[::-1]
 
-        index.index.name = 'anchor_year'
+        self._intervals.index.name = "anchor_year"
 
-        if flat:
-            return index.stack().reset_index(drop=True)
-
-        return index
+        return self
 
     def map_to_data(
-        self,
-        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-        flat: bool = False
-        ) -> Union[pd.DataFrame, xr.Dataset]:
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+    ) -> Union[pd.DataFrame, xr.Dataset]:
         """Map the calendar to input data period.
 
         Get datetime range from input data and generate corresponding interval index.
@@ -182,7 +179,6 @@ class AdventCalendar:
             input_data: Input data for datetime mapping. Its index must be either
                 pandas.DatetimeIndex, or an xarray `time` coordinate with datetime
                 data.
-            flat: Same as the argument in ``map_years``.
         Returns:
             Pandas DataFrame or xarray Dataset filled with Intervals of the calendar's
             frequency. (see also ``map_years``)
@@ -213,12 +209,13 @@ class AdventCalendar:
 
         # map year(s) and generate year realized advent calendar
         if map_last_year >= map_first_year:
-            intervals = self.map_years(map_first_year, map_last_year, flat)
+            self.map_years(map_first_year, map_last_year)
         else:
             raise ValueError(
-                "The input data could not cover the target advent calendar.")
+                "The input data could not cover the target advent calendar."
+            )
 
-        return intervals
+        return self
 
     def _resample_bins_constructor(
         self, intervals: Union[pd.Series, pd.DataFrame]
@@ -264,10 +261,11 @@ class AdventCalendar:
 
         Returns:
             pd.DataFrame: DataFrame containing the intervals and data resampled to
-                these intervals."""
+                these intervals.
+        """
 
-        intervals = self.map_to_data(input_data, flat=False)
-        bins = self._resample_bins_constructor(intervals)
+        self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(self._intervals)
 
         interval_index = pd.IntervalIndex(bins["interval"])
         interval_groups = interval_index.get_indexer(input_data.index)
@@ -298,8 +296,8 @@ class AdventCalendar:
             xr.Dataset: Dataset containing the intervals and data resampled to
                 these intervals."""
 
-        intervals = self.map_to_data(input_data)
-        bins = self._resample_bins_constructor(intervals)
+        self.map_to_data(input_data)
+        bins = self._resample_bins_constructor(self._intervals)
 
         # Create the indexer to connect the input data with the intervals
         interval_index = pd.IntervalIndex(bins["interval"])
@@ -425,41 +423,112 @@ class AdventCalendar:
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
-        props = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith('_')])
+        if self._intervals is not None:
+            return repr(self._intervals)
+
+        props = ", ".join(
+            [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
+        )
         return f"AdventCalendar({props})"
 
-    def discard(self, max_lag):
+    def _repr_html_(self):
+        """For jupyter notebook to load html compatiable version of __repr__."""
+        if self._intervals is not None:
+            return self._intervals._repr_html_() # pylint: disable=protected-access
+
+        props = ", ".join(
+            [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
+        )
+        return f"AdventCalendar({props})"
+
+    @property
+    def flat(self):
+        if self._intervals is not None:
+            return self._intervals.stack()
+        raise ValueError("The calendar is not initialized with intervals yet."
+                         "use `map_years` or `map_to_data` methods to set it up.")
+
+    def discard(self, max_lag):  # or "set_max_lag"
         """Only keep indices up to the given max lag."""
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, end=None, periods=None):
+    def mark_target_period(self, start=None, periods=None):
         """Mark indices that fall within the target period."""
         # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
-        if start and end:
+        if start is not None:
             pass
-        elif start and periods:
-            pass
-        elif end and periods:
+        elif periods:
             pass
         else:
-            raise ValueError("Of start/end/periods, specify exactly 2")
+            raise ValueError("Specify either start or periods, not both.")
+
         raise NotImplementedError
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
         raise NotImplementedError
 
-    def get_train_indices(self, strategy, params):  # noqa
-        """Return indices for training data indices using given strategy."""
-        raise NotImplementedError
+    @property
+    def traintest(self) -> pd.DataFrame:
+        """Shorthand for getting both train and test indices.
 
-    def get_test_indices(self, strategy, params):  # noqa
-        """Return indices for test data indices using given strategy."""
-        raise NotImplementedError
+        The user must first set a method using `set_traintest_method`. Then after calling
+        this, the user will get a intervals list similar to the output of `map_years`
+        or `map_data`, but with extra columns containing `train` and `test` labels.
 
-    def get_train_test_indices(self, strategy, params):  # noqa
-        """Shorthand for getting both train and test indices."""
-        # train = self.get_train_indices()
-        # test = self.get_test_indices()
-        raise NotImplementedError
+        Returns:
+            Pandas DataFrame with columns specifying whether the interval is
+                part of the train or test datasets.
+
+        Example:
+
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
+            >>> calendar.map_years(2020, 2021).flat
+            anchor_year  i_interval
+            2021         0             (2021-04-18, 2021-10-15]
+                         1             (2020-10-20, 2021-04-18]
+            2020         0             (2020-04-18, 2020-10-15]
+                         1             (2019-10-21, 2020-04-18]
+            dtype: interval
+
+            >>> calendar.set_traintest_method("kfold", n_splits = 2)
+            >>> traintest_group = calendar.traintest
+            >>> traintest_group
+                                                              0                         1
+            anchor_year fold_0 fold_1
+            2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
+            2020        train  test    (2020-04-18, 2020-10-15]  (2019-10-21, 2020-04-18]
+        """
+        if self._traintest is None:
+            raise RuntimeError("The train/test splitting method has not been set yet.")
+        df_combined = self._intervals.join(self._traintest)
+        new_index_cols = [self._intervals.index.name] + list(self._traintest.columns)
+        return df_combined.reset_index().set_index(new_index_cols)  # .stack()
+
+    def set_traintest_method(
+        self, method: str, overwrite: bool = False, **method_kwargs: Optional[dict]
+    ):
+        """
+        Configure the train/test splitting strategy for this calendar instance.
+        The list of train/test splitting methods supported by this function can be found:
+        https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/traintest/index.html
+
+        Args:
+            method: one of the methods available in `s2s.traintest`
+            method_kwargs: keyword arguments that will be passed to `method`
+        """
+        if self._traintest is not None:
+            if overwrite:
+                pass
+            else:
+                raise ValueError(
+                    "The traintest method has already been set. Set `overwrite = True` if you want to overwrite it."
+                )
+
+        func = traintest.ALL_METHODS.get(method)
+        if not func:
+            raise ValueError("The given method is not supported by `s2s.traintest`.")
+
+        self._traintest = func(self._intervals, **method_kwargs)
