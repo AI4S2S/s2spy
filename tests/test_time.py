@@ -32,12 +32,6 @@ class TestAdventCalendar:
         expected_calendar_repr = 'i_interval 0\nanchor_year \n2021 (2021-05-05, 2021-12-31]'.replace(" ", "")
         assert repr(dummy_calendar).replace(" ", "") == expected_calendar_repr
 
-    def test_repr_html_(self, dummy_calendar):
-        cal = AdventCalendar()
-        # only call the _repr_html_ functions for all cases without asserting
-        cal._repr_html_
-        dummy_calendar._repr_html_
-
     def test_str(self):
         cal = AdventCalendar()
         assert str(cal) == "52 periods of 7d leading up to 11/30."
@@ -69,7 +63,7 @@ class TestAdventCalendar:
     def test_flat_no_intervals(self):
         cal = AdventCalendar()
         with pytest.raises(ValueError):
-            cal.flat
+            cal.flat # pylint: disable=pointless-statement
 
 class TestMap:
     """Test map to year(s)/data methods"""
@@ -306,7 +300,7 @@ class TestTrainTest:
 
     def test_traintest_method_not_set(self, dummy_calendar):
         with pytest.raises(RuntimeError):
-            dummy_calendar.traintest
+            dummy_calendar.traintest # pylint: disable=pointless-statement
 
     def test_traintest_exist(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
