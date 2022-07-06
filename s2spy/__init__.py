@@ -1,4 +1,4 @@
-"""Documentation about s2s"""
+"""Documentation about s2spy"""
 import logging
 
 

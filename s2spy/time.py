@@ -1,4 +1,4 @@
-"""AI4S2S time utils.
+"""s2spy time utils.
 
 Utilities designed to aid in seasonal-to-subseasonal prediction experiments in
 which we search for skillful predictors preceding a certain event of interest.
@@ -10,24 +10,24 @@ between train and test sets.
 
 Example:
 
-    >>> import s2s.time
+    >>> import s2spy.time
     >>>
     >>> # Countdown the weeks until New Year's Eve
-    >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
+    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
     >>> calendar
     AdventCalendar(month=12, day=31, freq=7d)
     >>> print(calendar)
     52 periods of 7d leading up to 12/31.
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
-    >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> calendar.map_years(2020, 2020)
     i_interval                          0                         1
     anchor_year
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
-    >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
     >>> calendar.map_years(2020, 2022)
     i_interval                          0                         1
@@ -79,8 +79,8 @@ class AdventCalendar:
             Instantiate a calendar counting down the weeks until new-year's
             eve.
 
-            >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
             >>> calendar
             AdventCalendar(month=12, day=31, freq=7d)
             >>> print(calendar)
@@ -135,8 +135,8 @@ class AdventCalendar:
 
         Example:
 
-            >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
             >>> # note the leap year:
             >>> calendar.map_years(2020, 2022)
             i_interval                          0                         1
@@ -374,10 +374,10 @@ class AdventCalendar:
             Assuming the input data is pd.DataFrame containing random values with index
             from 2021-11-11 to 2021-11-01 at daily frequency.
 
-            >>> import s2s.time
+            >>> import s2spy.time
             >>> import pandas as pd
             >>> import numpy as np
-            >>> cal = s2s.time.AdventCalendar(freq='180d')
+            >>> cal = s2spy.time.AdventCalendar(freq='180d')
             >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
             >>> var = np.arange(len(time_index))
             >>> input_data = pd.Series(var, index=time_index)
