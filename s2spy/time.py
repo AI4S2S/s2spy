@@ -65,7 +65,8 @@ class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(
-        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d"
+        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
+        max_lag = None
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -93,10 +94,18 @@ class AdventCalendar:
         self.month = anchor_date[0]
         self.day = anchor_date[1]
         self.freq = freq
-        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
         self._traintest = None
         self._intervals = None
+
+        if max_lag:
+            self._n_intervals = max_lag + self._n_target
+            self._skip_years = int(self._n_intervals // (
+                pd.Timedelta("365days") / pd.to_timedelta(freq)))
+
+        else: # Default to maximum number of intervals that fit in a year
+            self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+            self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -158,9 +167,11 @@ class AdventCalendar:
             dtype: interval
 
         """
+        year_range = range(end, start - 1, -(self._skip_years + 1))
+
         self._intervals = pd.concat(
-            [self._map_year(year) for year in range(start, end + 1)], axis=1
-        ).T[::-1]
+            [self._map_year(year) for year in year_range], axis=1
+        ).T
 
         self._intervals.index.name = "anchor_year"
 
