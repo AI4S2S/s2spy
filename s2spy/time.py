@@ -54,7 +54,7 @@ from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
-from s2s import traintest
+from s2spy import traintest
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -483,8 +483,8 @@ class AdventCalendar:
 
         Example:
 
-            >>> import s2s.time
-            >>> calendar = s2s.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(10, 15), freq='180d')
             >>> calendar.map_years(2020, 2021).flat
             anchor_year  i_interval
             2021         0             (2021-04-18, 2021-10-15]

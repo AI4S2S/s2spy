@@ -2,8 +2,8 @@
 """
 import numpy as np
 import pytest
-import s2s.traintest
-from s2s.time import AdventCalendar
+import s2spy.traintest
+from s2spy.time import AdventCalendar
 
 class TestTrainTest:
     # Define all required inputs as fixtures:
@@ -13,15 +13,15 @@ class TestTrainTest:
         return cal.map_years(2019, 2021)
 
     def test_kfold(self, dummy_calendar):
-        traintest_group = s2s.traintest.kfold(dummy_calendar._intervals, n_splits=2) # pylint: disable=protected-access
+        traintest_group = s2spy.traintest.kfold(dummy_calendar._intervals, n_splits=2) # pylint: disable=protected-access
         # check the first fold
         expected_group = ['train', 'train', 'test']
         assert np.array_equal(traintest_group["fold_1"].values, expected_group)
 
     def test_random_strat(self):
         with pytest.raises(NotImplementedError):
-            s2s.traintest.random_strat()
+            s2spy.traintest.random_strat()
 
     def test_timeseries_split(self):
         with pytest.raises(NotImplementedError):
-            s2s.traintest.timeseries_split()
+            s2spy.traintest.timeseries_split()
