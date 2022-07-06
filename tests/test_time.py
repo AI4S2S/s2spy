@@ -42,12 +42,6 @@ class TestAdventCalendar:
         with pytest.raises(NotImplementedError):
             cal.discard(max_lag=5)
 
-    def test_mark_target_period(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.mark_target_period(start="20200101", periods=5)
-
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
 
