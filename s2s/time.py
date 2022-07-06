@@ -329,6 +329,17 @@ class AdventCalendar:
         bins = bins.assign_coords(
             {"anchor_year": bins["anchor_year"], "i_interval": bins["i_interval"]}
         )
+        # Also make the intervals themselves a coordinate so they are not lost when
+        #   grabbing a variable from the resampled dataset.
+        bins = bins.set_coords('interval')
+
+        # Reshaping the dataset to have the anchor_year and i_interval as dimensions.
+        #   set anchor_year or i_interval as the main dimension
+        #   (otherwise index is kept as dimension)
+        bins = bins.swap_dims({'index': 'anchor_year'})
+        bins = bins.set_index(ai=('anchor_year', 'i_interval'))
+        bins = bins.unstack()
+        bins = bins.transpose("anchor_year", "i_interval", ...)
 
         return bins
 
