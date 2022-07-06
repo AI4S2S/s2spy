@@ -1,10 +1,10 @@
-"""Tests for the s2s.time module.
+"""Tests for the s2spy.time module.
 """
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from s2s.time import AdventCalendar
+from s2spy.time import AdventCalendar
 
 
 def interval(start, end):
@@ -259,13 +259,13 @@ class TestResample:
     def test_dataarray(self, dummy_calendar, dummy_dataarray):
         da, expected = dummy_dataarray
         resampled_data = dummy_calendar.resample(da)
-        testing_vals = resampled_data["data1"].isel(index=range(2))
+        testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
     def test_dataset(self, dummy_calendar, dummy_dataset):
         ds, expected = dummy_dataset
         resampled_data = dummy_calendar.resample(ds)
-        testing_vals = resampled_data["data1"].isel(index=range(2))
+        testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
     def test_missing_time_dim(self, dummy_calendar, dummy_dataset):

@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"s2s"
+project = u"s2spy"
 copyright = u"2022, Netherlands eScience Center"
 author = u"Yang Liu"
 
@@ -61,7 +61,7 @@ todo_include_todos = False
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ["../s2s"]
+autoapi_dirs = ["../s2spy"]
 
 # -- Options for HTML output ----------------------------------------------
 
