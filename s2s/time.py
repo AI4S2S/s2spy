@@ -413,7 +413,7 @@ class AdventCalendar:
 
     def __repr__(self):
         if self._intervals is not None:
-            return str(self._intervals)
+            return repr(self._intervals)
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -484,7 +484,7 @@ class AdventCalendar:
             >>> traintest_group = calendar.traintest
             >>> traintest_group
                                                               0                         1
-            anchor_year fold_0 fold_1                                                    
+            anchor_year fold_0 fold_1
             2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
             2020        train  test    (2020-04-18, 2020-10-15]  (2019-10-21, 2020-04-18]
         """

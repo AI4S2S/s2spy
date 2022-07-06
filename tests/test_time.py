@@ -14,6 +14,12 @@ def interval(start, end):
 
 class TestAdventCalendar:
     """Test AdventCalendar methods."""
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        cal = AdventCalendar(anchor_date=(12, 31), freq="240d")
+        cal.map_years(2021, 2021)
+        return cal
+
     def test_init(self):
         cal = AdventCalendar()
         assert isinstance(cal, AdventCalendar)
@@ -21,6 +27,16 @@ class TestAdventCalendar:
     def test_repr(self):
         cal = AdventCalendar()
         assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d)"
+
+    def test_repr_with_intervals(self, dummy_calendar):
+        expected_calendar_repr = 'i_interval 0\nanchor_year \n2021 (2021-05-05, 2021-12-31]'.replace(" ", "")
+        assert repr(dummy_calendar).replace(" ", "") == expected_calendar_repr
+
+    def test_repr_html_(self, dummy_calendar):
+        cal = AdventCalendar()
+        # only call the _repr_html_ functions for all cases without asserting
+        cal._repr_html_
+        dummy_calendar._repr_html_
 
     def test_str(self):
         cal = AdventCalendar()
@@ -43,6 +59,17 @@ class TestAdventCalendar:
 
         with pytest.raises(NotImplementedError):
             cal.get_lagged_indices()
+
+    def test_flat(self, dummy_calendar):
+        expected = np.array([interval("2021-05-05", "2021-12-31")])
+        cal = AdventCalendar(anchor_date=(12, 31), freq="240d")
+        cal.map_years(2021, 2021)
+        assert np.array_equal(dummy_calendar.flat, expected)
+    
+    def test_flat_no_intervals(self):
+        cal = AdventCalendar()
+        with pytest.raises(ValueError):
+            cal.flat
 
 class TestMap:
     """Test map to year(s)/data methods"""
@@ -277,13 +304,18 @@ class TestTrainTest:
         with pytest.raises(ValueError):
             dummy_calendar.set_traintest_method("not_a_real_method")
 
-    def test_get_traintest_exist(self, dummy_calendar):
+    def test_traintest_method_not_set(self, dummy_calendar):
+        with pytest.raises(RuntimeError):
+            dummy_calendar.traintest
+
+    def test_traintest_exist(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
-        # test when the generated intervals are not flat
+        # test when the train/test method has already been set
+        # and overwrite is not flagged
         with pytest.raises(ValueError):
             dummy_calendar.set_traintest_method("kfold", n_splits = 3)
 
-    def test_get_traintest_overwrite(self, dummy_calendar):
+    def test_traintest_overwrite(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
         dummy_calendar.set_traintest_method("kfold", n_splits = 3, overwrite = True)
         expected_group = ['train', 'test', 'train']
