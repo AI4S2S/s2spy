@@ -89,6 +89,8 @@ html_sidebars = {
     ]
 }
 
+html_logo = 'ai4s2s_logo.png'
+
 # -- Options for Intersphinx
 
 intersphinx_mapping = {
