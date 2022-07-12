@@ -52,6 +52,7 @@ import warnings
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import numpy as np
 import pandas as pd
 import xarray as xr
 from s2spy import traintest
@@ -65,7 +66,8 @@ class AdventCalendar:
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(
-        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d"
+        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
+        max_lag: int = None
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -77,6 +79,12 @@ class AdventCalendar:
             anchor_date: Tuple of the form (month, day). Effectively the origin
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
+            max_lag: Maximum number of lag periods after the target period. If `None`,
+                the maximum lag will be determined by how many fit in each anchor year.
+                If a maximum lag is provided, the intervals can either only cover part
+                of the year, or extend over multiple years. In case of a large max_lag
+                number where the intervals extend over multiple years, anchor years will
+                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -93,10 +101,19 @@ class AdventCalendar:
         self.month = anchor_date[0]
         self.day = anchor_date[1]
         self.freq = freq
-        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
         self._n_target = 1
         self._traintest = None
         self._intervals = None
+
+        periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
+        # Determine the amount of intervals, and number of anchor years to skip
+        if max_lag:
+            self._n_intervals = max_lag + self._n_target
+            self._skip_years = np.ceil(self._n_intervals /
+                                       periods_per_year).astype(int) - 1
+        else:
+            self._n_intervals = int(periods_per_year)
+            self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -158,9 +175,11 @@ class AdventCalendar:
             dtype: interval
 
         """
+        year_range = range(end, start - 1, -(self._skip_years + 1))
+
         self._intervals = pd.concat(
-            [self._map_year(year) for year in range(start, end + 1)], axis=1
-        ).T[::-1]
+            [self._map_year(year) for year in year_range], axis=1
+        ).T
 
         self._intervals.index.name = "anchor_year"
 
