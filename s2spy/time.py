@@ -21,7 +21,7 @@ Example:
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
-    >>> calendar.map_years(2020, 2020)
+    >>> calendar.map_years(2020, 2020) # doctest: +NORMALIZE_WHITESPACE
     i_interval                          0                         1
     anchor_year
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
