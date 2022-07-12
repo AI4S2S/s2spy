@@ -495,7 +495,7 @@ class AdventCalendar:
 
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> traintest_group = calendar.traintest
-            >>> traintest_group
+            >>> traintest_group # doctest: +NORMALIZE_WHITESPACE
                                                               0                         1
             anchor_year fold_0 fold_1
             2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
