@@ -1,7 +1,7 @@
 # s2spy
 
 A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
-About how to use the `s2spy` package, check the [documentation](https://ai4s2s.readthedocs.io/en/latest/index.html).
+To learn how to use the `s2spy` package, check the [documentation](https://ai4s2s.readthedocs.io/en/latest/index.html).
 
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![workflow pypi badge](https://img.shields.io/pypi/v/s2spy.svg?colorB=blue)](https://pypi.python.org/project/s2spy/)
@@ -46,7 +46,7 @@ The full documentation of the `s2spy` package can be found [here](https://ai4s2s
 
 ## Contributing
 
-If you want to contribute to the development of s2s,
+If you want to contribute to the development of s2spy,
 have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## Credits

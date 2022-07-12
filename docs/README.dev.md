@@ -1,4 +1,4 @@
-# `s2s` developer documentation
+# `s2spy` developer documentation
 
 If you're looking for user documentation, go [here](readme_link.rst).
 
@@ -15,7 +15,7 @@ source env/bin/activate
 python3 -m pip install --upgrade pip setuptools
 
 # (from the project root directory)
-# install s2s as an editable package
+# install s2spy as an editable package
 python3 -m pip install --no-cache-dir --editable .
 # install development dependencies
 python3 -m pip install --no-cache-dir --editable .[dev]
@@ -33,7 +33,7 @@ The first way requires an activated virtual environment with the development too
 pytest -v
 ```
 
-The second is to use `tox`, which can be installed separately (e.g. with `pip install tox`), i.e. not necessarily inside the virtual environment you use for installing `s2s`, but then builds the necessary virtual environments itself by simply running:
+The second is to use `tox`, which can be installed separately (e.g. with `pip install tox`), i.e. not necessarily inside the virtual environment you use for installing `s2spy`, but then builds the necessary virtual environments itself by simply running:
 
 ```shell
 tox
@@ -70,15 +70,15 @@ development tools installed.
 # linter
 prospector
 
-# recursively check import style for the s2s module only
-isort --recursive --check-only s2s
+# recursively check import style for the s2spy module only
+isort --recursive --check-only s2spy
 
-# recursively check import style for the s2s module only and show
+# recursively check import style for the s2spy module only and show
 # any proposed changes as a diff
-isort --recursive --check-only --diff s2s
+isort --recursive --check-only --diff s2spy
 
-# recursively fix import style for the s2s module only
-isort --recursive s2s
+# recursively fix import style for the s2spy module only
+isort --recursive s2spy
 ```
 
 To fix readability of your code style you can use [yapf](https://github.com/google/yapf).
@@ -150,10 +150,10 @@ In a new terminal, without an activated virtual environment or an env directory:
 
 ```shell
 # prepare a new directory
-cd $(mktemp -d s2s.XXXXXX)
+cd $(mktemp -d s2spy.XXXXXX)
 
 # fresh git clone ensures the release has the state of origin/main branch
-git clone https://github.com/AI4S2S/ai4s2s .
+git clone https://github.com/AI4S2S/s2spy .
 
 # prepare a clean virtual environment and activate it
 python3 -m venv env
@@ -167,7 +167,7 @@ python3 -m pip install --no-cache-dir .
 python3 -m pip install --no-cache-dir .[publishing]
 
 # clean up any previously generated artefacts
-rm -rf s2s.egg-info
+rm -rf s2spy.egg-info
 rm -rf dist
 
 # create the source distribution and the wheel
@@ -178,13 +178,13 @@ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 ```
 
 Visit
-[https://test.pypi.org/project/s2s](https://test.pypi.org/project/s2s)
+[https://test.pypi.org/project/s2spy](https://test.pypi.org/project/s2spy)
 and verify that your package was uploaded successfully. Keep the terminal open, we'll need it later.
 
 In a new terminal, without an activated virtual environment or an env directory:
 
 ```shell
-cd $(mktemp -d s2s-test.XXXXXX)
+cd $(mktemp -d s2spy-test.XXXXXX)
 
 # prepare a clean virtual environment and activate it
 python3 -m venv env
@@ -196,7 +196,7 @@ pip install --upgrade pip setuptools
 # install from test pypi instance:
 python3 -m pip -v install --no-cache-dir \
 --index-url https://test.pypi.org/simple/ \
---extra-index-url https://pypi.org/simple s2s
+--extra-index-url https://pypi.org/simple s2spy
 ```
 
 Check that the package works as it should when installed from pypitest.
@@ -211,4 +211,4 @@ twine upload dist/*
 
 ### (3/3) GitHub
 
-Don't forget to also make a [release on GitHub](https://github.com/AI4S2S/ai4s2s/releases/new). If your repository uses the GitHub-Zenodo integration this will also trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.
+Don't forget to also make a [release on GitHub](https://github.com/AI4S2S/s2spy/releases/new). If your repository uses the GitHub-Zenodo integration this will also trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.

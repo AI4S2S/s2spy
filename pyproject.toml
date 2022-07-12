@@ -7,7 +7,7 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["s2s"]
+source = ["s2spy"]
 command_line = "-m pytest"
 
 [tool.tox]
