@@ -21,7 +21,7 @@ Example:
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
-    >>> calendar.map_years(2020, 2020)
+    >>> calendar.map_years(2020, 2020) # doctest: +NORMALIZE_WHITESPACE
     i_interval                          0                         1
     anchor_year
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
@@ -29,7 +29,7 @@ Example:
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
-    >>> calendar.map_years(2020, 2022)
+    >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
     i_interval                          0                         1
     anchor_year
     2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
@@ -139,7 +139,7 @@ class AdventCalendar:
             >>> import s2spy.time
             >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
             >>> # note the leap year:
-            >>> calendar.map_years(2020, 2022)
+            >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
             i_interval                          0                         1
             anchor_year
             2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
@@ -495,7 +495,7 @@ class AdventCalendar:
 
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> traintest_group = calendar.traintest
-            >>> traintest_group
+            >>> traintest_group # doctest: +NORMALIZE_WHITESPACE
                                                               0                         1
             anchor_year fold_0 fold_1
             2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
