@@ -7,7 +7,7 @@ import xarray as xr
 from s2spy.time import AdventCalendar
 
 
-# pylint: disable=protected-access,missing-function-docstring
+# pylint: disable=protected-access
 
 
 def interval(start, end):
