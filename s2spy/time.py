@@ -52,6 +52,7 @@ import warnings
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import numpy as np
 import pandas as pd
 import xarray as xr
 from s2spy import traintest
@@ -98,13 +99,14 @@ class AdventCalendar:
         self._traintest = None
         self._intervals = None
 
+        periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
+        # Determine the amount of intervals, and number of anchor years to skip
         if max_lag:
             self._n_intervals = max_lag + self._n_target
-            self._skip_years = int(self._n_intervals // (
-                pd.Timedelta("365days") / pd.to_timedelta(freq)))
-
-        else: # Default to maximum number of intervals that fit in a year
-            self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+            self._skip_years = np.ceil(self._n_intervals /
+                                       periods_per_year).astype(int) - 1
+        else:
+            self._n_intervals = int(periods_per_year)
             self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:

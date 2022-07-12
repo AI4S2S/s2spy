@@ -59,7 +59,7 @@ class TestAdventCalendar:
         cal = AdventCalendar(anchor_date=(12, 31), freq="240d")
         cal.map_years(2021, 2021)
         assert np.array_equal(dummy_calendar.flat, expected)
-    
+
     def test_flat_no_intervals(self):
         cal = AdventCalendar()
         with pytest.raises(ValueError):
@@ -197,6 +197,20 @@ class TestMap:
         )
 
         assert np.all(cal._intervals == expected) # pylint: disable=protected-access
+
+    # Note: add more test cases for different number of target periods!
+    max_lag_edge_cases = [(73, ['2019'], 74),
+                          (72, ['2019', '2018'], 73)]
+    # Test the edge cases of max_lag; where the max_lag just fits in exactly 365 days,
+    # and where the max_lag just causes the calendar to skip a year
+    @pytest.mark.parametrize("max_lag,expected_index,expected_size", max_lag_edge_cases)
+    def test_max_lag_skip_years(self, max_lag, expected_index, expected_size):
+        calendar = AdventCalendar(anchor_date=(12, 31), freq="5d", max_lag=max_lag)
+        calendar = calendar.map_years(2018, 2019)
+
+        np.testing.assert_array_equal(calendar._intervals.index.values, expected_index)
+        assert calendar._intervals.iloc[0].size == expected_size
+
 
 class TestResample:
     """Test resample methods."""
