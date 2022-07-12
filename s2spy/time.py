@@ -67,7 +67,7 @@ class AdventCalendar:
 
     def __init__(
         self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
-        max_lag = None
+        max_lag: int = None
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -79,6 +79,12 @@ class AdventCalendar:
             anchor_date: Tuple of the form (month, day). Effectively the origin
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
+            max_lag: Maximum number of lag periods after the target period. If `None`,
+                the maximum lag will be determined by how many fit in each anchor year.
+                If a maximum lag is provided, the intervals can either only cover part
+                of the year, or extend over multiple years. In case of a large max_lag
+                number where the intervals extend over multiple years, anchor years will
+                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
