@@ -2,6 +2,7 @@
 import logging
 from . import time
 from . import traintest
+from . import dimensionality
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())

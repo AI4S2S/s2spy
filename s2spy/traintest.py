@@ -1,4 +1,4 @@
-"""AI4S2S train/test splitting methods.
+"""s2spy train/test splitting methods.
 
 A collection of train/test splitting approaches for cross-validation.
 """
