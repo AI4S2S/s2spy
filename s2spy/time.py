@@ -507,10 +507,10 @@ class AdventCalendar:
             >>> import numpy as np
             >>> import pandas as pd
             >>> calendar = s2spy.time.AdventCalendar(
-            >>>        anchor_date=(5, 10), freq='100D', n_targets = 2)
+            ...        anchor_date=(5, 10), freq='100D', n_targets = 2)
             >>> df = calendar.map_years(2018, 2020).melt(
-            >>>            var_name="i_interval", value_name="interval", ignore_index=False
-            >>>        ).sort_values(by=["anchor_year", "i_interval"])
+            ...            var_name="i_interval", value_name="interval", ignore_index=False
+            ...        ).sort_values(by=["anchor_year", "i_interval"])
             >>> calendar._mark_target_period(df)
             >>> calendar
                         i_interval                  interval  target
