@@ -110,7 +110,7 @@ class AdventCalendar:
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
         # Determine the amount of intervals, and number of anchor years to skip
         if max_lag:
-            self._n_intervals = max_lag + self._n_target
+            self._n_intervals = max_lag + self._n_targets
             self._skip_years = np.ceil(self._n_intervals /
                                        periods_per_year).astype(int) - 1
         else:
