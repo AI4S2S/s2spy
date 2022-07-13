@@ -79,7 +79,7 @@ class AdventCalendar:
             anchor_date: Tuple of the form (month, day). Effectively the origin
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
-            n_targets: integer specifying the number of target intervals in a period.
+            n_targets: Integer specifying the number of target intervals in an anchored period.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
