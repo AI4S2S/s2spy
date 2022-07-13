@@ -402,11 +402,11 @@ class AdventCalendar:
             >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data)
             >>> bins
-              anchor_year  i_interval                  interval  mean_data
-            0        2020           0  (2020-06-03, 2020-11-30]      275.5
-            1        2020           1  (2019-12-06, 2020-06-03]       95.5
-            2        2021           0  (2021-06-03, 2021-11-30]      640.5
-            3        2021           1  (2020-12-05, 2021-06-03]      460.5
+              anchor_year  i_interval                  interval  mean_data  target
+            0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
+            1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
+            2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
+            3        2021           1  (2020-12-05, 2021-06-03]      460.5   False            
 
         """
         if not isinstance(input_data, PandasData + XArrayData):
@@ -507,11 +507,11 @@ class AdventCalendar:
             >>> import numpy as np
             >>> import pandas as pd
             >>> calendar = s2spy.time.AdventCalendar(
-                    anchor_date=(5, 10), freq='100D', n_targets = 2)
+            >>>        anchor_date=(5, 10), freq='100D', n_targets = 2)
             >>> df = calendar.map_years(2018, 2020).melt(
-                        var_name="i_interval", value_name="interval", ignore_index=False
-                    ).sort_values(by=["anchor_year", "i_interval"])
-            >>> calendar.mark_target_periods(df)
+            >>>            var_name="i_interval", value_name="interval", ignore_index=False
+            >>>        ).sort_values(by=["anchor_year", "i_interval"])
+            >>> calendar._mark_target_period(df)
             >>> calendar
                         i_interval                  interval  target
             anchor_year                                              
