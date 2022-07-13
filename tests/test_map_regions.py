@@ -1,4 +1,4 @@
-from s2s.RGDR import map_regions
+from s2spy.RGDR import map_regions
 import numpy as np
 
 # create random 3-d array with shape (time, latitude, longitude) 

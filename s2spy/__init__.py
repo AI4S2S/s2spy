@@ -1,7 +1,8 @@
-"""Documentation about s2s"""
+"""Documentation about s2spy"""
 import logging
 from . import time
-from . import RGDR
+from . import traintest
+
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
