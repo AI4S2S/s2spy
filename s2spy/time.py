@@ -67,7 +67,7 @@ class AdventCalendar:
 
     def __init__(
         self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
-        max_lag: int = None
+        n_targets: int = 1, max_lag: int = None
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -79,6 +79,7 @@ class AdventCalendar:
             anchor_date: Tuple of the form (month, day). Effectively the origin
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
+            n_targets: integer specifying the number of target intervals in a period.
             max_lag: Maximum number of lag periods after the target period. If `None`,
                 the maximum lag will be determined by how many fit in each anchor year.
                 If a maximum lag is provided, the intervals can either only cover part
@@ -101,14 +102,15 @@ class AdventCalendar:
         self.month = anchor_date[0]
         self.day = anchor_date[1]
         self.freq = freq
-        self._n_target = 1
+        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        self._n_targets = n_targets
         self._traintest = None
         self._intervals = None
 
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
         # Determine the amount of intervals, and number of anchor years to skip
         if max_lag:
-            self._n_intervals = max_lag + self._n_target
+            self._n_intervals = max_lag + self._n_targets
             self._skip_years = np.ceil(self._n_intervals /
                                        periods_per_year).astype(int) - 1
         else:
@@ -400,11 +402,11 @@ class AdventCalendar:
             >>> input_data = pd.Series(var, index=time_index)
             >>> bins = cal.resample(input_data)
             >>> bins
-              anchor_year  i_interval                  interval  mean_data
-            0        2020           0  (2020-06-03, 2020-11-30]      275.5
-            1        2020           1  (2019-12-06, 2020-06-03]       95.5
-            2        2021           0  (2021-06-03, 2021-11-30]      640.5
-            3        2021           1  (2020-12-05, 2021-06-03]      460.5
+              anchor_year  i_interval                  interval  mean_data  target
+            0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
+            1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
+            2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
+            3        2021           1  (2020-12-05, 2021-06-03]      460.5   False            
 
         """
         if not isinstance(input_data, PandasData + XArrayData):
@@ -426,17 +428,21 @@ class AdventCalendar:
                         available within all intervals."""
                     )
 
-            return self._resample_pandas(input_data)
+            resampled_data = self._resample_pandas(input_data)
 
         # Data must be xarray
-        if "time" not in input_data.dims:
-            raise ValueError(
-                "The input DataArray/Dataset does not contain a `time` dimension"
-            )
-        if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
-            raise ValueError("The `time` dimension is not of a datetime format")
+        else:
+            if "time" not in input_data.dims:
+                raise ValueError(
+                    "The input DataArray/Dataset does not contain a `time` dimension"
+                )
+            if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
+                raise ValueError("The `time` dimension is not of a datetime format")
 
-        return self._resample_xarray(input_data)
+            resampled_data = self._resample_xarray(input_data)
+
+        # mark target periods before returning the resampled data
+        return self._mark_target_period(resampled_data)
 
     def __str__(self):
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -472,17 +478,38 @@ class AdventCalendar:
         # or think of a nicer way to discard unneeded info
         raise NotImplementedError
 
-    def mark_target_period(self, start=None, periods=None):
-        """Mark indices that fall within the target period."""
-        # eg in pd.period_range you have to specify 2 of 3 (start/end/periods)
-        if start is not None:
-            pass
-        elif periods:
-            pass
-        else:
-            raise ValueError("Specify either start or periods, not both.")
+    def _mark_target_period(
+        self, input_data: Union[pd.DataFrame, xr.Dataset]
+    ) -> Union[pd.DataFrame, xr.Dataset]:
+        """Mark interval periods that fall within the given number of target periods.
+        
+        Pass a pandas Series/DataFrame with an 'i_interval' column, or an xarray 
+        DataArray/Dataset with an 'i_interval' coordinate axis. It will return an
+        object with an added column in the Series/DataFrame or an
+        added coordinate axis in the DataSet called 'target'. This is a boolean
+        indicating whether the index time interval is a target period or not. This is
+        determined by the instance variable 'n_targets'.
+        
+        Args:
+            input_data: Input data for resampling. For a Pandas object, one of its 
+            columns must be called 'i_interval'. An xarray object requires a coordinate
+            axis named 'i_interval' containing an interval counter for every period.
 
-        raise NotImplementedError
+        Returns:
+            Input data with boolean marked target periods, similar data format as
+                given inputs.
+        """
+        if isinstance(input_data, PandasData):
+            input_data['target'] = np.zeros(input_data.index.size, dtype=bool)
+            input_data['target'] = input_data['target'].where(
+               input_data['i_interval'] >= self._n_targets, other=True)
+
+        else:
+            #input data is xr.Dataset
+            target = input_data['i_interval'] < self._n_targets
+            input_data = input_data.assign_coords(coords={'target': target})
+        
+        return input_data
 
     def get_lagged_indices(self, lag=1):  # noqa
         """Return indices shifted backward by given lag."""
@@ -535,7 +562,7 @@ class AdventCalendar:
         https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/traintest/index.html
 
         Args:
-            method: one of the methods available in `s2s.traintest`
+            method: one of the methods available in `s2spy.traintest`
             method_kwargs: keyword arguments that will be passed to `method`
         """
         if self._traintest is not None:
@@ -548,6 +575,6 @@ class AdventCalendar:
 
         func = traintest.ALL_METHODS.get(method)
         if not func:
-            raise ValueError("The given method is not supported by `s2s.traintest`.")
+            raise ValueError("The given method is not supported by `s2spy.traintest`.")
 
         self._traintest = func(self._intervals, **method_kwargs)

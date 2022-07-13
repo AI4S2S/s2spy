@@ -46,12 +46,6 @@ class TestAdventCalendar:
         with pytest.raises(NotImplementedError):
             cal.discard(max_lag=5)
 
-    def test_mark_target_period(self):
-        cal = AdventCalendar()
-
-        with pytest.raises(NotImplementedError):
-            cal.mark_target_period(start="20200101", periods=5)
-
     def test_get_lagged_indices(self):
         cal = AdventCalendar()
 
@@ -223,6 +217,10 @@ class TestResample:
     def dummy_calendar(self):
         return AdventCalendar(anchor_date=(10, 15), freq="180d")
 
+    @pytest.fixture(autouse=True, params=[1,2,3])
+    def dummy_calendar_targets(self, request):
+        return AdventCalendar(anchor_date=(5, 10), freq="100D", n_targets=request.param)
+
     @pytest.fixture(params=["20151020", "20191020"])
     def dummy_series(self, request):
         time_index = pd.date_range(request.param, "20211001", freq="60d")
@@ -296,6 +294,24 @@ class TestResample:
         dataset['time'] = np.arange(dataset['time'].size)
         with pytest.raises(ValueError):
             dummy_calendar.resample(dataset)
+
+    def test_target_period_dataframe(self, dummy_calendar_targets, dummy_dataframe):
+        df, _ = dummy_dataframe
+        resampled_data = dummy_calendar_targets.resample(df)
+        expected = np.zeros(resampled_data.index.size, dtype=bool)
+        # pylint: disable=protected-access
+        for i in range(dummy_calendar_targets._n_targets): 
+            expected[i::3] = True
+        np.testing.assert_array_equal(resampled_data['target'].values, expected)
+    
+    def test_target_period_dataset(self, dummy_calendar_targets, dummy_dataset):
+        ds, _ = dummy_dataset
+        resampled_data = dummy_calendar_targets.resample(ds)
+        expected = np.zeros(3, dtype=bool)
+        # pylint: disable=protected-access
+        expected[:dummy_calendar_targets._n_targets] = True
+        np.testing.assert_array_equal(resampled_data['target'].values, expected)
+
 
 class TestTrainTest:
     """Test train test methods."""
