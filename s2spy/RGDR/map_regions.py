@@ -105,7 +105,7 @@ def spatial_mean_regions(precur_arr: np.ndarray,
         elif corr_wgts is None and area_wghts is not None:
             wghts = area_wghts # area weighted
         elif corr_wgts is not None and area_wghts is None:
-            wghts = corr_wgts # corr_wgts
+            wghts = abs(corr_wgts[l_idx]) # corr_wgts
         else:
             wghts = np.ones_like(labels[0])      
 
