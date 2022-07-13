@@ -36,18 +36,18 @@ def wrapper_spatial_mean_regions(field: xr.DataArray):
     '''
     Wrapper around spatial_mean_regions
     Should be able to loop over dimesions other then latitude longitude, e.g. ('split', 'lag')
-    # in proto, split was often done in Paralle
+    # in proto, split was often done in Parallel
     '''
     raise NotImplementedError
 
-def single_split_spatial_mean_regions(precur_arr: np.ndarray,
-                                      labels: np.ndarray, 
-                                      name: str,
-                                      area_wghts: np.ndarray = None,
-                                      corr_wgts: np.ndarray = None,
-                                      lag_names: list = None):
+def spatial_mean_regions(precur_arr: np.ndarray,
+                         labels: np.ndarray, 
+                         name: str,
+                         area_wghts: np.ndarray = None,
+                         corr_wgts: np.ndarray = None,
+                         lag_names: list = None):
     """Calculate 1-d timeseries for each precursor region. Precursor regions 
-    are integer label masks within the np.ndarray 'labels'.
+    are integer label masks within the np.ndarray labels.
 
     Args:
         precur_arr: shape should be (time, latitude, longitude), matching labels.
@@ -60,7 +60,32 @@ def single_split_spatial_mean_regions(precur_arr: np.ndarray,
     Returns:
         df_tscorr: pd.DataFrame of shape (time, features).
         Feature columns are named according to their lag (of the label map), region label and name.
+
+    Example:
+        Create dummy numpy array of dimension (time, latitude, longitude) and a label mask. 
+
+        >>> from s2spy.RGDR import map_regions
+        >>> import numpy as np
+        >>> np.random.seed(0)
+        >>> precur_arr = np.random.randint(0, 100, size=(5, 5, 5))
+        >>> labels = np.zeros(shape=(1, 5, 5)) ; labels[:] = np.nan
+        >>> labels[:, 1:3, 1:3] = 1 ; labels[:, 4, 3:5] = 2
+        >>> df = map_regions.spatial_mean_regions(precur_arr, labels, name='var', lag_names=['lag1'])
+        >>> labels
+        array([[[nan, nan, nan, nan, nan],
+                [nan,  1.,  1., nan, nan],
+                [nan,  1.,  1., nan, nan],
+                [nan, nan, nan, nan, nan],
+                [nan, nan, nan,  2.,  2.]]])
+        >>> df
+           lag1..1..var  lag1..2..var
+        0         70.00          74.5
+        1         48.50          29.0
+        2         43.00          86.5
+        3         52.25          66.5
+        4         61.25          40.5
     """     
+
     if lag_names is None: 
         lag_names = np.arange(labels.shape[0])
     ts_list = np.zeros( (len(lag_names)), dtype=list )
@@ -96,7 +121,6 @@ def single_split_spatial_mean_regions(precur_arr: np.ndarray,
             B[labels_lag == r] = 1
             # Calculates how values inside region vary over time
             ts = np.nanmean(precur_arr[:,B==1] * wghts[B==1], axis =1)
-
             # check for nans
             if ts[np.isnan(ts)].size !=0:
                 print(ts)
@@ -122,16 +146,17 @@ def single_split_spatial_mean_regions(precur_arr: np.ndarray,
 ##### Code below copied and slightly adapted from proto
 
 def cluster_DBSCAN_regions(corr_xr: xr.DataArray, 
-                           distance_eps: float=600, 
-                           min_area_in_degrees2: int=3,
-                           group_split: bool=False,
-                           group_lag: bool=True,
-                           n_jobs_clust: int=1):
+                           distance_eps: float = 600, 
+                           min_area_in_degrees2: int = 3,
+                           group_split: bool = False,
+                           group_lag: bool = True,
+                           n_jobs_clust: int = 1):
     """   
-    Clusters regions together of same sign using DBSCAN
+    Clusters gridcells together which are of the same sign and in proximity to
+    each other using DBSCAN.
 
     Args:
-        corr_xr (xr.DataArray): _description_
+        corr_xr (xr.DataArray): of shape (split, lag, latitude, longitude)
         distance_eps (float, optional): _description_. Defaults to 600.
         min_area_in_degrees2 (int, optional): _description_. Defaults to 3.
         group_split (bool, optional): _description_. Defaults to False.
@@ -139,17 +164,13 @@ def cluster_DBSCAN_regions(corr_xr: xr.DataArray,
         n_jobs_clust (int, optional): _description_. Defaults to 1.
 
     Returns:
-        _type_: _description_
+        prec_labels: xr.DataArray with integer labels assigned to each clustered region.
+        Gridcells that are seen as noise by DBSCAN are left out and filled with np.nan.
     """
     #%%
-
-
-
     lags = corr_xr.lag.values
     n_spl  = corr_xr.coords['split'].size
     area_grid = get_area(corr_xr)
-
-
 
     if group_lag: # group over regions found in range of lags
         lags = corr_xr.lag.values
@@ -265,12 +286,28 @@ def get_area(ds):
     #    A_mean = np.mean(A_gridcell2D)
     return A_gridcell2D
 
-def mask_sig_to_cluster(mask_and_data_s, 
-                        wght_area, 
+def mask_sig_to_cluster(mask_and_data_s : xr.DataArray, 
+                        wght_area: np.ndarray, 
                         distance_eps: Union[float, int], 
                         min_area_samples: int,
                         n_jobs=-1):
+    """xr.DataArray containing correlation values and coordinate mask, which 
+    indicates significance True/False.
 
+    Args:
+        mask_and_data_s: xr.DataArray containing correlation values and coordinate 
+            'mask', which indicates significance True/False. Shape shoudl be 
+            (lag, latitude, longitude)
+        wght_area: area weights to give more weight to larger gridcells. Shape in 
+            (latitude, longitude)
+        distance_eps: eps parameter of DBSCAN
+        min_area_samples: min_samples parameter of DBSCAN
+        n_jobs: run n_jobs in parallel (internally handled DBSCAN). Defaults to -1.
+
+    Returns:
+        np_regs : np.ndarray of shape with integers labels for each cluster found by DBSCAN.
+        labels_sign_lag : list with sign of each region? 
+    """
 
     mask_sig_1d = mask_and_data_s.mask.astype('bool').values == False
     data = mask_and_data_s.data
@@ -278,6 +315,7 @@ def mask_sig_to_cluster(mask_and_data_s,
     lats = mask_and_data_s.latitude.values
     n_lags = mask_and_data_s.lag.size
 
+    # numpy array to store dbscan output
     np_dbregs   = np.zeros( (n_lags, lats.size, lons.size), dtype=int )
     labels_sign_lag = []
     label_start = 0
@@ -395,57 +433,10 @@ def calc_spatcov(full_timeserie: np.ndarray, pattern: np.ndarray, area_wght=None
     #%%
     return spatcov
 
-def get_spatcovs(dict_ds, df_splits, s, outdic_actors, normalize=True): #, df_split, outdic_actors #TODO is df_split same as df_splits
-    #%%
-
-    lag = 0
-    TrainIsTrue = df_splits['TrainIsTrue']
-    times = df_splits.index
-    options = ['_spatcov', '_spatcov_caus']
-    columns = []
-    for var in outdic_actors.keys():
-        for select in options:
-            columns.append(var+select)
-
-
-    data = np.zeros( (len(columns), times.size) )
-    df_sp_s = pd.DataFrame(data.T, index=times, columns=columns)
-    dates_train = TrainIsTrue[TrainIsTrue.values].index
-    #    dates_test  = TrainIsTrue[TrainIsTrue.values==False].index
-    for var, pos_prec in outdic_actors.items():
-        ds = dict_ds[var]
-        for i, select in enumerate(['_labels', '_labels_tigr']):
-            # spat_cov over test years using corr fields from training
-
-            full_timeserie = pos_prec.precur_arr
-            corr_vals = ds[var + "_corr"].sel(split=s).isel(lag=lag)
-            mask = ds[var + select].sel(split=s).isel(lag=lag)
-            pattern = corr_vals.where(~np.isnan(mask))
-            if np.isnan(pattern.values).all():
-                # no regions of this variable and split
-                pass
-            else:
-                if normalize == True:
-                    spatcov_full = calc_spatcov(full_timeserie, pattern)
-                    mean = spatcov_full.sel(time=dates_train).mean(dim='time')
-                    std = spatcov_full.sel(time=dates_train).std(dim='time')
-                    spatcov_test = ((spatcov_full - mean) / std)
-                elif normalize == False:
-                    spatcov_test = calc_spatcov(full_timeserie, pattern)
-                pd_sp = pd.Series(spatcov_test.values, index=times)
-                col = options[i]
-                df_sp_s[var + col] = pd_sp
-    for i, bckgrnd in enumerate(['tcov', 'caus']):
-        cols = [col for col in df_sp_s.columns if col[-4:] == bckgrnd]
-        key = options[i]
-        df_sp_s['all'+key] = df_sp_s[cols].mean(axis=1)
-    #%%
-    return df_sp_s
-
 def reorder_strength(prec_labels_s, corr_vals, area_grid, min_area_km2):
     #%%
     # order regions on corr strength
-    # based on median of upper 25 percentile
+    # based on median of upper 25th percentile of correlation value within region
 
     n_lags = prec_labels_s.shape[0]
     Number_regions_per_lag = np.zeros(n_lags)
@@ -539,9 +530,8 @@ def xrmask_by_latlon(xarray,
 
     Returns
     -------
-    xarray : xr.DataArray
-        DESCRIPTION.
-
+    xarray : xr.DataArray with mask applied
+        
     '''
     ll = np.meshgrid(xarray.longitude, xarray.latitude)
     # north of latmax is masked
@@ -870,5 +860,8 @@ def df_data_prec_regs(list_MI, TV, df_splits): #, outdic_precur, df_splits, TV #
     #%%
     return df_data
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
 
 # %%
