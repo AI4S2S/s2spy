@@ -498,34 +498,7 @@ class AdventCalendar:
         Returns:
             Input data with boolean marked target periods, similar data format as
                 given inputs.
-
-        Example:
-            Assuming the input data is pd.DataFrame with anchor date 05-10 on a 100 day 
-            frequency.
-
-            >>> import s2spy.time
-            >>> import numpy as np
-            >>> import pandas as pd
-            >>> calendar = s2spy.time.AdventCalendar(
-            ...        anchor_date=(5, 10), freq='100D', n_targets = 2)
-            >>> df = calendar.map_years(2018, 2020).melt(
-            ...            var_name="i_interval", value_name="interval", ignore_index=False
-            ...        ).sort_values(by=["anchor_year", "i_interval"])
-            >>> calendar._mark_target_period(df)
-            >>> calendar
-                        i_interval                  interval  target
-            anchor_year                                              
-            2018                  0  (2018-01-30, 2018-05-10]    True
-            2018                  1  (2017-10-22, 2018-01-30]    True
-            2018                  2  (2017-07-14, 2017-10-22]   False
-            2019                  0  (2019-01-30, 2019-05-10]    True
-            2019                  1  (2018-10-22, 2019-01-30]    True
-            2019                  2  (2018-07-14, 2018-10-22]   False
-            2020                  0  (2020-01-31, 2020-05-10]    True
-            2020                  1  (2019-10-23, 2020-01-31]    True
-            2020                  2  (2019-07-15, 2019-10-23]   False
         """
-
         if isinstance(input_data, PandasData):
             input_data['target'] = np.zeros(input_data.index.size, dtype=bool)
             input_data['target'] = input_data['target'].where(
