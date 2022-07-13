@@ -7,6 +7,9 @@ import xarray as xr
 from s2spy.time import AdventCalendar
 
 
+# pylint: disable=protected-access
+
+
 def interval(start, end):
     """Shorthand for more readable tests."""
     return pd.Interval(pd.Timestamp(start), pd.Timestamp(end))
@@ -29,7 +32,8 @@ class TestAdventCalendar:
         assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d)"
 
     def test_repr_with_intervals(self, dummy_calendar):
-        expected_calendar_repr = 'i_interval 0\nanchor_year \n2021 (2021-05-05, 2021-12-31]'.replace(" ", "")
+        expected_calendar_repr = \
+            'i_interval 0\nanchor_year \n2021 (2021-05-05, 2021-12-31]'.replace(" ", "")
         assert repr(dummy_calendar).replace(" ", "") == expected_calendar_repr
 
     def test_str(self):
@@ -53,7 +57,7 @@ class TestAdventCalendar:
         cal = AdventCalendar(anchor_date=(12, 31), freq="240d")
         cal.map_years(2021, 2021)
         assert np.array_equal(dummy_calendar.flat, expected)
-    
+
     def test_flat_no_intervals(self):
         cal = AdventCalendar()
         with pytest.raises(ValueError):
@@ -76,7 +80,7 @@ class TestMap:
                 ],
             ]
         )
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_years_single(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
@@ -87,7 +91,7 @@ class TestMap:
                 interval("2020-01-06", "2020-07-04"),
             ]
         ])
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_to_data_edge_case_last_year(self):
         # test the edge value when the input could not cover the anchor date
@@ -103,7 +107,7 @@ class TestMap:
                 interval("2019-10-21", "2020-04-18"),
             ]
         ])
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_to_data_single_year_coverage(self):
         # test the single year coverage
@@ -121,7 +125,7 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_to_data_edge_case_first_year(self):
         # test the edge value when the input covers the anchor date
@@ -145,7 +149,7 @@ class TestMap:
             ]
         )
 
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_to_data_value_error(self):
         # test when the input data is not sufficient to cover one year
@@ -171,17 +175,17 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(cal._intervals, expected) # pylint: disable=protected-access
+        assert np.array_equal(cal._intervals, expected)
 
     def test_map_to_data_xarray_input(self):
         # test when the input data has reverse order time index
         cal = AdventCalendar(anchor_date=(10, 15), freq='180d')
         time_index = pd.date_range('20201010', '20211225', freq='60d')
         test_data = np.random.random(len(time_index))
-        da = xr.DataArray(
+        dataarray = xr.DataArray(
             data=test_data,
             coords={'time': time_index})
-        cal.map_to_data(da)
+        cal.map_to_data(dataarray)
 
         expected = np.array(
             [
@@ -190,7 +194,21 @@ class TestMap:
             ]
         )
 
-        assert np.all(cal._intervals == expected) # pylint: disable=protected-access
+        assert np.all(cal._intervals == expected)
+
+    # Note: add more test cases for different number of target periods!
+    max_lag_edge_cases = [(73, ['2019'], 74),
+                          (72, ['2019', '2018'], 73)]
+    # Test the edge cases of max_lag; where the max_lag just fits in exactly 365 days,
+    # and where the max_lag just causes the calendar to skip a year
+    @pytest.mark.parametrize("max_lag,expected_index,expected_size", max_lag_edge_cases)
+    def test_max_lag_skip_years(self, max_lag, expected_index, expected_size):
+        calendar = AdventCalendar(anchor_date=(12, 31), freq="5d", max_lag=max_lag)
+        calendar = calendar.map_years(2018, 2019)
+
+        np.testing.assert_array_equal(calendar._intervals.index.values, expected_index)
+        assert calendar._intervals.iloc[0].size == expected_size
+
 
 class TestResample:
     """Test resample methods."""
@@ -219,15 +237,15 @@ class TestResample:
     @pytest.fixture
     def dummy_dataarray(self, dummy_series):
         series, expected = dummy_series
-        da = series.to_xarray()
-        da = da.rename({'index': 'time'})
-        return da, expected
+        dataarray = series.to_xarray()
+        dataarray = dataarray.rename({'index': 'time'})
+        return dataarray, expected
 
     @pytest.fixture
     def dummy_dataset(self, dummy_dataframe):
         dataframe, expected = dummy_dataframe
-        ds = dataframe.to_xarray().rename({'index': 'time'})
-        return ds, expected
+        dataset = dataframe.to_xarray().rename({'index': 'time'})
+        return dataset, expected
 
     # Tests start here:
     def test_nontime_index(self, dummy_calendar, dummy_series):
@@ -255,27 +273,27 @@ class TestResample:
         np.testing.assert_allclose(resampled_data["data1"].iloc[:2], expected)
 
     def test_dataarray(self, dummy_calendar, dummy_dataarray):
-        da, expected = dummy_dataarray
-        resampled_data = dummy_calendar.resample(da)
+        dataarray, expected = dummy_dataarray
+        resampled_data = dummy_calendar.resample(dataarray)
         testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
     def test_dataset(self, dummy_calendar, dummy_dataset):
-        ds, expected = dummy_dataset
-        resampled_data = dummy_calendar.resample(ds)
+        dataset, expected = dummy_dataset
+        resampled_data = dummy_calendar.resample(dataset)
         testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
     def test_missing_time_dim(self, dummy_calendar, dummy_dataset):
-        ds, _ = dummy_dataset
+        dataset, _ = dummy_dataset
         with pytest.raises(ValueError):
-            dummy_calendar.resample(ds.rename({'time': 'index'}))
+            dummy_calendar.resample(dataset.rename({'time': 'index'}))
 
     def test_non_time_dim(self, dummy_calendar, dummy_dataset):
-        ds, _ = dummy_dataset
-        ds['time'] = np.arange(ds['time'].size)
+        dataset, _ = dummy_dataset
+        dataset['time'] = np.arange(dataset['time'].size)
         with pytest.raises(ValueError):
-            dummy_calendar.resample(ds)
+            dummy_calendar.resample(dataset)
 
     def test_target_period_dataframe(self, dummy_calendar_targets, dummy_dataframe):
         df, _ = dummy_dataframe
@@ -307,7 +325,7 @@ class TestTrainTest:
         dummy_calendar.set_traintest_method("kfold", n_splits = 2, shuffle = False)
         # check the first fold
         expected_group = ['test', 'test', 'train']
-        assert np.array_equal(dummy_calendar._traintest["fold_0"].values, expected_group) # pylint: disable=protected-access
+        assert np.array_equal(dummy_calendar._traintest["fold_0"].values, expected_group)
 
     def test_set_traintest_method_not_support(self, dummy_calendar):
         # test when the given method is not supported
@@ -329,7 +347,7 @@ class TestTrainTest:
         dummy_calendar.set_traintest_method("kfold", n_splits = 2)
         dummy_calendar.set_traintest_method("kfold", n_splits = 3, overwrite = True)
         expected_group = ['train', 'test', 'train']
-        assert np.array_equal(dummy_calendar._traintest["fold_1"].values, expected_group) # pylint: disable=protected-access
+        assert np.array_equal(dummy_calendar._traintest["fold_1"].values, expected_group)
 
     def test_traintest(self, dummy_calendar):
         dummy_calendar.set_traintest_method("kfold", n_splits = 2, shuffle = False)

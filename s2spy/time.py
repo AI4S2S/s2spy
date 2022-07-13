@@ -21,7 +21,7 @@ Example:
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
-    >>> calendar.map_years(2020, 2020)
+    >>> calendar.map_years(2020, 2020) # doctest: +NORMALIZE_WHITESPACE
     i_interval                          0                         1
     anchor_year
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
@@ -29,7 +29,7 @@ Example:
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
-    >>> calendar.map_years(2020, 2022)
+    >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
     i_interval                          0                         1
     anchor_year
     2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
@@ -67,7 +67,7 @@ class AdventCalendar:
 
     def __init__(
         self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
-        n_targets: int = 1
+        n_targets: int = 1, max_lag: int = None
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -80,6 +80,12 @@ class AdventCalendar:
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
             n_targets: integer specifying the number of target intervals in a period.
+            max_lag: Maximum number of lag periods after the target period. If `None`,
+                the maximum lag will be determined by how many fit in each anchor year.
+                If a maximum lag is provided, the intervals can either only cover part
+                of the year, or extend over multiple years. In case of a large max_lag
+                number where the intervals extend over multiple years, anchor years will
+                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -100,6 +106,16 @@ class AdventCalendar:
         self._n_targets = n_targets
         self._traintest = None
         self._intervals = None
+
+        periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
+        # Determine the amount of intervals, and number of anchor years to skip
+        if max_lag:
+            self._n_intervals = max_lag + self._n_target
+            self._skip_years = np.ceil(self._n_intervals /
+                                       periods_per_year).astype(int) - 1
+        else:
+            self._n_intervals = int(periods_per_year)
+            self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -142,7 +158,7 @@ class AdventCalendar:
             >>> import s2spy.time
             >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
             >>> # note the leap year:
-            >>> calendar.map_years(2020, 2022)
+            >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
             i_interval                          0                         1
             anchor_year
             2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
@@ -161,9 +177,11 @@ class AdventCalendar:
             dtype: interval
 
         """
+        year_range = range(end, start - 1, -(self._skip_years + 1))
+
         self._intervals = pd.concat(
-            [self._map_year(year) for year in range(start, end + 1)], axis=1
-        ).T[::-1]
+            [self._map_year(year) for year in year_range], axis=1
+        ).T
 
         self._intervals.index.name = "anchor_year"
 
@@ -550,7 +568,7 @@ class AdventCalendar:
 
             >>> calendar.set_traintest_method("kfold", n_splits = 2)
             >>> traintest_group = calendar.traintest
-            >>> traintest_group
+            >>> traintest_group # doctest: +NORMALIZE_WHITESPACE
                                                               0                         1
             anchor_year fold_0 fold_1
             2021        test   train   (2021-04-18, 2021-10-15]  (2020-10-20, 2021-04-18]
