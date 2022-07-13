@@ -41,50 +41,51 @@ def wrapper_spatial_mean_regions(field: xr.DataArray):
     raise NotImplementedError
 
 def single_split_spatial_mean_regions(precur_arr: np.ndarray,
-                                      corr: np.ndarray,
                                       labels: np.ndarray, 
-                                      a_wghts: np.ndarray,
-                                      lags: np.ndarray,
-                                      use_coef_wghts: bool,
-                                      name: str):
-    '''
-    precur_arr : np.ndarray
-        of shape (time, lat, lon). If lags define period_means;
-        of shape (lag, time, lat, lon).
-    corr : np.ndarray
-        if shape (lag, lat, lon).
-    labels : np.ndarray
-        of shape (lag, lat, lon).
-    a_wghts : np.ndarray
-        if shape (lat, lon).
-    use_coef_wghts : bool
-        Use correlation coefficient as weights for spatial mean.
+                                      name: str,
+                                      area_wghts: np.ndarray = None,
+                                      corr_wgts: np.ndarray = None,
+                                      lag_names: list = None):
+    """Calculate 1-d timeseries for each precursor region. Precursor regions 
+    are integer label masks within the np.ndarray 'labels'.
 
-    Returns
-    -------
-    ts_list : list of splits with numpy timeseries
-    '''
-    ts_list = np.zeros( (lags.size), dtype=list )
+    Args:
+        precur_arr: shape should be (time, latitude, longitude), matching labels.
+        name: name used to generate columns labels in the format of f'{lag}..{label}..{name}'.
+        labels: shape should be (lag, latitude, longitude), matching precur_arr.
+        area_wghts: shape should be (latitude, longitude), matching precur_arr and labels.
+        corr_wgts: shape should be (lag, latitude, longitude), matching precur_arr, area_wgths and labels.
+        lag_names: 1-d array containing the names for the lags. If none, index of item 'lag' is used.
+
+    Returns:
+        df_tscorr: pd.DataFrame of shape (time, features).
+        Feature columns are named according to their lag (of the label map), region label and name.
+    """     
+    if lag_names is None: 
+        lag_names = np.arange(labels.shape[0])
+    ts_list = np.zeros( (len(lag_names)), dtype=list )
     track_names = []
-    for l_idx, lag in enumerate(lags):
+    for l_idx, lag in enumerate(lag_names):
         labels_lag = labels[l_idx]
 
-        # # if lag represents aggregation period:
+        # # if lag represents aggregation period - new API should be implemented
         # if precur.period_means_array == True:
         #     precur_arr = precur.precur_arr[:,l_idx].values
 
         regions_for_ts = list(np.unique(labels_lag[~np.isnan(labels_lag)]))
 
-        if use_coef_wghts:
-            coef_wghts = abs(corr[l_idx]) / abs(np.nanmax(corr[l_idx]))
-            wghts = a_wghts * coef_wghts # area & corr. value weighted
+        if corr_wgts is not None and area_wghts is not None:
+            coef_wghts = abs(corr_wgts[l_idx]) / abs(np.nanmax(corr_wgts[l_idx]))
+            wghts = area_wghts * coef_wghts # area & corr. value weighted
+        elif corr_wgts is None and area_wghts is not None:
+            wghts = area_wghts # area weighted
+        elif corr_wgts is not None and area_wghts is None:
+            wghts = corr_wgts # corr_wgts
         else:
-            wghts = a_wghts
+            wghts = np.ones_like(labels[0])      
 
         # this array will be the time series for each feature
         ts_regions_lag_i = np.zeros((precur_arr.shape[0], len(regions_for_ts)))
-
-        # track sign of eacht region
 
         # calculate area-weighted mean over features
         for r in regions_for_ts:
@@ -104,16 +105,12 @@ def single_split_spatial_mean_regions(precur_arr: np.ndarray,
                     # all NaNs
                     print(f'All timesteps were NaNs for split'
                         f' for region {r} at lag {lag}')
-
                 else:
                     print(f'{perc_nans} NaNs for split'
                         f' for region {r} at lag {lag}')
 
             track_names.append(f'{lag}..{int(r)}..{name}')
-
             ts_regions_lag_i[:,idx] = ts
-            # get sign of region
-            # sign_ts_regions[idx] = np.sign(np.mean(corr.isel(lag=l_idx).values[B==1]))
 
         ts_list[l_idx] = ts_regions_lag_i
     tsCorr = np.concatenate(tuple(ts_list), axis = 1)
@@ -130,11 +127,23 @@ def cluster_DBSCAN_regions(corr_xr: xr.DataArray,
                            group_split: bool=False,
                            group_lag: bool=True,
                            n_jobs_clust: int=1):
+    """   
+    Clusters regions together of same sign using DBSCAN
+
+    Args:
+        corr_xr (xr.DataArray): _description_
+        distance_eps (float, optional): _description_. Defaults to 600.
+        min_area_in_degrees2 (int, optional): _description_. Defaults to 3.
+        group_split (bool, optional): _description_. Defaults to False.
+        group_lag (bool, optional): _description_. Defaults to True.
+        n_jobs_clust (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        _type_: _description_
+    """
     #%%
 
-    """
-    Clusters regions together of same sign using DBSCAN
-    """
+
 
     lags = corr_xr.lag.values
     n_spl  = corr_xr.coords['split'].size
@@ -861,3 +870,5 @@ def df_data_prec_regs(list_MI, TV, df_splits): #, outdic_precur, df_splits, TV #
     #%%
     return df_data
 
+
+# %%
