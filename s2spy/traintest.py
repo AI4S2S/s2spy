@@ -47,16 +47,6 @@ def timeseries_split():
     raise NotImplementedError
 
 
-ALL_METHODS = {
-    "kfold": kfold,
-    "random_strat": random_strat,
-    "timeseries_split": timeseries_split,
-    # "leave_n_out": leave_n_out,
-    # "random": random,
-    # "repeated_kfold": repeated_kfold,
-    # "split": split,
-}
-
 def iter_traintest(traintest_group, data, dim_function = None):
     """Iterators for train/test data and executor of dim reudction.
 
@@ -72,3 +62,13 @@ def iter_traintest(traintest_group, data, dim_function = None):
     # To do: concatenate output from each iteration.
     raise NotImplementedError
 
+
+ALL_METHODS = {
+    "kfold": kfold,
+    "random_strat": random_strat,
+    "timeseries_split": timeseries_split,
+    # "leave_n_out": leave_n_out,
+    # "random": random,
+    # "repeated_kfold": repeated_kfold,
+    # "split": split,
+}
