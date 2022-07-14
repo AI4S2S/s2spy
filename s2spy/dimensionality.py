@@ -1,28 +1,28 @@
 """s2spy dimensionality reduction module.
 
-A module handling dimensionality reduction tasks.
-This module provides a collection of dimensionality reduction
+A module handling dimensionality reduction tasks, which provides a
+collection of dimensionality reduction approaches.
 """
 
+def RGDR(series, lag_shift: int = 0):
+    """Wrapper for Response Guided Dimensionality Reduction function.
 
-def RGDR(series, field, lag_shift: int = 0):
-    """Instantiate a basic calendar with minimal configuration.
-
-    Set up the calendar with given freq ending exactly on the anchor date.
-    The index will extend back in time as many periods as fit within the
-    cycle time of one year.
+    Configure RGDR operations using this function. It will invoke the
+    RGDR operator and execute the relevant correlation and clustering
+    processes via the RGDR module.
 
     Args:
         series: Target timeseies.
         field: Target fields.
+        lag_shift: Number of lag shifts that will be tested.
     """
+    # To do: invoke RGDR functions without execution.
     raise NotImplementedError
 
-def PCA(field):
+def PCA():
+    """Wrapper for Principle Component Analysis."""
     raise NotImplementedError
 
-def MCA(field):
-    raise NotImplementedError
-
-def _traintest_binder():
+def MCA():
+    """Wrapper for Maximum Covariance Analysis."""
     raise NotImplementedError
