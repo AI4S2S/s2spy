@@ -64,6 +64,7 @@ def iter_traintest(traintest_group, data, dim_function = None):
     train/test split group and pass the data through the pre-defined
     dimensionality reduction function.
     """
+    # To do: check if dimensionality reduction function is given.
     # To do: loop through training data (data) and call dimensionality
     #  reduction function (dim_function) for each train data
     # To do: extract training data from resampled dataset based on
