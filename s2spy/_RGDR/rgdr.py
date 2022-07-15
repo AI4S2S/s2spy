@@ -33,6 +33,3 @@ class RGDR:
     def fit(self, data):
         """Perform RGDR calculations with given data."""
         raise NotImplementedError
-    
-
-
