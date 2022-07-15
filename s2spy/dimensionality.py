@@ -7,9 +7,8 @@ collection of dimensionality reduction approaches.
 def RGDR(series, lag_shift: int = 0):
     """Wrapper for Response Guided Dimensionality Reduction function.
 
-    Configure RGDR operations using this function. It manages input training,
-    data and loop through data with lag shift upto the given `lag_shift` value.
-    And it also invokes the RGDR operator and execute the relevant correlation
+    Configure RGDR operations using this function. It manages input training
+    data it also invokes the RGDR operator for the relevant correlation
     and clustering processes via the RGDR module.
 
     Args:
@@ -17,10 +16,9 @@ def RGDR(series, lag_shift: int = 0):
         field: Target fields.
         lag_shift: Number of lag shifts that will be tested.
     """
-    # To do: loop through lags
     # To do: invoke RGDR functions without execution.
     # e.g. import functools
-    # RGDR = functools.partial(s2s.RGDR.operator, series)
+    # RGDR = functools.partial(s2s.RGDR.operator, series, lag_shift)
     # return RGDR
     raise NotImplementedError
 

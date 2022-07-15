@@ -5,6 +5,7 @@ import pytest
 import s2spy.traintest
 from s2spy.time import AdventCalendar
 
+
 class TestTrainTest:
     # Define all required inputs as fixtures:
     @pytest.fixture(autouse=True)
@@ -25,3 +26,7 @@ class TestTrainTest:
     def test_timeseries_split(self):
         with pytest.raises(NotImplementedError):
             s2spy.traintest.timeseries_split()
+
+    def test_iter_traintest(self):
+        with pytest.raises(NotImplementedError):
+            s2spy.traintest.iter_traintest('traintest_group', 'data')
