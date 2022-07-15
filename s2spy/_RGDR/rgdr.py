@@ -8,7 +8,7 @@ class RGDR:
         self.timeseries = timeseries
         self.lag_shift = lag_shift
 
-    def lag_shift(self):
+    def lag_shifting(self):
         """loop through data with lag shift upto the given `lag_shift` value."""
         # To do: loop through lags
         # To do: call `map_analysis` and `map_regions` and manage
