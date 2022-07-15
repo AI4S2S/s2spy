@@ -10,7 +10,7 @@ def spatial_mean():
     """
     raise NotImplementedError
 
-def cluster_DBSCAN():
+def cluster_dbscan():
     """Perform DBSCAN clustering from vector array or distance matrix.
 
     Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
