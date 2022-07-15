@@ -22,7 +22,7 @@ Example:
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> calendar.map_years(2020, 2020) # doctest: +NORMALIZE_WHITESPACE
-    i_interval                          0                         1
+    i_interval                 (target) 0                         1
     anchor_year
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
@@ -30,7 +30,7 @@ Example:
     >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
     >>> # note the leap year:
     >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
-    i_interval                          0                         1
+    i_interval                 (target) 0                         1
     anchor_year
     2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
     2021         (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
@@ -159,7 +159,7 @@ class AdventCalendar:
             >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
             >>> # note the leap year:
             >>> calendar.map_years(2020, 2022) # doctest: +NORMALIZE_WHITESPACE
-            i_interval                          0                         1
+            i_interval                 (target) 0                         1
             anchor_year
             2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
             2021         (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
@@ -406,7 +406,7 @@ class AdventCalendar:
             0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
             1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
             2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
-            3        2021           1  (2020-12-05, 2021-06-03]      460.5   False            
+            3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 
         """
         if not isinstance(input_data, PandasData + XArrayData):
@@ -444,12 +444,16 @@ class AdventCalendar:
         # mark target periods before returning the resampled data
         return self._mark_target_period(resampled_data)
 
+    def _label_targets(self, intervals):
+        return intervals.rename(
+            columns={i: f'(target) {i}' for i in range(self._n_targets)})
+
     def __str__(self):
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
 
     def __repr__(self):
         if self._intervals is not None:
-            return repr(self._intervals)
+            return repr(self._label_targets(self._intervals))
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -459,7 +463,8 @@ class AdventCalendar:
     def _repr_html_(self):
         """For jupyter notebook to load html compatiable version of __repr__."""
         if self._intervals is not None:
-            return self._intervals._repr_html_() # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            return self._label_targets(self._intervals)._repr_html_()
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -482,16 +487,16 @@ class AdventCalendar:
         self, input_data: Union[pd.DataFrame, xr.Dataset]
     ) -> Union[pd.DataFrame, xr.Dataset]:
         """Mark interval periods that fall within the given number of target periods.
-        
-        Pass a pandas Series/DataFrame with an 'i_interval' column, or an xarray 
+
+        Pass a pandas Series/DataFrame with an 'i_interval' column, or an xarray
         DataArray/Dataset with an 'i_interval' coordinate axis. It will return an
         object with an added column in the Series/DataFrame or an
         added coordinate axis in the DataSet called 'target'. This is a boolean
         indicating whether the index time interval is a target period or not. This is
         determined by the instance variable 'n_targets'.
-        
+
         Args:
-            input_data: Input data for resampling. For a Pandas object, one of its 
+            input_data: Input data for resampling. For a Pandas object, one of its
             columns must be called 'i_interval'. An xarray object requires a coordinate
             axis named 'i_interval' containing an interval counter for every period.
 
@@ -508,7 +513,7 @@ class AdventCalendar:
             #input data is xr.Dataset
             target = input_data['i_interval'] < self._n_targets
             input_data = input_data.assign_coords(coords={'target': target})
-        
+
         return input_data
 
     def get_lagged_indices(self, lag=1):  # noqa
