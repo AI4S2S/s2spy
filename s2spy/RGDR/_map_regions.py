@@ -16,5 +16,9 @@ def cluster_dbscan():
     Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
     Clusters gridcells together which are of the same sign and in proximity to
     each other using DBSCAN.
+
+    The input data will be processed in this function to ensure that the distance
+    is free of the impact from spherical curvature. The actual Euclidean distance
+    will be obtained and passed to the DBSCAN clustering function.
     """
     raise NotImplementedError

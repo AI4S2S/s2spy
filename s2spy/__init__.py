@@ -8,7 +8,7 @@ import logging
 from . import dimensionality
 from . import time
 from . import traintest
-from ._RGDR import RGDR
+from .RGDR import RGDR
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
