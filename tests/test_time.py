@@ -32,8 +32,10 @@ class TestAdventCalendar:
         assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d)"
 
     def test_repr_with_intervals(self, dummy_calendar):
-        expected_calendar_repr = \
-            'i_interval 0\nanchor_year \n2021 (2021-05-05, 2021-12-31]'.replace(" ", "")
+        expected_calendar_repr = ('i_interval (target) 0\n'
+                                  'anchor_year \n'
+                                  '2021 (2021-05-05, 2021-12-31]')
+        expected_calendar_repr = expected_calendar_repr.replace(" ", "")
         assert repr(dummy_calendar).replace(" ", "") == expected_calendar_repr
 
     def test_str(self):
@@ -300,10 +302,10 @@ class TestResample:
         resampled_data = dummy_calendar_targets.resample(df)
         expected = np.zeros(resampled_data.index.size, dtype=bool)
         # pylint: disable=protected-access
-        for i in range(dummy_calendar_targets._n_targets): 
+        for i in range(dummy_calendar_targets._n_targets):
             expected[i::3] = True
         np.testing.assert_array_equal(resampled_data['target'].values, expected)
-    
+
     def test_target_period_dataset(self, dummy_calendar_targets, dummy_dataset):
         ds, _ = dummy_dataset
         resampled_data = dummy_calendar_targets.resample(ds)
