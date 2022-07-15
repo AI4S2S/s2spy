@@ -1,6 +1,6 @@
 """Tests for the s2s._RGDR.map_regions module."""
 import pytest
-from s2spy.RGDR import _map_regions
+from s2spy.rgdr import _map_regions
 
 
 # pylint: disable=protected-access

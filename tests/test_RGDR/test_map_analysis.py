@@ -1,6 +1,6 @@
 """Tests for the s2s._RGDR.map_analysis module."""
 import pytest
-from s2spy.RGDR import _map_analysis
+from s2spy.rgdr import _map_analysis
 
 
 # pylint: disable=protected-access
