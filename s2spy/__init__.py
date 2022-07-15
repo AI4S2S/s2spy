@@ -1,7 +1,14 @@
-"""Documentation about s2spy"""
+"""
+s2spy: integrating expert knowledge and ai to boost S2S forecasting.
+
+This package is a high-level python package integrating expert knowledge
+and artificial intelligence to boost (sub) seasonal forecasting.
+"""
 import logging
+from . import dimensionality
 from . import time
 from . import traintest
+from .rgdr import RGDR
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
