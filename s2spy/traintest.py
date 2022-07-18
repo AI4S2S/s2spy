@@ -2,11 +2,15 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
+from typing import Union
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
+import xarray as xr
+from sklearn.model_selection import KFold as _KFold
 
 
-def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
+def kfold(data: Union[pd.DataFrame, xr.Dataset], n_splits: int = 2, shuffle=False,
+          **kwargs):
     """
     K-Folds cross-validator, which splits provided intervals into k
     consecutive folds.
@@ -14,7 +18,7 @@ def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
     For more information
 
     args:
-        df: DataFrame to store the train/test groups. It must have a column named "anchor_years".
+        data: DataFrame to store the train/test groups. It must have a column named "anchor_years".
         n_splits: number of train/test splits.
 
     Other keyword arguments: see the documentation for sklearn.model_selection.KFold:
@@ -23,18 +27,33 @@ def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
     Returns:
         Pandas DataFrame with columns containing train/test label in each fold.
     """
-    cv = KFold(n_splits, shuffle=shuffle, **kwargs)
-    folds = cv.split(df)
+    cv = _KFold(n_splits, shuffle=shuffle, **kwargs)
 
-    # Map folds to a new dataframe
-    output = pd.DataFrame(index=df.index)
-    for i, (train_index, test_index) in enumerate(folds):
-        col_name = f"fold_{i}"
-        output[col_name] = "skip"
-        output[col_name].iloc[train_index] = "train"
-        output[col_name].iloc[test_index] = "test"
+    if isinstance(data, pd.DataFrame):
+        folds = cv.split(data)
 
-    return output
+        # Map folds to a new dataframe
+        output = pd.DataFrame(index=data.index)
+        for i, (train_index, test_index) in enumerate(folds):
+            col_name = f"fold_{i}"
+            output[col_name] = "skip"
+            output[col_name].iloc[train_index] = "train"
+            output[col_name].iloc[test_index] = "test"
+
+        return output
+
+    folds = cv.split(data.anchor_year)
+
+    for i, (train_indices, test_indices) in enumerate(folds):
+        fold_name = f"fold_{i}"
+        labels = np.empty(data.anchor_year.size, dtype='<U6')
+        labels[:] = "skip"
+        labels[train_indices] = "train"
+        labels[test_indices] = "test"
+        data[fold_name] = ('anchor_year', labels)
+        data = data.set_coords(fold_name)
+
+    return data
 
 
 def random_strat():
