@@ -22,6 +22,8 @@ class TestTrainTest:
         with pytest.raises(NotImplementedError):
             s2spy.traintest.random_strat()
 
-    def test_timeseries_split(self):
-        with pytest.raises(NotImplementedError):
-            s2spy.traintest.timeseries_split()
+    def test_timeseries_split(self, dummy_calendar):
+        traintest_group = s2spy.traintest.timeseries_split(dummy_calendar._intervals, n_splits=2) # pylint: disable=protected-access
+        # check the first fold
+        expected_fold = ['train','test', 'skip']
+        assert np.array_equal(traintest_group["fold_0"].values, expected_fold)
