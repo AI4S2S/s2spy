@@ -8,7 +8,7 @@ import xarray as xr
 from sklearn.model_selection import KFold
 
 
-def fold_by_anchor(cv, data):
+def fold_by_anchor(cv, data: xr.Dataset):
     """Splits calendar resampled data into train/test groups, based on the anchor year.
     As splitter, a Splitter Class such as sklearn's KFold can be passed.
 
@@ -38,7 +38,23 @@ def fold_by_anchor(cv, data):
             data[fold_name] = ('anchor_year', labels)
             data = data.set_coords(fold_name)
 
-    return data
+        return data
+
+    elif isinstance(data, pd.DataFrame):
+        folds = cv.split(data)
+
+        # Map folds to a new dataframe
+        output = pd.DataFrame(index=data.index)
+        for i, (train_index, test_index) in enumerate(folds):
+            col_name = f"fold_{i}"
+            output[col_name] = "skip"
+            output[col_name].iloc[train_index] = "train"
+            output[col_name].iloc[test_index] = "test"
+
+        return output
+
+    else:
+        raise ValueError('Invalid input data')
 
 
 def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
