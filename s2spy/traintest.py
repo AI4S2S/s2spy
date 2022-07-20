@@ -2,8 +2,43 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
+import numpy as np
 import pandas as pd
+import xarray as xr
 from sklearn.model_selection import KFold
+
+
+def fold_by_anchor(cv, data):
+    """Splits calendar resampled data into train/test groups, based on the anchor year.
+    As splitter, a Splitter Class such as sklearn's KFold can be passed.
+
+    For an overview of the sklearn Splitter Classes see:
+    https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
+
+    Args:
+        cv (Splitter Class): Initialized splitter class, much have a `fit(X)` method
+            which splits up `X` into multiple folds of train/test data.
+        data (xr.Dataset): Dataset with `anchor_year` as dimension. E.g. data resampled
+            using `s2spy.time.AdventCalendar`'s `resample` method.
+
+    Returns:
+        xr.Dataset: The input dataset with extra coordinates added for each fold,
+            containing the labels 'train', 'test', and possibly 'skip'.
+    """
+
+    if isinstance(data, xr.Dataset):
+        folds = cv.split(data.anchor_year)
+
+        for i, (train_indices, test_indices) in enumerate(folds):
+            fold_name = f"fold_{i}"
+            labels = np.empty(data.anchor_year.size, dtype='<U6')
+            labels[:] = "skip"
+            labels[train_indices] = "train"
+            labels[test_indices] = "test"
+            data[fold_name] = ('anchor_year', labels)
+            data = data.set_coords(fold_name)
+
+    return data
 
 
 def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
@@ -42,11 +77,6 @@ def random_strat():
     raise NotImplementedError
 
 
-def timeseries_split():
-    """timeseries_split cross-validator."""
-    raise NotImplementedError
-
-
 def iter_traintest(traintest_group, data, dim_function = None):
     """Iterators for train/test data and executor of dim reudction.
 
@@ -66,7 +96,6 @@ def iter_traintest(traintest_group, data, dim_function = None):
 ALL_METHODS = {
     "kfold": kfold,
     "random_strat": random_strat,
-    "timeseries_split": timeseries_split,
     # "leave_n_out": leave_n_out,
     # "random": random,
     # "repeated_kfold": repeated_kfold,
