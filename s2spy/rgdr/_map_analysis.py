@@ -46,11 +46,10 @@ def correlation(
     """
     if not is_1d(target):
         raise ValueError("Target timeseries should be 1-dimensional")
-    if isinstance(target, xr.DataArray):
-        if time_dim not in target.dims:
-            raise ValueError(
-                f"input target does not have contain the '{time_dim}' dimension"
-            )
+    if isinstance(target, xr.DataArray) and (time_dim not in target.dims):
+        raise ValueError(
+            f"input target does not have contain the '{time_dim}' dimension"
+        )
     if time_dim not in field.dims:
         raise ValueError(
             f"input field does not have contain the '{time_dim}' dimension"
@@ -67,12 +66,10 @@ def correlation(
 
 
 def is_1d(timeseries: Union[xr.DataArray, np.ndarray]):
-    if isinstance(timeseries, xr.DataArray):
-        if timeseries.ndim > 1:
-            return False
-    elif isinstance(timeseries, np.ndarray):
-        if len(timeseries.shape) > 1:
-            return False
+    if isinstance(timeseries, xr.DataArray) and timeseries.ndim > 1:
+        return False
+    elif isinstance(timeseries, np.ndarray) and len(timeseries.shape) > 1:
+        return False
     return True
 
 

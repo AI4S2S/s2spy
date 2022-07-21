@@ -57,9 +57,15 @@ class TestMapAnalysis:
         np.testing.assert_equal(c_val.values, 1)
         np.testing.assert_equal(p_val.values, 0)
 
-    def test_correlation_wrong_dim_name(self, dummy_dataarray, dummy_timeseries):
+    def test_correlation_wrong_target_dim_name(self, dummy_dataarray, dummy_timeseries):
+        ts = dummy_timeseries.rename({'time': 'dummy'})
         with pytest.raises(ValueError):
-            _map_analysis.correlation(dummy_dataarray, dummy_timeseries, time_dim="dummy")
+            _map_analysis.correlation(dummy_dataarray, ts)
+
+    def test_correlation_wrong_field_dim_name(self, dummy_dataarray, dummy_timeseries):
+        da = dummy_dataarray.rename({'time': 'dummy'})
+        with pytest.raises(ValueError):
+            _map_analysis.correlation(da, dummy_timeseries)
 
     def test_correlation_wrong_dim_count(self, dummy_dataarray):
         with pytest.raises(ValueError):
