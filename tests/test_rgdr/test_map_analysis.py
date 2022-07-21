@@ -29,7 +29,7 @@ class TestMapAnalysis:
 
     @pytest.fixture(autouse=True)
     def dummy_timeseries(self, dummy_dataarray):
-        return dummy_dataarray.drop_isel(lat=0, lon=0)
+        return dummy_dataarray.isel(lat=0, lon=0).drop_vars(['lat', 'lon'])
 
     def test_pearsonr(self):
         result = _map_analysis._pearsonr_nan([0, 0, 1], [0, 1, 1])

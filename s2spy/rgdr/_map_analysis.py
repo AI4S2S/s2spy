@@ -9,7 +9,7 @@ import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 
 
-def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
+def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
     """NaN friendly implementation of scipy.stats.pearsonr. Calculates the correlation
     coefficient between two arrays, as well as the p-value of this correlation.
 
@@ -23,13 +23,12 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """
     if np.any(np.isnan(x)) or np.any(np.isnan(y)):
         return np.nan, np.nan
-    else:
-        return _pearsonr(x, y)
+    return _pearsonr(x, y)
 
 
 def correlation(
     field: xr.DataArray, target: Union[xr.DataArray, np.ndarray], time_dim: str = "time"
-) -> tuple[xr.DataArray, xr.DataArray]:
+):
     """Calculate correlation maps.
 
     Args:
