@@ -44,6 +44,18 @@ def correlation(
         p_value: DataArray filled with the two-tailed p-values for each computed
             correlation coefficient.
     """
+    if not is_1d(target):
+        raise ValueError("Target timeseries should be 1-dimensional")
+    if isinstance(target, xr.DataArray):
+        if time_dim not in target.dims:
+            raise ValueError(
+                f"input target does not have contain the '{time_dim}' dimension"
+            )
+    if time_dim not in field.dims:
+        raise ValueError(
+            f"input field does not have contain the '{time_dim}' dimension"
+        )
+
     return xr.apply_ufunc(
         _pearsonr_nan,
         field,
@@ -52,6 +64,16 @@ def correlation(
         vectorize=True,
         output_core_dims=[[], []],
     )
+
+
+def is_1d(timeseries: Union[xr.DataArray, np.ndarray]):
+    if isinstance(timeseries, xr.DataArray):
+        if timeseries.ndim > 1:
+            return False
+    elif isinstance(timeseries, np.ndarray):
+        if len(timeseries.shape) > 1:
+            return False
+    return True
 
 
 def partial_correlation(field, target, z):
