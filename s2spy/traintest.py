@@ -31,6 +31,10 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
     ), "Input data should be of type xr.Dataset or pd.DataFrame"
 
     if isinstance(data, xr.Dataset):
+        assert (
+            data.anchor_year.size > 1
+        ), "Input data must have more than 1 anchor year to split."
+
         folds = cv.split(data.anchor_year)
 
         for i, (train_indices, test_indices) in enumerate(folds):
@@ -45,6 +49,10 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
     else:
         # split the anchor years
         anchor_years = np.unique(data["anchor_year"])
+        assert (
+            anchor_years.size > 1
+        ), "Input data must have more than 1 anchor year to split."
+
         folds = cv.split(anchor_years)
 
         # label every row in the dataframe
