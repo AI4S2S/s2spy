@@ -3,7 +3,6 @@
 A toolbox for spatial-temporal data analysis, including regression,
 correlation, auto-correlation and relevant utilities functions.
 """
-from typing import Union
 import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
@@ -26,9 +25,7 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
     return _pearsonr(x, y)
 
 
-def correlation(
-    field: xr.DataArray, target: Union[xr.DataArray, np.ndarray], time_dim: str = "time"
-):
+def correlation(field: xr.DataArray, target: xr.DataArray, time_dim: str = "time"):
     """Calculate correlation maps.
 
     Args:
@@ -44,16 +41,15 @@ def correlation(
         p_value: DataArray filled with the two-tailed p-values for each computed
             correlation coefficient.
     """
-    if not is_1d(target):
-        raise ValueError("Target timeseries should be 1-dimensional")
-    if isinstance(target, xr.DataArray) and (time_dim not in target.dims):
-        raise ValueError(
-            f"input target does not have contain the '{time_dim}' dimension"
-        )
-    if time_dim not in field.dims:
-        raise ValueError(
-            f"input field does not have contain the '{time_dim}' dimension"
-        )
+    assert (
+        time_dim in target.dims
+    ), f"input target does not have contain the '{time_dim}' dimension"
+    assert (
+        time_dim in field.dims
+    ), f"input field does not have contain the '{time_dim}' dimension"
+    assert np.all(
+        [dim in field.dims for dim in target.dims]
+    ), "Field and target dims do not match"
 
     return xr.apply_ufunc(
         _pearsonr_nan,
@@ -63,14 +59,6 @@ def correlation(
         vectorize=True,
         output_core_dims=[[], []],
     )
-
-
-def is_1d(timeseries: Union[xr.DataArray, np.ndarray]):
-    if isinstance(timeseries, xr.DataArray) and timeseries.ndim > 1:
-        return False
-    if isinstance(timeseries, np.ndarray) and len(timeseries.shape) > 1:
-        return False
-    return True
 
 
 def partial_correlation(field, target, z):
