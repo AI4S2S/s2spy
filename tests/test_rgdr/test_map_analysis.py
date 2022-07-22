@@ -1,5 +1,4 @@
 """Tests for the s2s._RGDR.map_analysis module."""
-from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,12 +23,11 @@ class TestMapAnalysis:
                 "lon": np.arange(0, 2),
             },
         )
-
         return da
 
     @pytest.fixture(autouse=True)
     def dummy_timeseries(self, dummy_dataarray):
-        return dummy_dataarray.isel(lat=0, lon=0).drop_vars(['lat', 'lon'])
+        return dummy_dataarray.isel(lat=0, lon=0).drop_vars(["lat", "lon"])
 
     def test_pearsonr(self):
         result = _map_analysis._pearsonr_nan([0, 0, 1], [0, 1, 1])
@@ -58,12 +56,12 @@ class TestMapAnalysis:
         np.testing.assert_equal(p_val.values, 0)
 
     def test_correlation_wrong_target_dim_name(self, dummy_dataarray, dummy_timeseries):
-        ts = dummy_timeseries.rename({'time': 'dummy'})
+        ts = dummy_timeseries.rename({"time": "dummy"})
         with pytest.raises(ValueError):
             _map_analysis.correlation(dummy_dataarray, ts)
 
     def test_correlation_wrong_field_dim_name(self, dummy_dataarray, dummy_timeseries):
-        da = dummy_dataarray.rename({'time': 'dummy'})
+        da = dummy_dataarray.rename({"time": "dummy"})
         with pytest.raises(ValueError):
             _map_analysis.correlation(da, dummy_timeseries)
 

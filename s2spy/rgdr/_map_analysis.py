@@ -68,7 +68,7 @@ def correlation(
 def is_1d(timeseries: Union[xr.DataArray, np.ndarray]):
     if isinstance(timeseries, xr.DataArray) and timeseries.ndim > 1:
         return False
-    elif isinstance(timeseries, np.ndarray) and len(timeseries.shape) > 1:
+    if isinstance(timeseries, np.ndarray) and len(timeseries.shape) > 1:
         return False
     return True
 
