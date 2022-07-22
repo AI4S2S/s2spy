@@ -49,13 +49,11 @@ Example:
 
 """
 import warnings
-from typing import Optional
 from typing import Tuple
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from s2spy import traintest
 
 
 PandasData = (pd.Series, pd.DataFrame)
