@@ -2,52 +2,94 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
+from typing import Union
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
+import xarray as xr
 
 
-def kfold(df: pd.DataFrame, n_splits: int = 2, shuffle=False, **kwargs):
-    """
-    K-Folds cross-validator, which splits provided intervals into k
-    consecutive folds.
+def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
+    """Splits calendar resampled data into train/test groups, based on the anchor year.
+    As splitter, a Splitter Class such as sklearn's KFold can be passed.
 
-    For more information
+    For an overview of the sklearn Splitter Classes see:
+    https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
 
-    args:
-        df: DataFrame to store the train/test groups. It must have a column named "anchor_years".
-        n_splits: number of train/test splits.
-
-    Other keyword arguments: see the documentation for sklearn.model_selection.KFold:
-    https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html
+    Args:
+        cv (Splitter Class): Initialized splitter class, much have a `fit(X)` method
+            which splits up `X` into multiple folds of train/test data.
+        data (xr.Dataset or pd.DataFrame): Dataset with `anchor_year` as dimension or
+            DataFrame with `anchor_year` as column. E.g. data resampled using
+            `s2spy.time.AdventCalendar`'s `resample` method.
 
     Returns:
-        Pandas DataFrame with columns containing train/test label in each fold.
+        The input dataset with extra coordinates or columns added for each fold,
+            containing the labels 'train', 'test', and possibly 'skip'.
     """
-    cv = KFold(n_splits, shuffle=shuffle, **kwargs)
-    folds = cv.split(df)
+    assert isinstance(
+        data, (xr.Dataset, pd.DataFrame)
+    ), "Input data should be of type xr.Dataset or pd.DataFrame"
 
-    # Map folds to a new dataframe
-    output = pd.DataFrame(index=df.index)
-    for i, (train_index, test_index) in enumerate(folds):
-        col_name = f"fold_{i}"
-        output[col_name] = "skip"
-        output[col_name].iloc[train_index] = "train"
-        output[col_name].iloc[test_index] = "test"
+    if isinstance(data, xr.Dataset):
+        data = data.copy()  # otherwise the dataset is modified inplace
 
-    return output
+        assert (
+            data.anchor_year.size > 1
+        ), "Input data must have more than 1 anchor year to split."
+
+        folds = cv.split(data.anchor_year)
+
+        fold_data = np.empty(
+            (cv.get_n_splits(data.anchor_year.size), data.anchor_year.size), dtype="<U6"
+        )
+
+        for i, (train_indices, test_indices) in enumerate(folds):
+            fold_data[i, :] = "skip"
+            fold_data[i, train_indices] = "train"
+            fold_data[i, test_indices] = "test"
+
+        data.expand_dims("fold")
+        data["fold"] = np.arange(fold_data.shape[0])
+        data["traintest"] = (["fold", "anchor_year"], fold_data)
+        data = data.set_coords("traintest")
+
+    else:
+        # split the anchor years
+        anchor_years = np.unique(data["anchor_year"])
+        assert (
+            anchor_years.size > 1
+        ), "Input data must have more than 1 anchor year to split."
+
+        folds = cv.split(anchor_years)
+
+        # label every row in the dataframe
+        for i, (train_indices, test_indices) in enumerate(folds):
+            # create column fold_# filled with "skip" in dataframe
+            col_name = f"fold_{i}"
+            data[col_name] = ""
+
+            # create dictionary with anchor_years and train/test
+            indices = np.empty(anchor_years.size, dtype="<U6")
+            indices[:] = "skip"
+            indices[train_indices] = "train"
+            indices[test_indices] = "test"
+            train_test_dict = dict(zip(anchor_years, indices))
+
+            # map anchor_year row values with train/test
+            data[col_name] = data["anchor_year"].map(train_test_dict)
+
+    return data
 
 
-def random_strat():
-    """random_strat cross-validator."""
+def leave_n_out():
+    """cross validator that leaves out n anchor years, instead of cv
+    defined on number of splits
+    """
+    # yet to be implemented
     raise NotImplementedError
 
 
-def timeseries_split():
-    """timeseries_split cross-validator."""
-    raise NotImplementedError
-
-
-def iter_traintest(traintest_group, data, dim_function = None):
+def iter_traintest(traintest_group, data, dim_function=None):
     """Iterators for train/test data and executor of dim reudction.
 
     This iterator will loop through the training data based on the given
@@ -61,14 +103,3 @@ def iter_traintest(traintest_group, data, dim_function = None):
     #  the train/test split group (traintest_group)
     # To do: concatenate output from each iteration.
     raise NotImplementedError
-
-
-ALL_METHODS = {
-    "kfold": kfold,
-    "random_strat": random_strat,
-    "timeseries_split": timeseries_split,
-    # "leave_n_out": leave_n_out,
-    # "random": random,
-    # "repeated_kfold": repeated_kfold,
-    # "split": split,
-}
