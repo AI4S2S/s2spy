@@ -19,31 +19,32 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
         cv (Splitter Class): Initialized splitter class, much have a `fit(X)` method
             which splits up `X` into multiple folds of train/test data.
         data (xr.Dataset or pd.DataFrame): Dataset with `anchor_year` as dimension or
-            DataFrame with `anchor_year` as column. E.g. data resampled using 
+            DataFrame with `anchor_year` as column. E.g. data resampled using
             `s2spy.time.AdventCalendar`'s `resample` method.
-            
+
     Returns:
-        xr.Dataset: The input dataset with extra coordinates added for each fold,
-            containing the labels 'train', 'test', and possibly 'skip'.
-        pd.DataFrame: The input dataframe with extra columns added for each fold,
+        The input dataset with extra coordinates or columns added for each fold,
             containing the labels 'train', 'test', and possibly 'skip'.
     """
+    assert isinstance(
+        data, (xr.Dataset, pd.DataFrame)
+    ), "Input data should be of type xr.Dataset or pd.DataFrame"
 
     if isinstance(data, xr.Dataset):
         folds = cv.split(data.anchor_year)
 
         for i, (train_indices, test_indices) in enumerate(folds):
             fold_name = f"fold_{i}"
-            labels = np.empty(data.anchor_year.size, dtype='<U6')
+            labels = np.empty(data.anchor_year.size, dtype="<U6")
             labels[:] = "skip"
             labels[train_indices] = "train"
             labels[test_indices] = "test"
-            data[fold_name] = ('anchor_year', labels)
+            data[fold_name] = ("anchor_year", labels)
             data = data.set_coords(fold_name)
 
-    elif isinstance(data, pd.DataFrame):
+    else:
         # split the anchor years
-        anchor_years = np.unique(data['anchor_year'])
+        anchor_years = np.unique(data["anchor_year"])
         folds = cv.split(anchor_years)
 
         # label every row in the dataframe
@@ -53,28 +54,27 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
             data[col_name] = ""
 
             # create dictionary with anchor_years and train/test
-            indices = np.empty(anchor_years.size, dtype='<U6')
+            indices = np.empty(anchor_years.size, dtype="<U6")
             indices[:] = "skip"
             indices[train_indices] = "train"
             indices[test_indices] = "test"
             train_test_dict = dict(zip(anchor_years, indices))
 
-            # map anchor_year row values with train/test 
-            data[col_name] = data['anchor_year'].map(train_test_dict)
-
-    else:
-        raise ValueError('Invalid input data')
+            # map anchor_year row values with train/test
+            data[col_name] = data["anchor_year"].map(train_test_dict)
 
     return data
 
+
 def leave_n_out():
-    '''cross validator that leaves out n anchor years, instead of cv 
+    """cross validator that leaves out n anchor years, instead of cv
     defined on number of splits
-    '''
+    """
     # yet to be implemented
     raise NotImplementedError
 
-def iter_traintest(traintest_group, data, dim_function = None):
+
+def iter_traintest(traintest_group, data, dim_function=None):
     """Iterators for train/test data and executor of dim reudction.
 
     This iterator will loop through the training data based on the given
