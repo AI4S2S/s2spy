@@ -49,7 +49,7 @@ class TestMapAnalysis:
         da = dummy_dataarray.rename({"time": "i_interval"})
         ts = dummy_timeseries.rename({"time": "i_interval"})
         c_val, p_val = _map_analysis.correlation(
-            da, ts, time_dim="i_interval"
+            da, ts, corr_dim="i_interval"
         )
 
         np.testing.assert_equal(c_val.values, 1)

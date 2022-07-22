@@ -25,28 +25,28 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
     return _pearsonr(x, y)
 
 
-def correlation(field: xr.DataArray, target: xr.DataArray, time_dim: str = "time"):
+def correlation(field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"):
     """Calculate correlation maps.
 
     Args:
-        field: Spatial data with a time dimension named `time_dim`, for which each
+        field: Spatial data with a dimension named `corr_dim`, over which each
             location should have the Pearson correlation coefficient calculated with the
-            target timeseries.
-        target: Timeseries which has to be correlated with the spatial data. If it is
-            a DataArray, it requires a dimension named `time_dim`
+            target data.
+        target: Data which has to be correlated with the spatial data. Requires a
+            dimension named `corr_dim`.
 
     Returns:
         r_coefficient: DataArray filled with the correlation coefficient for each
-            non-time coordinate.
+            non-`corr_dim` coordinate.
         p_value: DataArray filled with the two-tailed p-values for each computed
             correlation coefficient.
     """
     assert (
-        time_dim in target.dims
-    ), f"input target does not have contain the '{time_dim}' dimension"
+        corr_dim in target.dims
+    ), f"input target does not have contain the '{corr_dim}' dimension"
     assert (
-        time_dim in field.dims
-    ), f"input field does not have contain the '{time_dim}' dimension"
+        corr_dim in field.dims
+    ), f"input field does not have contain the '{corr_dim}' dimension"
     assert np.all(
         [dim in field.dims for dim in target.dims]
     ), "Field and target dims do not match"
@@ -55,7 +55,7 @@ def correlation(field: xr.DataArray, target: xr.DataArray, time_dim: str = "time
         _pearsonr_nan,
         field,
         target,
-        input_core_dims=[[time_dim], [time_dim]],
+        input_core_dims=[[corr_dim], [corr_dim]],
         vectorize=True,
         output_core_dims=[[], []],
     )
