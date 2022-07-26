@@ -8,6 +8,10 @@ import xarray as xr
 from sklearn.cluster import DBSCAN
 
 
+radius_earth_km = 6371
+surface_area_earth_km2 = 5.1e8
+
+
 def weighted_groupby_mean(ds, groupby: str, weight: str):
     """Apply a weighted mean after a groupby call. xarray does not currently support
     this functionality.
@@ -23,8 +27,10 @@ def weighted_groupby_mean(ds, groupby: str, weight: str):
             based on `ds[weight]`.
     """
     groups = ds.groupby(groupby)
-    means = [g.weighted(g[weight]).mean(dim=['stacked_latitude_longitude'])
-             for _, g in groups]
+    means = [
+        g.weighted(g[weight]).mean(dim=["stacked_latitude_longitude"])
+        for _, g in groups
+    ]
     return xr.concat(means, dim=groupby)
 
 
@@ -41,9 +47,9 @@ def spherical_area(latitude, resolution):
     """
     lat = np.radians(latitude)
     resolution = np.radians(resolution)
-    h = np.sin(lat + resolution/2) - np.sin(lat - resolution/2)
-    spherical_area = h * resolution / np.pi*4
-    return spherical_area * 5.1e8
+    h = np.sin(lat + resolution / 2) - np.sin(lat - resolution / 2)
+    spherical_area = h * resolution / np.pi * 4
+    return spherical_area * surface_area_earth_km2
 
 
 def dbscan(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
@@ -66,27 +72,27 @@ def dbscan(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
             for areas with a negative correlation coefficient and positive for areas
             with a positive correlation coefficient.
     """
-    ds = ds.stack(coord=['latitude', 'longitude'])
-    p_vals = ds['p_val'].values
-    corr = ds['corr'].values
-    coords = np.asarray(list(ds['coord'].values)) # turn array of tuples to 2d-array
+    ds = ds.stack(coord=["latitude", "longitude"])
+    coords = np.asarray(list(ds["coord"].values))  # turn array of tuples to 2d-array
 
-    alpha_mask = p_vals < alpha
+    labels = np.zeros(len(coords))  # Prepare labels, default value is 0 (not in cluster)
 
-    labels = np.zeros(ds.coord.size) # prepare labels
+    for sign, sign_mask in zip([1, -1], [ds["corr"] >= 0, ds["corr"] < 0]):
+        mask = np.logical_and(ds["p_val"] < alpha, sign_mask)
 
-    for sign, sign_mask in zip([1, -1], [corr>=0, corr<0]):
-        mask = np.logical_and(alpha_mask, sign_mask)
-
-        if np.sum(mask) > 0:
-            masked_coords = coords[mask]
-            db = DBSCAN(eps=eps_km/6371, min_samples=1, algorithm='auto',
-                        metric='haversine').fit(np.radians(masked_coords))
+        if np.sum(mask) > 0:  # Check if the mask contains any points to cluster
+            masked_coords = np.radians(coords[mask])
+            db = DBSCAN(
+                eps=eps_km / radius_earth_km,
+                min_samples=1,
+                algorithm="auto",
+                metric="haversine",
+            ).fit(masked_coords)
 
             labels[mask] = sign * (db.labels_ + 1)
 
-    ds['cluster_labels'] = ('coord', labels)
-    return ds.unstack('coord')
+    ds["cluster_labels"] = ("coord", labels)
+    return ds.unstack("coord")
 
 
 def cluster(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
@@ -114,6 +120,6 @@ def cluster(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
     """
     ds = dbscan(ds, alpha=alpha, eps_km=eps_km)
     resolution = np.abs(ds.longitude.values[1] - ds.longitude.values[0])
-    ds['area'] = spherical_area(ds.latitude, resolution=resolution)
-    ds = weighted_groupby_mean(ds, groupby='cluster_labels', weight='area')
+    ds["area"] = spherical_area(ds.latitude, resolution=resolution)
+    ds = weighted_groupby_mean(ds, groupby="cluster_labels", weight="area")
     return ds
