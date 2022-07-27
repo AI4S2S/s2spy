@@ -14,7 +14,7 @@ class TestMapAnalysis:
     def dummy_dataarray(self):
         time = pd.date_range("20161001", "20211001", freq="60d")
 
-        da = xr.DataArray(
+        return xr.DataArray(
             np.tile(np.arange(len(time)), (2, 2, 1)),
             dims=["lat", "lon", "time"],
             coords={
@@ -23,7 +23,6 @@ class TestMapAnalysis:
                 "lon": np.arange(0, 2),
             },
         )
-        return da
 
     @pytest.fixture(autouse=True)
     def dummy_timeseries(self, dummy_dataarray):
@@ -48,9 +47,7 @@ class TestMapAnalysis:
     def test_correlation_dim_name(self, dummy_dataarray, dummy_timeseries):
         da = dummy_dataarray.rename({"time": "i_interval"})
         ts = dummy_timeseries.rename({"time": "i_interval"})
-        c_val, p_val = _map_analysis.correlation(
-            da, ts, corr_dim="i_interval"
-        )
+        c_val, p_val = _map_analysis.correlation(da, ts, corr_dim="i_interval")
 
         np.testing.assert_equal(c_val.values, 1)
         np.testing.assert_equal(p_val.values, 0)
@@ -66,7 +63,7 @@ class TestMapAnalysis:
             _map_analysis.correlation(da, dummy_timeseries)
 
     def test_correlation_wrong_target_dims(self, dummy_dataarray):
-        ts = dummy_dataarray.rename({'lat': 'latitude'})
+        ts = dummy_dataarray.rename({"lat": "latitude"})
         with pytest.raises(AssertionError):
             _map_analysis.correlation(dummy_dataarray, ts)
 
