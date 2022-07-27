@@ -10,7 +10,9 @@ from scipy.stats import pearsonr as _pearsonr
 
 def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
     """NaN friendly implementation of scipy.stats.pearsonr. Calculates the correlation
-    coefficient between two arrays, as well as the p-value of this correlation.
+    coefficient between two arrays, as well as the p-value of this correlation. However,
+    instead of raising an error when encountering NaN values, this function will return
+    both the correlation coefficient and the p-value as NaN.
 
     Args:
         x: 1-D array
@@ -25,7 +27,9 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
     return _pearsonr(x, y)
 
 
-def correlation(field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"):
+def correlation(
+    field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"
+) -> tuple[xr.DataArray, xr.DataArray]:
     """Calculate correlation maps.
 
     Args:
@@ -34,6 +38,7 @@ def correlation(field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time
             target data.
         target: Data which has to be correlated with the spatial data. Requires a
             dimension named `corr_dim`.
+        corr_dim: Dimension over which the correlation coefficient should be calculated.
 
     Returns:
         r_coefficient: DataArray filled with the correlation coefficient for each

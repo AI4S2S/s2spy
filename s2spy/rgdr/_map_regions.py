@@ -6,15 +6,16 @@ between spatial fields and target timeseries.
 import numpy as np
 import xarray as xr
 from sklearn.cluster import DBSCAN
+from . import _map_utils
 
 
 radius_earth_km = 6371
-surface_area_earth_km2 = 5.1e8
 
 
 def weighted_groupby_mean(ds, groupby: str, weight: str):
     """Apply a weighted mean after a groupby call. xarray does not currently support
-    this functionality.
+    combining `weighted` and `groupby`. An open PR adds supports for this functionality
+    (https://github.com/pydata/xarray/pull/5480/files), but this branch was never merged.
 
     Args:
         ds (xr.Dataset): Dataset containing the coordinates or variables specified in
@@ -34,25 +35,9 @@ def weighted_groupby_mean(ds, groupby: str, weight: str):
     return xr.concat(means, dim=groupby)
 
 
-def spherical_area(latitude, resolution):
-    """Approximate the area of a square grid cell on a spherical (!) earth.
-    Returns the area in square kilometers of earth surface.
-
-    Args:
-        latitude (float): Latitude at the center of the grid cell (deg)
-        resolution (float): Grid resolution (deg)
-
-    Returns:
-        float: Area of the grid cell (km^2)
-    """
-    lat = np.radians(latitude)
-    resolution = np.radians(resolution)
-    h = np.sin(lat + resolution / 2) - np.sin(lat - resolution / 2)
-    spherical_area = h * resolution / np.pi * 4
-    return spherical_area * surface_area_earth_km2
-
-
-def dbscan(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
+def dbscan(
+    ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600, min_area_km2: float = None
+) -> xr.Dataset:
     """Determines the clusters based on sklearn's DBSCAN implementation. Alpha determines
     the mask based on the minimum p_value. Grouping can be adjusted using the `eps_km`
     kwarg.
@@ -75,7 +60,8 @@ def dbscan(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
     ds = ds.stack(coord=["latitude", "longitude"])
     coords = np.asarray(list(ds["coord"].values))  # turn array of tuples to 2d-array
 
-    labels = np.zeros(len(coords))  # Prepare labels, default value is 0 (not in cluster)
+    # Prepare labels, default value is 0 (not in cluster)
+    labels = np.zeros(len(coords))
 
     for sign, sign_mask in zip([1, -1], [ds["corr"] >= 0, ds["corr"] < 0]):
         mask = np.logical_and(ds["p_val"] < alpha, sign_mask)
@@ -92,10 +78,21 @@ def dbscan(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
             labels[mask] = sign * (db.labels_ + 1)
 
     ds["cluster_labels"] = ("coord", labels)
-    return ds.unstack("coord")
+
+    ds = ds.unstack(("coord"))
+
+    resolution = np.abs(ds.longitude.values[1] - ds.longitude.values[0])
+    ds["area"] = _map_utils.spherical_area(ds.latitude, resolution=resolution)
+
+    if min_area_km2:
+        ds = _map_utils.remove_small_area_clusters(ds, min_area_km2)
+
+    return ds
 
 
-def cluster(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
+def cluster(
+    ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600, min_area_km2: float = None
+) -> xr.Dataset:
     """Perform DBSCAN clustering on a prepared Dataset, and then group the data by their
     determined clusters, taking the weighted mean. The weight is based on the area of
     each grid cell.
@@ -118,8 +115,8 @@ def cluster(ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600):
             DBSCAN parameter to choose appropriately.
 
     """
-    ds = dbscan(ds, alpha=alpha, eps_km=eps_km)
-    resolution = np.abs(ds.longitude.values[1] - ds.longitude.values[0])
-    ds["area"] = spherical_area(ds.latitude, resolution=resolution)
+    ds = dbscan(ds, alpha=alpha, eps_km=eps_km, min_area_km2=min_area_km2)
+
     ds = weighted_groupby_mean(ds, groupby="cluster_labels", weight="area")
+
     return ds
