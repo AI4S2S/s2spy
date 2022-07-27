@@ -48,7 +48,6 @@ Example:
     dtype: interval
 
 """
-import calendar
 import warnings
 from typing import Optional
 from typing import Tuple
@@ -62,18 +61,84 @@ from s2spy import traintest
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
-month_mapping_dict = {v.upper(): k for k, v in enumerate(calendar.month_abbr)} | {
-    v.upper(): k for k, v in enumerate(calendar.month_name)
-}
 
+class AdventCalendar:
+    """Countdown time to anticipated anchor date or period of interest."""
 
-class BaseCalendar:
-    def __init__(self):
-        self._n_intervals = None
-        self._n_targets = None
+    def __init__(
+        self, anchor_date: Tuple[int, int] = (11, 30), freq: str = "7d",
+        n_targets: int = 1, max_lag: int = None
+    ) -> None:
+        """Instantiate a basic calendar with minimal configuration.
+
+        Set up the calendar with given freq ending exactly on the anchor date.
+        The index will extend back in time as many periods as fit within the
+        cycle time of one year.
+
+        Args:
+            anchor_date: Tuple of the form (month, day). Effectively the origin
+                of the calendar. It will countdown until this date.
+            freq: Frequency of the calendar.
+            n_targets: integer specifying the number of target intervals in a period.
+            max_lag: Maximum number of lag periods after the target period. If `None`,
+                the maximum lag will be determined by how many fit in each anchor year.
+                If a maximum lag is provided, the intervals can either only cover part
+                of the year, or extend over multiple years. In case of a large max_lag
+                number where the intervals extend over multiple years, anchor years will
+                be skipped to avoid overlapping intervals.
+
+        Example:
+            Instantiate a calendar counting down the weeks until new-year's
+            eve.
+
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
+            >>> calendar
+            AdventCalendar(month=12, day=31, freq=7d)
+            >>> print(calendar)
+            "52 periods of 7d leading up to 12/31."
+
+        """
+        self.month = anchor_date[0]
+        self.day = anchor_date[1]
+        self.freq = freq
+        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        self._n_targets = n_targets
         self._traintest = None
         self._intervals = None
-        self._skip_year = None
+
+        periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
+        # Determine the amount of intervals, and number of anchor years to skip
+        if max_lag:
+            self._n_intervals = max_lag + self._n_targets
+            self._skip_years = np.ceil(self._n_intervals /
+                                       periods_per_year).astype(int) - 1
+        else:
+            self._n_intervals = int(periods_per_year)
+            self._skip_years = 0
+
+    def _map_year(self, year: int) -> pd.Series:
+        """Internal routine to return a concrete IntervalIndex for the given year.
+
+        Since the AdventCalendar represents a periodic event, it is first
+        instantiated without a specific year. This method adds a specific year
+        to the calendar and returns an intervalindex, applying the
+        AdvenctCalendar to this specific year.
+
+        Args:
+            year: The year for which the AdventCalendar will be realized
+
+        Returns:
+            Pandas Series filled with Intervals of the calendar's frequency, counting
+            backwards from the calendar's anchor_date.
+        """
+        anchor = pd.Timestamp(year, self.month, self.day)
+        intervals = pd.interval_range(
+            end=anchor, periods=self._n_intervals, freq=self.freq
+        )
+        intervals = pd.Series(intervals[::-1], name=str(year))
+        intervals.index.name = "i_interval"
+        return intervals
 
     def map_years(self, start: int = 1979, end: int = 2020) -> pd.DataFrame:
         """Return a periodic IntervalIndex for the given years.
@@ -123,8 +188,7 @@ class BaseCalendar:
         return self
 
     def map_to_data(
-        self,
-        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
     ) -> Union[pd.DataFrame, xr.Dataset]:
         """Map the calendar to input data period.
 
@@ -283,13 +347,13 @@ class BaseCalendar:
         )
         # Also make the intervals themselves a coordinate so they are not lost when
         #   grabbing a variable from the resampled dataset.
-        bins = bins.set_coords("interval")
+        bins = bins.set_coords('interval')
 
         # Reshaping the dataset to have the anchor_year and i_interval as dimensions.
         #   set anchor_year or i_interval as the main dimension
         #   (otherwise index is kept as dimension)
-        bins = bins.swap_dims({"index": "anchor_year"})
-        bins = bins.set_index(ai=("anchor_year", "i_interval"))
+        bins = bins.swap_dims({'index': 'anchor_year'})
+        bins = bins.set_index(ai=('anchor_year', 'i_interval'))
         bins = bins.unstack()
         bins = bins.transpose("anchor_year", "i_interval", ...)
 
@@ -382,8 +446,7 @@ class BaseCalendar:
 
     def _label_targets(self, intervals):
         return intervals.rename(
-            columns={i: f"(target) {i}" for i in range(self._n_targets)}
-        )
+            columns={i: f'(target) {i}' for i in range(self._n_targets)})
 
     def __str__(self):
         return f"{self._n_intervals} periods of {self.freq} leading up to {self.month}/{self.day}."
@@ -412,10 +475,8 @@ class BaseCalendar:
     def flat(self):
         if self._intervals is not None:
             return self._intervals.stack()
-        raise ValueError(
-            "The calendar is not initialized with intervals yet."
-            "use `map_years` or `map_to_data` methods to set it up."
-        )
+        raise ValueError("The calendar is not initialized with intervals yet."
+                         "use `map_years` or `map_to_data` methods to set it up.")
 
     def discard(self, max_lag):  # or "set_max_lag"
         """Only keep indices up to the given max lag."""
@@ -444,15 +505,14 @@ class BaseCalendar:
                 given inputs.
         """
         if isinstance(input_data, PandasData):
-            input_data["target"] = np.zeros(input_data.index.size, dtype=bool)
-            input_data["target"] = input_data["target"].where(
-                input_data["i_interval"] >= self._n_targets, other=True
-            )
+            input_data['target'] = np.zeros(input_data.index.size, dtype=bool)
+            input_data['target'] = input_data['target'].where(
+               input_data['i_interval'] >= self._n_targets, other=True)
 
         else:
-            # input data is xr.Dataset
-            target = input_data["i_interval"] < self._n_targets
-            input_data = input_data.assign_coords(coords={"target": target})
+            #input data is xr.Dataset
+            target = input_data['i_interval'] < self._n_targets
+            input_data = input_data.assign_coords(coords={'target': target})
 
         return input_data
 
@@ -523,123 +583,3 @@ class BaseCalendar:
             raise ValueError("The given method is not supported by `s2spy.traintest`.")
 
         self._traintest = func(self._intervals, **method_kwargs)
-
-
-class AdventCalendar(BaseCalendar):
-    """Countdown time to anticipated anchor date or period of interest."""
-
-    def __init__(
-        self,
-        anchor_date: Tuple[int, int] = (11, 30),
-        freq: str = "7d",
-        n_targets: int = 1,
-        max_lag: int = None,
-    ) -> None:
-        """Instantiate a basic calendar with minimal configuration.
-
-        Set up the calendar with given freq ending exactly on the anchor date.
-        The index will extend back in time as many periods as fit within the
-        cycle time of one year.
-
-        Args:
-            anchor_date: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date.
-            freq: Frequency of the calendar.
-            n_targets: integer specifying the number of target intervals in a period.
-            max_lag: Maximum number of lag periods after the target period. If `None`,
-                the maximum lag will be determined by how many fit in each anchor year.
-                If a maximum lag is provided, the intervals can either only cover part
-                of the year, or extend over multiple years. In case of a large max_lag
-                number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
-
-        Example:
-            Instantiate a calendar counting down the weeks until new-year's
-            eve.
-
-            >>> import s2spy.time
-            >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
-            >>> calendar
-            AdventCalendar(month=12, day=31, freq=7d)
-            >>> print(calendar)
-            "52 periods of 7d leading up to 12/31."
-
-        """
-        self.month = anchor_date[0]
-        self.day = anchor_date[1]
-        self.freq = freq
-        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
-        self._n_targets = n_targets
-        self._traintest = None
-        self._intervals = None
-
-        periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
-        # Determine the amount of intervals, and number of anchor years to skip
-        if max_lag:
-            self._n_intervals = max_lag + self._n_targets
-            self._skip_years = (
-                np.ceil(self._n_intervals / periods_per_year).astype(int) - 1
-            )
-        else:
-            self._n_intervals = int(periods_per_year)
-            self._skip_years = 0
-
-    def _map_year(self, year: int) -> pd.Series:
-        """Internal routine to return a concrete IntervalIndex for the given year.
-
-        Since the AdventCalendar represents a periodic event, it is first
-        instantiated without a specific year. This method adds a specific year
-        to the calendar and returns an intervalindex, applying the
-        AdvenctCalendar to this specific year.
-
-        Args:
-            year: The year for which the AdventCalendar will be realized
-
-        Returns:
-            Pandas Series filled with Intervals of the calendar's frequency, counting
-            backwards from the calendar's anchor_date.
-        """
-        anchor = pd.Timestamp(year, self.month, self.day)
-        intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq
-        )
-        intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index.name = "i_interval"
-        return intervals
-
-
-class MonthlyCalendar(BaseCalendar):
-    def __init__(self, anchor_month: str, freq: str = "1M", n_targets: int = 1) -> None:
-
-        self.month = month_mapping_dict[anchor_month.upper()]
-        self.freq = freq
-        self._n_intervals = 12 // int(freq.replace("M", ""))
-        self._n_targets = n_targets
-        self._traintest = None
-        self._intervals = None
-        self._skip_years = 0
-
-    def _map_year(self, year: int) -> pd.Series:
-        """Internal routine to return a concrete IntervalIndex for the given year.
-
-        Since the AdventCalendar represents a periodic event, it is first
-        instantiated without a specific year. This method adds a specific year
-        to the calendar and returns an intervalindex, applying the
-        AdvenctCalendar to this specific year.
-
-        Args:
-            year: The year for which the AdventCalendar will be realized
-
-        Returns:
-            Pandas Series filled with Intervals of the calendar's frequency, counting
-            backwards from the calendar's anchor_date.
-        """
-        anchor = pd.Timestamp(year, self.month, 1) + pd.tseries.offsets.MonthEnd(0)
-
-        intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq
-        )
-
-        intervals = pd.Series(intervals[::-1], name=str(year))
-        intervals.index.name = "i_interval"
-        return intervals
