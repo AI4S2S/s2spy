@@ -3,6 +3,7 @@
 A toolbox for spatial-temporal data analysis, including regression,
 correlation, auto-correlation and relevant utilities functions.
 """
+from typing import Tuple
 import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
@@ -29,7 +30,7 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray):
 
 def correlation(
     field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"
-) -> tuple[xr.DataArray, xr.DataArray]:
+) -> Tuple[xr.DataArray, xr.DataArray]:
     """Calculate correlation maps.
 
     Args:
