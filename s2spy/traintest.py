@@ -2,13 +2,22 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
+from typing import Optional
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+from sklearn.model_selection._split import BaseCrossValidator
 
 
-def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
+SplitterClass = BaseCrossValidator
+
+
+def split_groups(
+    splitter: SplitterClass,
+    data: Union[xr.Dataset, pd.DataFrame],
+    key: Optional[str] = "anchor_year",
+):
     """Splits calendar resampled data into train/test groups, based on the anchor year.
     As splitter, a Splitter Class such as sklearn's KFold can be passed.
 
@@ -16,7 +25,7 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
     https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
 
     Args:
-        cv (Splitter Class): Initialized splitter class, much have a `fit(X)` method
+        splitter (SplitterClass): Initialized splitter class, much have a `fit(X)` method
             which splits up `X` into multiple folds of train/test data.
         data (xr.Dataset or pd.DataFrame): Dataset with `anchor_year` as dimension or
             DataFrame with `anchor_year` as column. E.g. data resampled using
@@ -26,80 +35,66 @@ def fold_by_anchor(cv, data: Union[xr.Dataset, pd.DataFrame]):
         The input dataset with extra coordinates or columns added for each fold,
             containing the labels 'train', 'test', and possibly 'skip'.
     """
-    assert isinstance(
-        data, (xr.Dataset, pd.DataFrame)
-    ), "Input data should be of type xr.Dataset or pd.DataFrame"
-
     if isinstance(data, xr.Dataset):
-        data = data.copy()  # otherwise the dataset is modified inplace
+        return _split_dataset(splitter, data, key)
+    if isinstance(data, pd.DataFrame):
+        return _split_dataframe(splitter, data, key)
+    raise ValueError("Input data should be of type xr.Dataset or pd.DataFrame")
 
-        assert (
-            data.anchor_year.size > 1
-        ), "Input data must have more than 1 anchor year to split."
 
-        folds = cv.split(data.anchor_year)
+def _split_dataset(splitter, data, key):
+    """Splitter implementation for xarray's Dataset."""
+    if key not in data.dims:
+        raise ValueError(f"'{key}' is not a dimension in the Dataset.")
+    if data[key].size <= 1:
+        raise ValueError(f"Input data must have more than 1 unique {key} to split data.")
 
-        fold_data = np.empty(
-            (cv.get_n_splits(data.anchor_year.size), data.anchor_year.size), dtype="<U6"
-        )
+    data = data.copy()  # otherwise the dataset is modified inplace
 
-        for i, (train_indices, test_indices) in enumerate(folds):
-            fold_data[i, :] = "skip"
-            fold_data[i, train_indices] = "train"
-            fold_data[i, test_indices] = "test"
+    splits = splitter.split(data[key])
 
-        data.expand_dims("fold")
-        data["fold"] = np.arange(fold_data.shape[0])
-        data["traintest"] = (["fold", "anchor_year"], fold_data)
-        data = data.set_coords("traintest")
+    split_data = np.empty(
+        (splitter.get_n_splits(data[key].size), data[key].size), dtype="<U6"
+    )
 
-    else:
-        # split the anchor years
-        anchor_years = np.unique(data["anchor_year"])
-        assert (
-            anchor_years.size > 1
-        ), "Input data must have more than 1 anchor year to split."
+    for i, (train_indices, test_indices) in enumerate(splits):
+        split_data[i, :] = "skip"
+        split_data[i, train_indices] = "train"
+        split_data[i, test_indices] = "test"
 
-        folds = cv.split(anchor_years)
-
-        # label every row in the dataframe
-        for i, (train_indices, test_indices) in enumerate(folds):
-            # create column fold_# filled with "skip" in dataframe
-            col_name = f"fold_{i}"
-            data[col_name] = ""
-
-            # create dictionary with anchor_years and train/test
-            indices = np.empty(anchor_years.size, dtype="<U6")
-            indices[:] = "skip"
-            indices[train_indices] = "train"
-            indices[test_indices] = "test"
-            train_test_dict = dict(zip(anchor_years, indices))
-
-            # map anchor_year row values with train/test
-            data[col_name] = data["anchor_year"].map(train_test_dict)
+    data.expand_dims("split")
+    data["split"] = np.arange(split_data.shape[0])
+    data["traintest"] = (["split", key], split_data)
+    data = data.set_coords("traintest")
 
     return data
 
 
-def leave_n_out():
-    """cross validator that leaves out n anchor years, instead of cv
-    defined on number of splits
-    """
-    # yet to be implemented
-    raise NotImplementedError
+def _split_dataframe(splitter, data, key):
+    """Splitter implementation for Pandas DataFrame."""
+    if key not in data.keys():
+        raise ValueError(f"'{key}' is not a key in the input DataFrame.")
 
+    group_labels = np.unique(data[key])
+    if group_labels.size <= 1:
+        raise ValueError(f"Input data must have more than 1 unique {key} to split data.")
 
-def iter_traintest(traintest_group, data, dim_function=None):
-    """Iterators for train/test data and executor of dim reudction.
+    splits = splitter.split(group_labels)
 
-    This iterator will loop through the training data based on the given
-    train/test split group and pass the data through the pre-defined
-    dimensionality reduction function.
-    """
-    # To do: check if dimensionality reduction function is given.
-    # To do: loop through training data (data) and call dimensionality
-    #  reduction function (dim_function) for each train data
-    # To do: extract training data from resampled dataset based on
-    #  the train/test split group (traintest_group)
-    # To do: concatenate output from each iteration.
-    raise NotImplementedError
+    # label every row in the dataframe
+    for i, (train_indices, test_indices) in enumerate(splits):
+        # create column split_# filled with "skip" in dataframe
+        col_name = f"split_{i}"
+        data[col_name] = ""
+
+        # create dictionary with anchor_years and train/test
+        indices = np.empty(group_labels.size, dtype="<U6")
+        indices[:] = "skip"
+        indices[train_indices] = "train"
+        indices[test_indices] = "test"
+        train_test_dict = dict(zip(group_labels, indices))
+
+        # map anchor_year row values with train/test
+        data[col_name] = data[key].map(train_test_dict)
+
+    return data

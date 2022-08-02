@@ -37,26 +37,29 @@ class TestTrainTest:
 
     def test_kfold_df(self, dummy_calendar, dummy_dataframe):
         df = dummy_calendar.resample(dummy_dataframe)
-        df = s2spy.traintest.fold_by_anchor(KFold(n_splits=2), df)
+        df = s2spy.traintest.split_groups(KFold(n_splits=2), df)
         expected_group = ["test", "test", "train", "train"]
-        assert np.array_equal(df["fold_0"].values, expected_group)
+        assert np.array_equal(df["split_0"].values, expected_group)
 
     def test_kfold_ds(self, dummy_calendar, dummy_dataset):
         ds = dummy_calendar.resample(dummy_dataset)
-        ds = s2spy.traintest.fold_by_anchor(KFold(n_splits=2), ds)
+        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds)
         expected_group = ["test", "train"]
         assert np.array_equal(ds.traintest.values[0], expected_group)
 
     def test_kfold_df_short(self, dummy_calendar, dummy_dataframe_short):
+        "Should fail as there is only a single anchor year: no splits can be made"
         df = dummy_calendar.resample(dummy_dataframe_short)
-        with pytest.raises(AssertionError):
-            df = s2spy.traintest.fold_by_anchor(KFold(n_splits=2), df)
+        with pytest.raises(ValueError):
+            df = s2spy.traintest.split_groups(KFold(n_splits=2), df)
 
     def test_kfold_ds_short(self, dummy_calendar, dummy_dataset_short):
+        "Should fail as there is only a single anchor year: no splits can be made"
         ds = dummy_calendar.resample(dummy_dataset_short)
-        with pytest.raises(AssertionError):
-            ds = s2spy.traintest.fold_by_anchor(KFold(n_splits=2), ds)
+        with pytest.raises(ValueError):
+            ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds)
 
-    def test_iter_traintest(self):
-        with pytest.raises(NotImplementedError):
-            s2spy.traintest.iter_traintest("traintest_group", "data")
+    def test_alternative_key(self, dummy_calendar, dummy_dataset):
+        ds = dummy_calendar.resample(dummy_dataset)
+        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds, key='i_interval')
+        assert 'i_interval' in ds.traintest.dims
