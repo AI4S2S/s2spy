@@ -32,9 +32,11 @@ def split_groups(
     Args:
         splitter (SplitterClass): Initialized splitter class, much have a `fit(X)` method
             which splits up `X` into multiple folds of train/test data.
-        data (xr.Dataset or pd.DataFrame): Dataset with `anchor_year` as dimension or
-            DataFrame with `anchor_year` as column. E.g. data resampled using
-            `s2spy.time.AdventCalendar`'s `resample` method.
+        data (xr.Dataset or pd.DataFrame): Dataset with `key` as dimension or
+            DataFrame with `key` as column. E.g. data resampled using
+            `s2spy.time.AdventCalendar`'s `resample` method will have the `key`
+            'anchor_year'.
+        key (str): Key by which to group the data. Defaults to 'anchor_year'
 
     Returns:
         The input dataset with extra coordinates or columns added for each fold,
@@ -92,14 +94,14 @@ def _split_dataframe(splitter, data, key):
         col_name = f"split_{i}"
         data[col_name] = ""
 
-        # create dictionary with anchor_years and train/test
+        # create dictionary with key and train/test labels
         indices = np.empty(group_labels.size, dtype="<U6")
         indices[:] = "skip"
         indices[train_indices] = "train"
         indices[test_indices] = "test"
         train_test_dict = dict(zip(group_labels, indices))
 
-        # map anchor_year row values with train/test
+        # map key row values with train/test
         data[col_name] = data[key].map(train_test_dict)
 
     return data
