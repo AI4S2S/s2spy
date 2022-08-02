@@ -18,11 +18,16 @@ def split_groups(
     data: Union[xr.Dataset, pd.DataFrame],
     key: Optional[str] = "anchor_year",
 ):
-    """Splits calendar resampled data into train/test groups, based on the anchor year.
+    """Splits calendar resampled data into train/test groups, based on the input key.
     As splitter, a Splitter Class such as sklearn's KFold can be passed.
 
     For an overview of the sklearn Splitter Classes see:
     https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
+
+    Similarly to sklearn's GroupKFold, `split_groups` makes sure to split the data into
+    non-overlapping groups. However, `split_groups` is designed to work directly with
+    panda's DataFrames and xarray's Datasets, and determines the groups based on an input
+    key.
 
     Args:
         splitter (SplitterClass): Initialized splitter class, much have a `fit(X)` method
