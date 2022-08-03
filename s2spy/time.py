@@ -194,7 +194,7 @@ class MonthlyCalendar(BaseCalendar):
             interval (pd.Interval): Pandas interval.
 
         Returns:
-            str: String in the form of '(2020-50, 2020-51]'
+            str: String in the form of '(2020 Jan, 2020 Feb]'
         """
         left = interval.left.strftime("%Y %b")
         right = interval.right.strftime("%Y %b")
