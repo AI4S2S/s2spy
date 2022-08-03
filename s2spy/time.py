@@ -49,17 +49,22 @@ Example:
 
 """
 import calendar as pycalendar
+import warnings
 from typing import Tuple
+from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+import _resample
 from ._base_calendar import BaseCalendar
+
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
-month_mapping_dict = {v.upper(): k for k, v in enumerate(pycalendar.month_abbr)} | {
-    v.upper(): k for k, v in enumerate(pycalendar.month_name)
+month_mapping_dict = {
+    **{v.upper(): k for k, v in enumerate(pycalendar.month_abbr)},
+    **{v.upper(): k for k, v in enumerate(pycalendar.month_name)},
 }
 
 
@@ -106,20 +111,20 @@ class AdventCalendar(BaseCalendar):
         self.month = anchor_date[0]
         self.day = anchor_date[1]
         self.freq = freq
-        self._n_intervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
-        self._n_targets = n_targets
+        self._nintervals = pd.Timedelta("365days") // pd.to_timedelta(freq)
+        self.n_targets = n_targets
         self._traintest = None
-        self._intervals = None
+        self.intervals = None
 
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(freq)
         # Determine the amount of intervals, and number of anchor years to skip
         if max_lag:
-            self._n_intervals = max_lag + self._n_targets
+            self._nintervals = max_lag + self.n_targets
             self._skip_years = (
-                np.ceil(self._n_intervals / periods_per_year).astype(int) - 1
+                np.ceil(self._nintervals / periods_per_year).astype(int) - 1
             )
         else:
-            self._n_intervals = int(periods_per_year)
+            self._nintervals = int(periods_per_year)
             self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
@@ -139,7 +144,7 @@ class AdventCalendar(BaseCalendar):
         """
         anchor = pd.Timestamp(year, self.month, self.day)
         intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq
+            end=anchor, periods=self._nintervals, freq=self.freq
         )
         intervals = pd.Series(intervals[::-1], name=str(year))
         intervals.index.name = "i_interval"
@@ -150,10 +155,10 @@ class MonthlyCalendar(BaseCalendar):
     def __init__(self, anchor_month: str, freq: str = "1M", n_targets: int = 1) -> None:
         self.month = month_mapping_dict[anchor_month.upper()]
         self.freq = freq
-        self._n_intervals = 12 // int(freq.replace("M", ""))
-        self._n_targets = n_targets
+        self._nintervals = 12 // int(freq.replace("M", ""))
+        self.n_targets = n_targets
         self._traintest = None
-        self._intervals = None
+        self.intervals = None
         self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
@@ -174,7 +179,7 @@ class MonthlyCalendar(BaseCalendar):
         anchor = pd.Timestamp(year, self.month, 1) + pd.tseries.offsets.MonthEnd(0)
 
         intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq
+            end=anchor, periods=self._nintervals, freq=self.freq
         )
 
         intervals = pd.Series(intervals[::-1], name=str(year))
@@ -191,15 +196,15 @@ class MonthlyCalendar(BaseCalendar):
         Returns:
             str: String in the form of '(2020-50, 2020-51]'
         """
-        left = interval.left.strftime('%Y %b')
-        right = interval.right.strftime('%Y %b')
+        left = interval.left.strftime("%Y %b")
+        right = interval.right.strftime("%Y %b")
         return f"({left}, {right}]"
 
     def __repr__(self):
-        if self._intervals is not None:
-            return repr(self._label_targets(
-                self._intervals.applymap(self._interval_as_month)
-                ))
+        if self.intervals is not None:
+            return repr(
+                self._label_targets(self.intervals.applymap(self._interval_as_month))
+            )
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -208,11 +213,11 @@ class MonthlyCalendar(BaseCalendar):
 
     def _repr_html_(self):
         """For jupyter notebook to load html compatiable version of __repr__."""
-        if self._intervals is not None:
+        if self.intervals is not None:
             # pylint: disable=protected-access
             return self._label_targets(
-                self._intervals.applymap(self._interval_as_month)
-                )._repr_html_()
+                self.intervals.applymap(self._interval_as_month)
+            )._repr_html_()
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -221,13 +226,18 @@ class MonthlyCalendar(BaseCalendar):
 
 
 class WeeklyCalendar(BaseCalendar):
-    def __init__(self, anchor_week: int, freq: str = "1W", n_targets: int = 1,) -> None:
+    def __init__(
+        self,
+        anchor_week: int,
+        freq: str = "1W",
+        n_targets: int = 1,
+    ) -> None:
         self.week = anchor_week
         self.freq = freq
-        self._n_intervals = 52 // int(freq.replace("W", ""))
-        self._n_targets = n_targets
+        self._nintervals = 52 // int(freq.replace("W", ""))
+        self.n_targets = n_targets
         self._traintest = None
-        self._intervals = None
+        self.intervals = None
         self._skip_years = 0
 
     def _map_year(self, year: int) -> pd.Series:
@@ -246,10 +256,10 @@ class WeeklyCalendar(BaseCalendar):
             backwards from the calendar's anchor_date.
         """
         # Day 0 of a weeknumber is sunday. Weeks start on monday (strftime functionality)
-        anchor = pd.to_datetime(f'{year}-{self.week}-0', format='%Y-%W-%w')
+        anchor = pd.to_datetime(f"{year}-{self.week}-0", format="%Y-%W-%w")
 
         intervals = pd.interval_range(
-            end=anchor, periods=self._n_intervals, freq=self.freq
+            end=anchor, periods=self._nintervals, freq=self.freq
         )
 
         intervals = pd.Series(intervals[::-1], name=str(year))
@@ -266,15 +276,15 @@ class WeeklyCalendar(BaseCalendar):
         Returns:
             str: String in the form of '(2020-50, 2020-51]'
         """
-        left = interval.left.strftime('%Y-%W')
-        right = interval.right.strftime('%Y-%W')
+        left = interval.left.strftime("%Y-%W")
+        right = interval.right.strftime("%Y-%W")
         return f"({left}, {right}]"
 
     def __repr__(self):
-        if self._intervals is not None:
-            return repr(self._label_targets(
-                self._intervals.applymap(self._interval_as_weeknr)
-                ))
+        if self.intervals is not None:
+            return repr(
+                self._label_targets(self.intervals.applymap(self._interval_as_weeknr))
+            )
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -283,13 +293,103 @@ class WeeklyCalendar(BaseCalendar):
 
     def _repr_html_(self):
         """For jupyter notebook to load html compatiable version of __repr__."""
-        if self._intervals is not None:
+        if self.intervals is not None:
             # pylint: disable=protected-access
             return self._label_targets(
-                self._intervals.applymap(self._interval_as_weeknr)
-                )._repr_html_()
+                self.intervals.applymap(self._interval_as_weeknr)
+            )._repr_html_()
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
         )
         return f"WeeklyCalendar({props})"
+
+
+def resample(
+    mapped_calendar,
+    input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset],
+) -> Union[pd.DataFrame, xr.Dataset]:
+    """Resample input data to the calendar frequency.
+
+    Pass a pandas Series/DataFrame with a datetime axis, or an
+    xarray DataArray/Dataset with a datetime coordinate called 'time'.
+    It will return the same object with the datetimes resampled onto
+    the Calendar's Index by binning the data into the Calendar's intervals
+    and calculating the mean of each bin.
+
+    Note: this function is intended for upscaling operations, which means
+    the calendar frequency is larger than the original frequency of input data (e.g.
+    `freq` is "7days" and the input is daily data). It supports downscaling
+    operations but the user need to be careful since the returned values may contain
+    "NaN".
+
+    Args:
+        input_data: Input data for resampling. For a Pandas object its index must be
+            either a pandas.DatetimeIndex. An xarray object requires a dimension
+            named 'time' containing datetime values.
+
+    Raises:
+        UserWarning: If the calendar frequency is smaller than the frequency of
+            input data
+
+    Returns:
+        Input data resampled based on the calendar frequency, similar data format as
+            given inputs.
+
+    Example:
+        Assuming the input data is pd.DataFrame containing random values with index
+        from 2021-11-11 to 2021-11-01 at daily frequency.
+
+        >>> import s2spy.time
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> cal = s2spy.time.AdventCalendar(freq='180d')
+        >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
+        >>> var = np.arange(len(time_index))
+        >>> input_data = pd.Series(var, index=time_index)
+        >>> bins = cal.resample(input_data)
+        >>> bins
+            anchor_year  i_interval                  interval  mean_data  target
+        0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
+        1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
+        2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
+        3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
+
+    """
+    if not mapped_calendar.intervals:
+        raise ValueError("Generate a calendar map before calling resample")
+
+    if not isinstance(input_data, PandasData + XArrayData):
+        raise ValueError("The input data is neither a pandas or xarray object")
+
+    if isinstance(input_data, PandasData):
+        if not isinstance(input_data.index, pd.DatetimeIndex):
+            raise ValueError("The input data does not have a datetime index.")
+
+        # raise a warning for upscaling
+        # target frequency must be larger than the (absolute) input frequency
+        if input_data.index.freq:
+            input_freq = input_data.index.freq
+            input_freq = input_freq if input_freq.n > 0 else -input_freq
+            if pd.Timedelta(mapped_calendar.freq) < input_freq:
+                warnings.warn(
+                    """Target frequency is smaller than the original frequency.
+                    The resampled data will contain NaN values, as there is no data
+                    available within all intervals."""
+                )
+
+        resampled_data = _resample.resample_pandas(mapped_calendar, input_data)
+
+    # Data must be xarray
+    else:
+        if "time" not in input_data.dims:
+            raise ValueError(
+                "The input DataArray/Dataset does not contain a `time` dimension"
+            )
+        if not xr.core.common.is_np_datetime_like(input_data["time"].dtype):
+            raise ValueError("The `time` dimension is not of a datetime format")
+
+        resampled_data = _resample.resample_xarray(mapped_calendar, input_data)
+
+    # mark target periods before returning the resampled data
+    return _resample.mark_target_period(mapped_calendar, resampled_data)
