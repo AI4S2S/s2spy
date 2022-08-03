@@ -55,7 +55,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-import _resample
+from . import _resample
 from ._base_calendar import BaseCalendar
 
 
@@ -203,7 +203,7 @@ class MonthlyCalendar(BaseCalendar):
     def __repr__(self):
         if self.intervals is not None:
             return repr(
-                self._label_targets(self.intervals.applymap(self._interval_as_month))
+                _resample.label_targets(self, self.intervals.applymap(self._interval_as_month))
             )
 
         props = ", ".join(
@@ -215,7 +215,8 @@ class MonthlyCalendar(BaseCalendar):
         """For jupyter notebook to load html compatiable version of __repr__."""
         if self.intervals is not None:
             # pylint: disable=protected-access
-            return self._label_targets(
+            return _resample.label_targets(
+                self,
                 self.intervals.applymap(self._interval_as_month)
             )._repr_html_()
 
@@ -283,7 +284,7 @@ class WeeklyCalendar(BaseCalendar):
     def __repr__(self):
         if self.intervals is not None:
             return repr(
-                self._label_targets(self.intervals.applymap(self._interval_as_weeknr))
+                _resample.label_targets(self, self.intervals.applymap(self._interval_as_weeknr))
             )
 
         props = ", ".join(
@@ -295,7 +296,8 @@ class WeeklyCalendar(BaseCalendar):
         """For jupyter notebook to load html compatiable version of __repr__."""
         if self.intervals is not None:
             # pylint: disable=protected-access
-            return self._label_targets(
+            return _resample.label_targets(
+                self,
                 self.intervals.applymap(self._interval_as_weeknr)
             )._repr_html_()
 
@@ -356,7 +358,7 @@ def resample(
         3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 
     """
-    if not mapped_calendar.intervals:
+    if mapped_calendar.intervals is None:
         raise ValueError("Generate a calendar map before calling resample")
 
     if not isinstance(input_data, PandasData + XArrayData):

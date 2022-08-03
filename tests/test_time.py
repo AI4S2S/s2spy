@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
-
+from s2spy.time import resample
 
 # pylint: disable=protected-access
 
@@ -29,7 +29,9 @@ class TestAdventCalendar:
 
     def test_repr(self):
         cal = AdventCalendar()
-        assert repr(cal) == "AdventCalendar(month=11, day=30, freq=7d)"
+        assert repr(cal) == (
+            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1, intervals=None)"
+        )
 
     def test_repr_with_intervals(self, dummy_calendar):
         expected_calendar_repr = ('i_interval (target) 0\n'
@@ -82,7 +84,7 @@ class TestMap:
                 ],
             ]
         )
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_years_single(self):
         cal = AdventCalendar(anchor_date=(12, 31), freq="180d")
@@ -93,7 +95,7 @@ class TestMap:
                 interval("2020-01-06", "2020-07-04"),
             ]
         ])
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_to_data_edge_case_last_year(self):
         # test the edge value when the input could not cover the anchor date
@@ -109,7 +111,7 @@ class TestMap:
                 interval("2019-10-21", "2020-04-18"),
             ]
         ])
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_to_data_single_year_coverage(self):
         # test the single year coverage
@@ -127,7 +129,7 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_to_data_edge_case_first_year(self):
         # test the edge value when the input covers the anchor date
@@ -151,7 +153,7 @@ class TestMap:
             ]
         )
 
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_to_data_value_error(self):
         # test when the input data is not sufficient to cover one year
@@ -177,7 +179,7 @@ class TestMap:
             ]
         ])
 
-        assert np.array_equal(cal._intervals, expected)
+        assert np.array_equal(cal.intervals, expected)
 
     def test_map_to_data_xarray_input(self):
         # test when the input data has reverse order time index
@@ -196,7 +198,7 @@ class TestMap:
             ]
         )
 
-        assert np.all(cal._intervals == expected)
+        assert np.all(cal.intervals == expected)
 
     # Note: add more test cases for different number of target periods!
     max_lag_edge_cases = [(73, ['2019'], 74),
@@ -208,8 +210,8 @@ class TestMap:
         calendar = AdventCalendar(anchor_date=(12, 31), freq="5d", max_lag=max_lag)
         calendar = calendar.map_years(2018, 2019)
 
-        np.testing.assert_array_equal(calendar._intervals.index.values, expected_index)
-        assert calendar._intervals.iloc[0].size == expected_size
+        np.testing.assert_array_equal(calendar.intervals.index.values, expected_index)
+        assert calendar.intervals.iloc[0].size == expected_size
 
 
 class TestResample:
@@ -249,69 +251,78 @@ class TestResample:
         dataset = dataframe.to_xarray().rename({'index': 'time'})
         return dataset, expected
 
+    @pytest.fixture(autouse=True)
+    def mapped_calendar(self, dummy_calendar, dummy_series):
+        series, _ = dummy_series
+        return dummy_calendar.map_to_data(series)
+
     # Tests start here:
-    def test_nontime_index(self, dummy_calendar, dummy_series):
+    def test_non_mapped_calendar(self, dummy_calendar):
+        with pytest.raises(ValueError):
+            resample(dummy_calendar, None)
+
+    def test_nontime_index(self, mapped_calendar, dummy_series):
         series, _ = dummy_series
         series = series.reset_index()
         with pytest.raises(ValueError):
-            dummy_calendar.resample(series)
+            resample(mapped_calendar, series)
 
-    def test_series(self, dummy_calendar, dummy_series):
+    def test_series(self, mapped_calendar, dummy_series):
         series, expected = dummy_series
-        resampled_data = dummy_calendar.resample(series)
+        resampled_data = resample(mapped_calendar, series)
         np.testing.assert_allclose(
             resampled_data['data1'].iloc[:2], expected)
 
-    def test_unnamed_series(self, dummy_calendar, dummy_series):
+    def test_unnamed_series(self, mapped_calendar, dummy_series):
         series, expected = dummy_series
         series.name = None
-        resampled_data = dummy_calendar.resample(series)
+        resampled_data = resample(mapped_calendar, series)
         np.testing.assert_allclose(
             resampled_data["mean_data"].iloc[:2], expected)
 
-    def test_dataframe(self, dummy_calendar, dummy_dataframe):
+    def test_dataframe(self, mapped_calendar, dummy_dataframe):
         dataframe, expected = dummy_dataframe
-        resampled_data = dummy_calendar.resample(dataframe)
+        resampled_data = resample(mapped_calendar, dataframe)
         np.testing.assert_allclose(resampled_data["data1"].iloc[:2], expected)
 
-    def test_dataarray(self, dummy_calendar, dummy_dataarray):
+    def test_dataarray(self, mapped_calendar, dummy_dataarray):
         dataarray, expected = dummy_dataarray
-        resampled_data = dummy_calendar.resample(dataarray)
+        resampled_data = resample(mapped_calendar, dataarray)
         testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
-    def test_dataset(self, dummy_calendar, dummy_dataset):
+    def test_dataset(self, mapped_calendar, dummy_dataset):
         dataset, expected = dummy_dataset
-        resampled_data = dummy_calendar.resample(dataset)
+        resampled_data = resample(mapped_calendar, dataset)
         testing_vals = resampled_data["data1"].isel(anchor_year=0)
         np.testing.assert_allclose(testing_vals, expected)
 
-    def test_missing_time_dim(self, dummy_calendar, dummy_dataset):
+    def test_missing_time_dim(self, mapped_calendar, dummy_dataset):
         dataset, _ = dummy_dataset
         with pytest.raises(ValueError):
-            dummy_calendar.resample(dataset.rename({'time': 'index'}))
+            resample(mapped_calendar, dataset.rename({'time': 'index'}))
 
-    def test_non_time_dim(self, dummy_calendar, dummy_dataset):
+    def test_non_time_dim(self, mapped_calendar, dummy_dataset):
         dataset, _ = dummy_dataset
         dataset['time'] = np.arange(dataset['time'].size)
         with pytest.raises(ValueError):
-            dummy_calendar.resample(dataset)
+            resample(mapped_calendar, dataset)
 
     def test_target_period_dataframe(self, dummy_calendar_targets, dummy_dataframe):
         df, _ = dummy_dataframe
-        resampled_data = dummy_calendar_targets.resample(df)
+        calendar = dummy_calendar_targets.map_to_data(df)
+        resampled_data = resample(calendar, df)
         expected = np.zeros(resampled_data.index.size, dtype=bool)
-        # pylint: disable=protected-access
-        for i in range(dummy_calendar_targets._n_targets):
+        for i in range(calendar.n_targets):
             expected[i::3] = True
         np.testing.assert_array_equal(resampled_data['target'].values, expected)
 
     def test_target_period_dataset(self, dummy_calendar_targets, dummy_dataset):
         ds, _ = dummy_dataset
-        resampled_data = dummy_calendar_targets.resample(ds)
+        calendar = dummy_calendar_targets.map_to_data(ds)
+        resampled_data = resample(calendar, ds)
         expected = np.zeros(3, dtype=bool)
-        # pylint: disable=protected-access
-        expected[:dummy_calendar_targets._n_targets] = True
+        expected[:dummy_calendar_targets.n_targets] = True
         np.testing.assert_array_equal(resampled_data['target'].values, expected)
 
 

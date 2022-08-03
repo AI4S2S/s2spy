@@ -7,6 +7,7 @@ from typing import Union
 import pandas as pd
 import xarray as xr
 from s2spy import traintest
+from . import _resample
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -125,7 +126,7 @@ class BaseCalendar:
 
     def __repr__(self):
         if self.intervals is not None:
-            return repr(self._label_targets(self.intervals))
+            return repr(_resample.label_targets(self, self.intervals))
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]
@@ -136,7 +137,7 @@ class BaseCalendar:
         """For jupyter notebook to load html compatiable version of __repr__."""
         if self.intervals is not None:
             # pylint: disable=protected-access
-            return self._label_targets(self.intervals)._repr_html_()
+            return _resample.label_targets(self, self.intervals)._repr_html_()
 
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]

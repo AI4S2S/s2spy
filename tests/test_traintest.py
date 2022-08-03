@@ -14,7 +14,7 @@ class TestTrainTest:
         return cal.map_years(2019, 2021)
 
     def test_kfold(self, dummy_calendar):
-        traintest_group = s2spy.traintest.kfold(dummy_calendar._intervals, n_splits=2) # pylint: disable=protected-access
+        traintest_group = s2spy.traintest.kfold(dummy_calendar.intervals, n_splits=2)
         # check the first fold
         expected_group = ['train', 'train', 'test']
         assert np.array_equal(traintest_group["fold_1"].values, expected_group)
