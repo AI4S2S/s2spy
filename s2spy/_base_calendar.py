@@ -27,8 +27,9 @@ class BaseCalendar(ABC):
         self.max_lag = max_lag
         self.anchor = anchor
         self.freq = freq
+
         self._first_timestamp = None
-        self._first_year = None
+        self._first_year = 0
 
     @abstractmethod
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
@@ -99,7 +100,7 @@ class BaseCalendar(ABC):
             else 0
         )
 
-    def map_years(self, start: int = 1979, end: int = 2020) -> None:
+    def map_years(self, start: int = 1979, end: int = 2020):
         """Adds a start and end year mapping to the calendar.
 
         If the start and end years are the same, the intervals for only that single
@@ -123,7 +124,7 @@ class BaseCalendar(ABC):
     def map_to_data(
         self,
         input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
-    ) -> None:
+    ):
         """Map the calendar to input data period.
 
         Stores the first and last intervals of the input data to the calendar, so that
@@ -147,9 +148,9 @@ class BaseCalendar(ABC):
             self._first_timestamp = pd.Timestamp(input_data.time.min().values)
             self._last_timestamp = pd.Timestamp(input_data.time.max().values)
 
-        # Set the years to None
-        self._first_year = None
-        self._last_year = None
+        # Set the years to 0
+        self._first_year = 0
+        self._last_year = 0
         return self
 
     def _year_range_from_timestamps(self):
@@ -188,7 +189,7 @@ class BaseCalendar(ABC):
             columns={i: f"(target) {i}" for i in range(self.n_targets)}
         )
 
-    def get_intervals(self):
+    def get_intervals(self) -> pd.DataFrame:
         """Method to retrieve updated intervals from the Calendar object."""
         if self._first_year is None:
             if self._first_timestamp is None:
@@ -208,11 +209,11 @@ class BaseCalendar(ABC):
         return intervals
 
     @abstractmethod
-    def show(self):
+    def show(self) -> pd.DataFrame:
         """Display the intervals nicely."""
         return self._label_targets(self.get_intervals())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation of the Calendar."""
         props = ", ".join(
             [f"{k}={v}" for k, v in self.__dict__.items() if not k.startswith("_")]

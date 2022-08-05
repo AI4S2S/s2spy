@@ -14,11 +14,11 @@ Example:
     >>> # Countdown the weeks until New Year's Eve
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
     >>> calendar
-    AdventCalendar(month=12, day=31, freq=7d)
+    AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None)
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
-    >>> calendar.map_years(2020, 2020)
+    >>> calendar = calendar.map_years(2020, 2020)
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
     i_interval                 (target) 0                         1
     anchor_year
@@ -26,7 +26,7 @@ Example:
 
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
-    >>> calendar.map_years(2020, 2022)
+    >>> calendar = calendar.map_years(2020, 2022)
     >>> # note the leap year:
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
     i_interval                 (target) 0                         1
@@ -113,7 +113,7 @@ class AdventCalendar(BaseCalendar):
         self.n_targets = n_targets
         self.max_lag = max_lag
         self._first_timestamp = None
-        self._first_year = None
+        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -179,7 +179,7 @@ class MonthlyCalendar(BaseCalendar):
         self.n_targets = n_targets
         self.max_lag = max_lag
         self._first_timestamp = None
-        self._first_year = None
+        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -286,7 +286,7 @@ class WeeklyCalendar(BaseCalendar):
         self.n_targets = n_targets
         self.max_lag = max_lag
         self._first_timestamp = None
-        self._first_year = None
+        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.

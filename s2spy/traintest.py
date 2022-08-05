@@ -3,6 +3,7 @@
 A collection of train/test splitting approaches for cross-validation.
 """
 from typing import Optional
+from typing import Type
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -10,11 +11,8 @@ import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
 
 
-SplitterClass = BaseCrossValidator
-
-
 def split_groups(
-    splitter: SplitterClass,
+    splitter: Type[BaseCrossValidator],
     data: Union[xr.Dataset, pd.DataFrame],
     key: Optional[str] = "anchor_year",
 ):
