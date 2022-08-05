@@ -32,3 +32,9 @@ pyflakes:
     disable: [
         F401,  # unused import: already checked by pylint
     ]
+
+mypy:
+    # see https://github.com/PyCQA/prospector/issues/313
+    run: true
+    options:
+        ignore-missing-imports: true
