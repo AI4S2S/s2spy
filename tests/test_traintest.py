@@ -8,6 +8,7 @@ import s2spy.traintest
 from s2spy.time import AdventCalendar
 from s2spy.time import resample
 
+
 class TestTrainTest:
     # Define all required inputs as fixtures:
     @pytest.fixture(autouse=True)
@@ -65,5 +66,5 @@ class TestTrainTest:
     def test_alternative_key(self, dummy_calendar, dummy_dataset):
         mapped_calendar = dummy_calendar.map_to_data(dummy_dataset)
         ds = resample(mapped_calendar, dummy_dataset)
-        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds, key='i_interval')
-        assert 'i_interval' in ds.traintest.dims
+        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds, key="i_interval")
+        assert "i_interval" in ds.traintest.dims

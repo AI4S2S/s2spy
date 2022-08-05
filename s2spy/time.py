@@ -49,15 +49,16 @@ Example:
 """
 import calendar as pycalendar
 import warnings
-from typing import Tuple
 from typing import Optional
+from typing import Tuple
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
 from . import _resample
-from ._base_calendar import BaseCalendar
 from . import utils
+from ._base_calendar import BaseCalendar
+
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
@@ -113,7 +114,6 @@ class AdventCalendar(BaseCalendar):
         self.max_lag = max_lag
         self._first_timestamp = None
         self._first_year = None
-
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.

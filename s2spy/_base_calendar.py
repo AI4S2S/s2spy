@@ -4,13 +4,14 @@ The BaseCalendar includes most methods required for all calendar operations, exc
 a set of abstract methods (e.g., __init__, _map_year_anchor, ...). These will have to be
 customized for each specific calendar.
 """
-from abc import ABC, abstractmethod
-from typing import Optional
+from abc import ABC
+from abc import abstractmethod
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
 from . import utils
+
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
@@ -18,10 +19,9 @@ XArrayData = (xr.DataArray, xr.Dataset)
 
 class BaseCalendar(ABC):
     """Base calendar class which serves as a template for specific implementations."""
+
     @abstractmethod
-    def __init__(
-        self, anchor, freq, n_targets: Optional[int] = 1, max_lag: Optional[int] = None
-    ):
+    def __init__(self, anchor, freq, n_targets: int = 1, max_lag: int = None):
         """For initializing calendars, the following six variables will be required."""
         self.n_targets = n_targets
         self.max_lag = max_lag

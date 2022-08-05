@@ -1,8 +1,10 @@
 import pandas as pd
 import xarray as xr
 
+
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
+
 
 def check_input_data(data) -> None:
     """Utility function to check input data.
