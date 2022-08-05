@@ -46,8 +46,7 @@ def mark_target_period(
 def resample_bins_constructor(
     intervals: Union[pd.Series, pd.DataFrame]
 ) -> pd.DataFrame:
-    """
-    Restructures the interval object into a tidy DataFrame.
+    """Restructures the interval object into a tidy DataFrame.
 
     Args:
         intervals: the output interval `pd.Series` or `pd.DataFrame` from the
@@ -77,12 +76,6 @@ def resample_bins_constructor(
     return bins
 
 
-def label_targets(calendar, intervals):
-    return intervals.rename(
-        columns={i: f"(target) {i}" for i in range(calendar.n_targets)}
-    )
-
-
 def resample_pandas(
     calendar, input_data: Union[pd.Series, pd.DataFrame]
 ) -> pd.DataFrame:
@@ -96,8 +89,7 @@ def resample_pandas(
         pd.DataFrame: DataFrame containing the intervals and data resampled to
             these intervals.
     """
-
-    bins = resample_bins_constructor(calendar.intervals)
+    bins = resample_bins_constructor(calendar.get_intervals())
 
     interval_index = pd.IntervalIndex(bins["interval"])
     interval_groups = interval_index.get_indexer(input_data.index)
@@ -127,9 +119,9 @@ def resample_xarray(
 
     Returns:
         xr.Dataset: Dataset containing the intervals and data resampled to
-            these intervals."""
-
-    bins = resample_bins_constructor(calendar.intervals)
+            these intervals.
+    """
+    bins = resample_bins_constructor(calendar.get_intervals())
 
     # Create the indexer to connect the input data with the intervals
     interval_index = pd.IntervalIndex(bins["interval"])
@@ -150,6 +142,7 @@ def resample_xarray(
         if interval_means.name is None:
             interval_means = interval_means.rename("mean_values")
         bins = xr.merge([bins, interval_means])
+
     bins["anchor_year"] = bins["anchor_year"].astype(int)
 
     # Turn the anchor year and interval count into coordinates
