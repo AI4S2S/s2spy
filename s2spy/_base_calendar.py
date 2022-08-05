@@ -59,7 +59,7 @@ class BaseCalendar(ABC):
 
         Returns:
             Pandas Series filled with Intervals of the calendar's frequency, counting
-            backwards from the calendar's anchor_date.
+            backwards from the calendar's achor.
         """
         year_intervals = pd.interval_range(
             end=self._map_year_anchor(year),

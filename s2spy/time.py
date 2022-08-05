@@ -12,12 +12,12 @@ Example:
     >>> import s2spy.time
     >>>
     >>> # Countdown the weeks until New Year's Eve
-    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq="7d")
+    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
     >>> calendar
     AdventCalendar(month=12, day=31, freq=7d)
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
-    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
     >>> calendar.map_years(2020, 2020)
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
     i_interval                 (target) 0                         1
@@ -25,7 +25,7 @@ Example:
     2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
 
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
-    >>> calendar = s2spy.time.AdventCalendar(anchor_date=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
     >>> calendar.map_years(2020, 2022)
     >>> # note the leap year:
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
@@ -141,7 +141,7 @@ class MonthlyCalendar(BaseCalendar):
 
     def __init__(
         self,
-        anchor: str,
+        anchor: str = 'Dec',
         freq: str = "1M",
         n_targets: int = 1,
         max_lag: Optional[int] = None,
@@ -312,8 +312,8 @@ class WeeklyCalendar(BaseCalendar):
         Returns:
             str: String in the form of '(2020-50, 2020-51]'
         """
-        left = interval.left.strftime("%Y-%W")
-        right = interval.right.strftime("%Y-%W")
+        left = interval.left.strftime("%Y-W%W")
+        right = interval.right.strftime("%Y-W%W")
         return f"({left}, {right}]"
 
     def show(self) -> pd.DataFrame:
@@ -372,7 +372,7 @@ def resample(
         >>> var = np.arange(len(time_index))
         >>> input_data = pd.Series(var, index=time_index)
         >>> cal = cal.map_to_data(input_data)
-        >>> bins = cal.resample(cal, input_data)
+        >>> bins = s2spy.time.resample(cal, input_data)
         >>> bins # doctest: +NORMALIZE_WHITESPACE
             anchor_year  i_interval                  interval  mean_data  target
         0        2020           0  (2020-06-03, 2020-11-30]      275.5    True

@@ -5,6 +5,8 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
+from s2spy.time import MonthlyCalendar
+from s2spy.time import WeeklyCalendar
 from s2spy.time import resample
 
 
@@ -34,7 +36,7 @@ class TestAdventCalendar:
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
-            "i_interval (target) 0\n" "anchor_year \n" "2021 (2021-05-05, 2021-12-31]"
+            "i_interval (target) 0\n anchor_year \n 2021 (2021-05-05, 2021-12-31]"
         )
         expected_calendar_repr = expected_calendar_repr.replace(" ", "")
         assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
@@ -45,8 +47,80 @@ class TestAdventCalendar:
         cal.map_years(2021, 2021)
         assert np.array_equal(cal.flat, expected)
 
-    def test_flat_no_intervals(self):
+    def test_no_intervals(self):
         cal = AdventCalendar()
+        with pytest.raises(ValueError):
+            cal.get_intervals()
+
+
+class TestMonthlyCalendar:
+    """Test MonthlyCalendar methods."""
+
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        cal = MonthlyCalendar(anchor='Dec', freq="8M")
+        cal.map_years(2021, 2021)
+        return cal
+
+    def test_init(self):
+        cal = MonthlyCalendar(anchor='Dec', freq="2M")
+        assert isinstance(cal, MonthlyCalendar)
+
+    def test_repr(self):
+        cal = MonthlyCalendar(anchor='Dec', freq="2M")
+        assert repr(cal) == (
+            "MonthlyCalendar(month=12, freq=2M, n_targets=1, max_lag=None)"
+        )
+
+    def test_show(self, dummy_calendar):
+        expected_calendar_repr = (
+            "i_interval (target) 0\n anchor_year \n 2021 (2021 Apr, 2021 Dec]"
+        )
+        expected_calendar_repr = expected_calendar_repr.replace(" ", "")
+        assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
+
+    def test_flat(self, dummy_calendar):
+        expected = np.array([interval("2021-04-30", "2021-12-31")])
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_no_intervals(self):
+        cal = MonthlyCalendar()
+        with pytest.raises(ValueError):
+            cal.get_intervals()
+
+
+class TestWeeklyCalendar:
+    """Test WeeklyCalendar methods."""
+
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        cal = WeeklyCalendar(anchor=48, freq="30W")
+        cal.map_years(2021, 2021)
+        return cal
+
+    def test_init(self):
+        cal = WeeklyCalendar(anchor=48, freq="30W")
+        assert isinstance(cal, WeeklyCalendar)
+
+    def test_repr(self):
+        cal = WeeklyCalendar(anchor=48, freq="30W")
+        assert repr(cal) == (
+            "WeeklyCalendar(week=48, freq=30W, n_targets=1, max_lag=None)"
+        )
+
+    def test_show(self, dummy_calendar):
+        expected_calendar_repr = (
+            "i_interval (target) 0\n anchor_year \n 2021 (2021-W18, 2021-W48]"
+        )
+        expected_calendar_repr = expected_calendar_repr.replace(" ", "")
+        assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
+
+    def test_flat(self, dummy_calendar):
+        expected = np.array([interval("2021-05-09", "2021-12-05")])
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_no_intervals(self):
+        cal = WeeklyCalendar(anchor=40)
         with pytest.raises(ValueError):
             cal.get_intervals()
 

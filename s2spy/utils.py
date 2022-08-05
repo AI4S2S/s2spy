@@ -10,9 +10,9 @@ def check_input_data(data) -> None:
     """Utility function to check input data.
 
     Checks if:
-        Input data is pd.Dataframe/pd.Series/xr.Dataset/xr.DataArray.
-        Input data has a time index (pd), or a dim named `time` containing datetime
-            values
+     - Input data is pd.Dataframe/pd.Series/xr.Dataset/xr.DataArray.
+     - Input data has a time index (pd), or a dim named `time` containing datetime
+       values
     """
     if not isinstance(data, PandasData + XArrayData):
         raise ValueError("The input data is neither a pandas or xarray object")
