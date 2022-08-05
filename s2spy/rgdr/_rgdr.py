@@ -4,38 +4,7 @@ import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
-
-
-class RGDR:
-    """Response Guided Dimensionality Reduction."""
-
-    def __init__(self, timeseries, lag_shift: int = 0):
-        """Instantiate an RGDR operator."""
-        self.timeseries = timeseries
-        self.lag_shift = lag_shift
-
-    def _map_analysis(self):
-        """Perform map analysis.
-
-        Use chosen method from `map_analysis` and perform map analysis.
-        """
-        raise NotImplementedError
-
-    def _clustering_regions(self):
-        """Perform regions clustering.
-
-        Use chosen method from `map_regions` and perform clustering of regions
-        based on the results from `map_analysis`.
-        """
-        raise NotImplementedError
-
-    def fit(self, data):
-        """Perform RGDR calculations with given data."""
-        raise NotImplementedError
-
-    def transform(self, data):
-        """Apply RGDR on data, based on the fit model"""
-        raise NotImplementedError
+import matplotlib.pyplot as plt
 
 
 radius_earth_km = 6371
@@ -293,3 +262,79 @@ def regression(field, target):
     Methods include Linear, Ridge, Lasso.
     """
     raise NotImplementedError
+
+
+class RGDR:
+    """Response Guided Dimensionality Reduction."""
+
+    def __init__(self, timeseries, eps_km=600, alpha=0.05, min_area_km2=3000**2):
+        """Instantiate an RGDR operator."""
+        self.timeseries = timeseries
+        self._eps = eps_km
+        self._alpha = alpha
+        self._min_area = min_area_km2
+        self._clusters = None
+        self._area = None
+
+    def preview_map_analysis(self, precursor):
+        """Perform map analysis.
+
+        Use chosen method from `map_analysis` and perform map analysis.
+        """
+        if not isinstance(precursor, xr.DataArray):
+            raise ValueError("Please provide an xr.DataArray, not a dataset")
+
+        corr, p_val = correlation(precursor, self.timeseries, corr_dim='anchor_year')
+
+        fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 3))
+        corr.plot.pcolormesh(ax=ax1, cmap='viridis')
+        p_val.plot.pcolormesh(ax=ax2, cmap='viridis')
+        ax1.set_title('correlation')
+        ax2.set_title('p-value')
+        return fig
+
+    def preview_clusters(self, precursor):
+        """Perform regions clustering.
+
+        Use chosen method from `map_regions` and perform clustering of regions
+        based on the results from `map_analysis`.
+        """
+        ds = precursor.to_dataset()
+        ds['corr'], ds['p_val'] = correlation(precursor, self.timeseries,
+                                              corr_dim='anchor_year')
+
+        clusters = masked_spherical_dbscan(
+            ds,
+            eps_km=self._eps,
+            alpha=self._alpha,
+            min_area_km2=self._min_area
+        )
+        fig = plt.figure()
+        clusters.cluster_labels.plot(cmap='viridis', size=3, aspect=3)
+        return fig
+
+    def fit(self, precursor):
+        """Perform RGDR calculations with given data."""
+        ds = precursor.to_dataset()
+        ds['corr'], ds['p_val'] = correlation(precursor, self.timeseries,
+                                              corr_dim='anchor_year')
+
+        ds = reduce_to_clusters(
+            ds,
+            eps_km=self._eps,
+            alpha=self._alpha,
+            min_area_km2=self._min_area
+        )
+        self._clusters = ds.cluster_labels
+        self._area = ds.area
+        return ds
+
+    def transform(self, data):
+        """Apply RGDR on data, based on the fit model"""
+        if self._clusters is None:
+            raise ValueError("Transform requires the model to be fit on other data first")
+        ds = data.to_dataset()
+        ds['cluster_labels'] = self._clusters
+        ds['area'] = self._area
+
+        return weighted_groupby(ds, groupby="cluster_labels", weight="area")
