@@ -112,8 +112,6 @@ class AdventCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
-        self._first_timestamp = None
-        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -141,7 +139,7 @@ class MonthlyCalendar(BaseCalendar):
 
     def __init__(
         self,
-        anchor: str = 'Dec',
+        anchor: str = "Dec",
         freq: str = "1M",
         n_targets: int = 1,
         max_lag: Optional[int] = None,
@@ -178,8 +176,6 @@ class MonthlyCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
-        self._first_timestamp = None
-        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -285,8 +281,6 @@ class WeeklyCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
-        self._first_timestamp = None
-        self._first_year = 0
 
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.

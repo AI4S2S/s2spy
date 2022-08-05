@@ -20,16 +20,15 @@ XArrayData = (xr.DataArray, xr.Dataset)
 class BaseCalendar(ABC):
     """Base calendar class which serves as a template for specific implementations."""
 
+    _mapping = None
+
     @abstractmethod
     def __init__(self, anchor, freq, n_targets: int = 1, max_lag: int = None):
-        """For initializing calendars, the following six variables will be required."""
+        """For initializing calendars, the following four variables will be required."""
         self.n_targets = n_targets
         self.max_lag = max_lag
         self.anchor = anchor
         self.freq = freq
-
-        self._first_timestamp = None
-        self._first_year = 0
 
     @abstractmethod
     def _map_year_anchor(self, year: int) -> pd.Timestamp:
@@ -115,10 +114,7 @@ class BaseCalendar(ABC):
         """
         self._first_year = start
         self._last_year = end
-        # Overwrite existing map_to_data settings
-        self._first_timestamp = None
-        self._last_timestamp = None
-
+        self._mapping = "years"
         return self
 
     def map_to_data(
@@ -148,9 +144,8 @@ class BaseCalendar(ABC):
             self._first_timestamp = pd.Timestamp(input_data.time.min().values)
             self._last_timestamp = pd.Timestamp(input_data.time.max().values)
 
-        # Set the years to 0
-        self._first_year = 0
-        self._last_year = 0
+        self._mapping = "data"
+
         return self
 
     def _year_range_from_timestamps(self):
@@ -191,12 +186,12 @@ class BaseCalendar(ABC):
 
     def get_intervals(self) -> pd.DataFrame:
         """Method to retrieve updated intervals from the Calendar object."""
-        if self._first_year is None:
-            if self._first_timestamp is None:
-                raise ValueError(
-                    "Cannot retrieve intervals without map_years or "
-                    "map_to_data having configured the calendar."
-                )
+        if self._mapping is None:
+            raise ValueError(
+                "Cannot retrieve intervals without map_years or "
+                "map_to_data having configured the calendar."
+            )
+        if self._mapping == "data":
             self._year_range_from_timestamps()
 
         year_range = range(
