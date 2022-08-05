@@ -136,12 +136,9 @@ def resample_xarray(
 
     # Turn the bins dataframe into an xarray object and merge the data means into it
     bins = bins.to_xarray()
-    if isinstance(input_data, xr.Dataset):
-        bins = xr.merge([bins, interval_means])
-    else:
-        if interval_means.name is None:
-            interval_means = interval_means.rename("mean_values")
-        bins = xr.merge([bins, interval_means])
+    if isinstance(input_data, xr.DataArray) and interval_means.name is None:
+        interval_means = interval_means.rename("mean_values")
+    bins = xr.merge([bins, interval_means])
 
     bins["anchor_year"] = bins["anchor_year"].astype(int)
 

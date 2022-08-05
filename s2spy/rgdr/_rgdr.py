@@ -66,7 +66,7 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
     return spherical_area * surface_area_earth_km2
 
 
-def cluster_area(ds: xr.Dataset, cluster_label: float) -> float:
+def cluster_area(ds: xr.Dataset, cluster_label: float) -> np.ndarray:
     """Determines the total area of a cluster. Requires the input dataset to have the
     variables `area` and `cluster_labels`.
 
