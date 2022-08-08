@@ -1,4 +1,5 @@
 from typing import Union
+from typing_extensions import reveal_type
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -136,7 +137,7 @@ def resample_xarray(
 
     # Turn the bins dataframe into an xarray object and merge the data means into it
     bins = bins.to_xarray()
-    if isinstance(input_data, xr.DataArray) and interval_means.name is None:
+    if isinstance(interval_means, xr.DataArray) and interval_means.name is None:
         interval_means = interval_means.rename("mean_values")
     bins = xr.merge([bins, interval_means])
 

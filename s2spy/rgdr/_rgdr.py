@@ -125,7 +125,7 @@ def weighted_groupby(ds: xr.Dataset, groupby: str, weight: str, method: str = "m
 
     # find stacked dim name:
     group_dims = list(groups)[0][1].dims  # Get ds of first group
-    stacked_dims = [dim for dim in group_dims.keys() if "stacked_" in dim]
+    stacked_dims = [dim for dim in group_dims.keys() if "stacked_" in dim] # type: ignore
 
     reduced_data = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
