@@ -1,5 +1,6 @@
 """Response Guided Dimensionality Reduction."""
 from typing import Tuple
+from typing import Union
 import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
@@ -7,8 +8,8 @@ from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
 
-radius_earth_km = 6371
-surface_area_earth_km2 = 5.1e8
+RADIUS_EARTH_KM = 6371
+SURFACE_AREA_EARTH_KM2 = 5.1e8
 
 
 def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
@@ -32,16 +33,18 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
     h = np.sin(lat + dlat / 2) - np.sin(lat - dlat / 2)
     spherical_area = h * dlon / np.pi * 4
 
-    return spherical_area * surface_area_earth_km2
+    return spherical_area * SURFACE_AREA_EARTH_KM2
 
 
-def cluster_area(ds: xr.Dataset, cluster_label: float) -> float:
+def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> float:
     """Determines the total area of a cluster. Requires the input dataset to have the
     variables `area` and `cluster_labels`.
 
     Args:
-        ds (xr.Dataset): Dataset containing the variables `area` and `cluster_labels`.
-        cluster_label (float): The label for which the area should be calculated.
+        ds (xr.Dataset or xr.DataArray): Dataset/DataArray containing the variables
+            `area` and `cluster_labels`.
+        cluster_label (float): The label (as float) for which the area should be
+            calculated.
 
     Returns:
         float: Area of the cluster `cluster_label`.
@@ -73,13 +76,15 @@ def remove_small_area_clusters(ds: xr.Dataset, min_area_km2: float) -> xr.Datase
     return ds
 
 
-def weighted_groupby(ds: xr.Dataset, groupby: str, weight: str, method: str = "mean") -> xr.Dataset:
+def weighted_groupby(
+    ds: Union[xr.DataArray, xr.Dataset], groupby: str, weight: str, method: str = "mean"
+) -> Union[xr.DataArray, xr.Dataset]:
     """Apply a weighted reduction after a groupby call. xarray does not currently support
     combining `weighted` and `groupby`. An open PR adds supports for this functionality
     (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
 
     Args:
-        ds (xr.Dataset): Dataset containing the coordinates or variables specified in
+        ds (xr.DataArray): DataArray containing the coordinates or variables specified in
         the `groupby` and `weight` kwargs.
         groupby (str): Coordinate which should be used to make the groups.
         weight (str): Variable in the Dataset containing the weights that should be used.
@@ -94,51 +99,61 @@ def weighted_groupby(ds: xr.Dataset, groupby: str, weight: str, method: str = "m
 
     # find stacked dim name:
     group_dims = list(groups)[0][1].dims  # Get ds of first group
-    stacked_dims = [dim for dim in group_dims.keys() if "stacked_" in dim]
+    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims
+    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]
 
     reduced_data = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
     ]
-    return xr.concat(reduced_data, dim=groupby)
+    reduced_data = xr.concat(reduced_data, dim=groupby)
+
+    if isinstance(ds, xr.DataArray):  # Add back the labels of the groupby dim
+        reduced_data[groupby] = np.unique(ds[groupby])
+    return reduced_data
 
 
 def masked_spherical_dbscan(
-    ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600, min_area_km2: float = None
+    precursor: xr.DataArray,
+    corr: xr.DataArray,
+    p_val: xr.DataArray,
+    dbscan_params: dict,
 ) -> xr.Dataset:
+
     """Determines the clusters based on sklearn's DBSCAN implementation. Alpha determines
     the mask based on the minimum p_value. Grouping can be adjusted using the `eps_km`
-    kwarg. Cluster labels are negative for areas with a negative correlation coefficient
+    parameter. Cluster labels are negative for areas with a negative correlation coefficient
     and positive for areas with a positive correlation coefficient. Areas without any
     significant correlation are put in the cluster labelled '0'.
 
     Args:
-        ds (xr.Dataset): Dataset containing 'latitude' and 'longitude' dimensions in
-            degrees. Must also contain 'p_val' and 'corr' to base the groups on.
-        alpha (float): Value below which the correlation is significant enough to be
-            considered
-        eps_km (float): The maximum distance (in km) between two samples for one to be
-            considered as in the neighborhood of the other. This is not a maximum bound
-            on the distances of points within a cluster. This is the most important
-            DBSCAN parameter to choose appropriately.
-        min_area_km2 (float): The minimum area of a cluster. Clusters smaller than this
-            minimum area will be discarded.
+        precursor (xr.DataArray): DataArray of the precursor field, containing
+            'latitude' and 'longitude' dimensions in degrees.
+        corr (xr.DataArray): DataArray with the correlation values, generated by
+            correlation_map()
+        p_val (xr.DataArray): DataArray with the p-values, generated by
+            correlation_map()
+        dbscan_params (dict): Dictionary containing the elements 'alpha', 'eps',
+            'min_area_km2'. See the documentation of RGDR for more information.
 
     Returns:
-        xr.Dataset: Dataset grouped by the DBSCAN clusters.
+        xr.DataArray: Precursor data grouped by the DBSCAN clusters.
     """
-    ds = ds.stack(coord=["latitude", "longitude"])
-    coords = np.asarray(list(ds["coord"].values))  # turn array of tuples to 2d-array
+    orig_name = precursor.name
+    data = precursor.to_dataset()
+    data["corr"], data["p_val"] = corr, p_val  # Will require less tracking of indices
+
+    data = data.stack(coord=["latitude", "longitude"])
+    coords = np.asarray(data["coord"].values.tolist())
     coords = np.radians(coords)
 
     # Prepare labels, default value is 0 (not in cluster)
     labels = np.zeros(len(coords))
 
-    for sign, sign_mask in zip([1, -1], [ds["corr"] >= 0, ds["corr"] < 0]):
-        mask = np.logical_and(ds["p_val"] < alpha, sign_mask)
-
+    for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
+        mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
         if np.sum(mask) > 0:  # Check if the mask contains any points to cluster
             db = DBSCAN(
-                eps=eps_km / radius_earth_km,
+                eps=dbscan_params["eps"] / RADIUS_EARTH_KM,
                 min_samples=1,
                 algorithm="auto",
                 metric="haversine",
@@ -146,51 +161,19 @@ def masked_spherical_dbscan(
 
             labels[mask] = sign * (db.labels_ + 1)
 
-    ds["cluster_labels"] = ("coord", labels)
+    precursor = precursor.stack(coord=["latitude", "longitude"])
+    precursor["cluster_labels"] = ("coord", labels)
+    precursor = precursor.unstack(("coord"))
 
-    ds = ds.unstack(("coord"))
+    dlat = np.abs(precursor.latitude.values[1] - precursor.latitude.values[0])
+    dlon = np.abs(precursor.longitude.values[1] - precursor.longitude.values[0])
+    precursor["area"] = spherical_area(precursor.latitude, dlat, dlon)
 
-    dlat = np.abs(ds.latitude.values[1] - ds.latitude.values[0])
-    dlon = np.abs(ds.longitude.values[1] - ds.longitude.values[0])
-    ds["area"] = spherical_area(ds.latitude, dlat, dlon)
+    if dbscan_params["min_area"]:
+        precursor = remove_small_area_clusters(precursor, dbscan_params["min_area"])
 
-    if min_area_km2:
-        ds = remove_small_area_clusters(ds, min_area_km2)
-    return ds
-
-
-def reduce_to_clusters(
-    ds: xr.Dataset, alpha: float = 0.05, eps_km: float = 600, min_area_km2: float = None
-) -> xr.Dataset:
-    """Perform DBSCAN clustering on a prepared Dataset, and then group the data by their
-    determined clusters, taking the weighted mean. The weight is based on the area of
-    each grid cell.
-
-    Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
-    Clusters gridcells together which are of the same sign and in proximity to
-    each other using DBSCAN.
-
-    The input data will be processed in this function to ensure that the distance
-    is free of the impact from spherical curvature. The actual geodesic distance
-    will be obtained and passed to the DBSCAN clustering function.
-
-    Args:
-        ds: Dataset prepared to have p_val and corr.
-        alpha (float): Value below which the correlation is significant enough to be
-            considered
-        eps_km (float): The maximum distance (in km) between two samples for one to be
-            considered as in the neighborhood of the other. This is not a maximum bound
-            on the distances of points within a cluster. This is the most important
-            DBSCAN parameter to choose appropriately.
-
-    """
-    ds = masked_spherical_dbscan(
-        ds, alpha=alpha, eps_km=eps_km, min_area_km2=min_area_km2
-    )
-
-    ds = weighted_groupby(ds, groupby="cluster_labels", weight="area")
-
-    return ds
+    precursor.name = orig_name
+    return precursor
 
 
 def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
@@ -268,73 +251,100 @@ class RGDR:
     """Response Guided Dimensionality Reduction."""
 
     def __init__(self, timeseries, eps_km=600, alpha=0.05, min_area_km2=3000**2):
-        """Instantiate an RGDR operator."""
+        """Instantiate an RGDR operator.
+
+        Args:
+            alpha (float): Value below which the correlation is significant enough to be
+                considered
+            eps_km (float): The maximum distance (in km) between two samples for one to
+                be considered as in the neighborhood of the other. This is not a maximum
+                bound on the distances of points within a cluster. This is the most
+                important DBSCAN parameter to choose appropriately.
+            min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
+                this minimum area will be discarded.
+        """
         self.timeseries = timeseries
-        self._eps = eps_km
-        self._alpha = alpha
-        self._min_area = min_area_km2
         self._clusters = None
         self._area = None
+        self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
-    def preview_map_analysis(self, precursor):
-        """Perform map analysis.
+    def preview_correlation(self, precursor: xr.DataArray) -> plt.Figure:
+        """Generates a figure showing the correlation and p-value results with the
+        initiated RGDR class and input precursor field.
 
-        Use chosen method from `map_analysis` and perform map analysis.
+        Args:
+            precursor (xr.DataArray): Precursor field containing latitude and longitude
+                dimensions.
+
+        Returns:
+            plt.figure: Figure handle for the generated plot
         """
         if not isinstance(precursor, xr.DataArray):
             raise ValueError("Please provide an xr.DataArray, not a dataset")
 
-        corr, p_val = correlation(precursor, self.timeseries, corr_dim='anchor_year')
+        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
 
         fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 3))
-        corr.plot.pcolormesh(ax=ax1, cmap='viridis')
-        p_val.plot.pcolormesh(ax=ax2, cmap='viridis')
-        ax1.set_title('correlation')
-        ax2.set_title('p-value')
+        corr.plot.pcolormesh(ax=ax1, cmap="viridis")
+        p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
+        ax1.set_title("correlation")
+        ax2.set_title("p-value")
+
         return fig
 
-    def preview_clusters(self, precursor):
-        """Perform regions clustering.
+    def preview_clusters(self, precursor: xr.DataArray) -> plt.Figure:
+        """Generates a figure showing the clusters resulting from the initiated RGDR
+        class and input precursor field.
 
-        Use chosen method from `map_regions` and perform clustering of regions
-        based on the results from `map_analysis`.
+        Args:
+            precursor (xr.DataArray): Precursor field containing latitude and longitude
+                dimensions.
+
+        Returns:
+            plt.figure: Figure handle for the generated plot
         """
-        ds = precursor.to_dataset()
-        ds['corr'], ds['p_val'] = correlation(precursor, self.timeseries,
-                                              corr_dim='anchor_year')
+        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
 
-        clusters = masked_spherical_dbscan(
-            ds,
-            eps_km=self._eps,
-            alpha=self._alpha,
-            min_area_km2=self._min_area
-        )
+        clusters = masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
         fig = plt.figure()
-        clusters.cluster_labels.plot(cmap='viridis', size=3, aspect=3)
+        clusters.cluster_labels.plot(cmap="viridis", size=3, aspect=3)
         return fig
 
-    def fit(self, precursor):
-        """Perform RGDR calculations with given data."""
-        ds = precursor.to_dataset()
-        ds['corr'], ds['p_val'] = correlation(precursor, self.timeseries,
-                                              corr_dim='anchor_year')
+    def fit(self, precursor: xr.DataArray) -> xr.DataArray:
+        """Perform DBSCAN clustering on a prepared Dataset, and then group the data by their
+        determined clusters, taking the weighted mean. The weight is based on the area of
+        each grid cell.
 
-        ds = reduce_to_clusters(
-            ds,
-            eps_km=self._eps,
-            alpha=self._alpha,
-            min_area_km2=self._min_area
+        Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
+        Clusters gridcells together which are of the same sign and in proximity to
+        each other using DBSCAN.
+
+        The input data will be processed in this function to ensure that the distance
+        is free of the impact from spherical curvature. The actual geodesic distance
+        will be obtained and passed to the DBSCAN clustering function.
+
+        Args:
+            precursor: The precursor field.
+        """
+
+        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
+
+        masked_data = masked_spherical_dbscan(
+            precursor, corr, p_val, self._dbscan_params
         )
-        self._clusters = ds.cluster_labels
-        self._area = ds.area
-        return ds
+
+        self._clusters = masked_data.cluster_labels
+        self._area = masked_data.area
+
+        return weighted_groupby(masked_data, groupby="cluster_labels", weight="area")
 
     def transform(self, data):
         """Apply RGDR on data, based on the fit model"""
         if self._clusters is None:
-            raise ValueError("Transform requires the model to be fit on other data first")
-        ds = data.to_dataset()
-        ds['cluster_labels'] = self._clusters
-        ds['area'] = self._area
+            raise ValueError(
+                "Transform requires the model to be fit on other data first"
+            )
+        data["cluster_labels"] = self._clusters
+        data["area"] = self._area
 
-        return weighted_groupby(ds, groupby="cluster_labels", weight="area")
+        return weighted_groupby(data, groupby="cluster_labels", weight="area")
