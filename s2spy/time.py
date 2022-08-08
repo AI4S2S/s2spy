@@ -108,7 +108,7 @@ class AdventCalendar(BaseCalendar):
             AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None)
 
         """
-        if not re.fullmatch(r"\d*[d]", freq):
+        if not re.fullmatch(r"\d*d", freq):
             raise ValueError("Please input a frequency in the form of '10d'")
         self.month = anchor[0]
         self.day = anchor[1]
@@ -175,7 +175,7 @@ class MonthlyCalendar(BaseCalendar):
             MonthlyCalendar(month=12, freq=3M, n_targets=1, max_lag=None)
 
         """
-        if not re.fullmatch(r"\d*[M]", freq):
+        if not re.fullmatch(r"\d*M", freq):
             raise ValueError("Please input a frequency in the form of '2M'")
         self.month = month_mapping_dict[anchor.upper()]
         self.freq = freq
@@ -282,7 +282,7 @@ class WeeklyCalendar(BaseCalendar):
             WeeklyCalendar(week=40, freq=1W, n_targets=1, max_lag=None)
 
         """
-        if not re.fullmatch(r"\d*[W]", freq):
+        if not re.fullmatch(r"\d*W", freq):
             raise ValueError("Please input a frequency in the form of '4W'")
 
         self.week = anchor
