@@ -1,11 +1,14 @@
 """Response Guided Dimensionality Reduction."""
+from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
-import matplotlib.pyplot as plt
 
 
 RADIUS_EARTH_KM = 6371
@@ -54,16 +57,18 @@ def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> f
     )
 
 
-def remove_small_area_clusters(ds: xr.Dataset, min_area_km2: float) -> xr.Dataset:
+def remove_small_area_clusters(
+    ds: Union[xr.DataArray, xr.Dataset], min_area_km2: float
+) -> Union[xr.DataArray, xr.Dataset]:
     """Removes the clusters where the area is under the input threshold.
 
     Args:
-        ds (xr.Dataset): Dataset containing `cluster_labels` and `area`.
+        ds (xr.DataArray, xr.Dataset): Dataset containing `cluster_labels` and `area`.
         min_area_km2 (float): The minimum allowed area of each cluster
 
     Returns:
-        xr.Dataset: The input dataset with the labels of the clusters set to 0 when the
-            area of the cluster is under the `min_area_km2` threshold.
+        xr.DataArray, xr.Dataset: The input dataset with the labels of the clusters set
+            to 0 when the area of the cluster is under the `min_area_km2` threshold.
     """
     clusters = np.unique(ds["cluster_labels"])
     areas = [cluster_area(ds, c) for c in clusters]
@@ -84,8 +89,8 @@ def weighted_groupby(
     (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
 
     Args:
-        ds (xr.DataArray): DataArray containing the coordinates or variables specified in
-        the `groupby` and `weight` kwargs.
+        ds (xr.DataArray or xr.Dataset): Data containing the coordinates or variables
+            specified in the `groupby` and `weight` kwargs.
         groupby (str): Coordinate which should be used to make the groups.
         weight (str): Variable in the Dataset containing the weights that should be used.
         method (str): Method that should be used to reduce the dataset, by default
@@ -250,12 +255,16 @@ def regression(field, target):
 class RGDR:
     """Response Guided Dimensionality Reduction."""
 
-    def __init__(self, timeseries, eps_km=600, alpha=0.05, min_area_km2=3000**2):
-        """Instantiate an RGDR operator.
+    def __init__(
+        self, timeseries, eps_km=600, alpha=0.05, min_area_km2=3000**2
+    ) -> None:
+        """Response Guided Dimensionality Reduction (RGDR).
+
+        Dimensionality reduction based on the correlation between
 
         Args:
-            alpha (float): Value below which the correlation is significant enough to be
-                considered
+            alpha (float): p-value below which the correlation is considered significant
+                enough for a location to be included in a cluster.
             eps_km (float): The maximum distance (in km) between two samples for one to
                 be considered as in the neighborhood of the other. This is not a maximum
                 bound on the distances of points within a cluster. This is the most
@@ -268,63 +277,95 @@ class RGDR:
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
-    def preview_correlation(self, precursor: xr.DataArray) -> plt.Figure:
+    def preview_correlation(
+        self,
+        precursor: xr.DataArray,
+        ax1: Optional[mpl.axes.Axes] = None,
+        ax2: Optional[mpl.axes.Axes] = None,
+    ) -> List[mpl.collections.QuadMesh]:
         """Generates a figure showing the correlation and p-value results with the
         initiated RGDR class and input precursor field.
 
         Args:
-            precursor (xr.DataArray): Precursor field containing latitude and longitude
-                dimensions.
+            precursor (xr.DataArray): Precursor field data with the dimensions
+                'latitude', 'longitude', and 'anchor_year'
+            ax1 (mpl.axes.Axes, optional): a matplotlib axis handle to plot
+                the correlation values into. If None, an axis handle will be created
+                instead.
+            ax2 (mpl.axes.Axes, optional): a matplotlib axis handle to plot
+                the p-values into. If None, an axis handle will be created instead.
 
         Returns:
-            plt.figure: Figure handle for the generated plot
+            List[mpl.collections.QuadMesh]: List of matplotlib artists.
         """
+
         if not isinstance(precursor, xr.DataArray):
             raise ValueError("Please provide an xr.DataArray, not a dataset")
 
         corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
 
-        fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 3))
-        corr.plot.pcolormesh(ax=ax1, cmap="viridis")
-        p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
+        if (ax1 is None) and (ax2 is None):
+            _, (ax1, ax2) = plt.subplots(ncols=2)
+        elif (ax1 is None) ^ (ax2 is None):
+            raise ValueError(
+                "Either pass axis handles for both ax1 and ax2, or pass neither."
+            )
+
+        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")
+        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
+
         ax1.set_title("correlation")
         ax2.set_title("p-value")
 
-        return fig
+        return [plot1, plot2]
 
-    def preview_clusters(self, precursor: xr.DataArray) -> plt.Figure:
+    def preview_clusters(
+        self, precursor: xr.DataArray, ax: Optional[mpl.axes.Axes] = None
+    ) -> mpl.collections.QuadMesh:
         """Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
 
         Args:
-            precursor (xr.DataArray): Precursor field containing latitude and longitude
-                dimensions.
+            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
+                and 'anchor_year'
+            ax (mpl.axes.Axes, optional): a matplotlib axis handle to plot the clusters
+                into. If None, an axis handle will be created instead.
 
         Returns:
-            plt.figure: Figure handle for the generated plot
+            matplotlib.collections.QuadMesh: Matplotlib artist.
         """
         corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
 
         clusters = masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
-        fig = plt.figure()
-        clusters.cluster_labels.plot(cmap="viridis", size=3, aspect=3)
-        return fig
+
+        if ax is None:
+            _, ax = plt.subplots()
+
+        return clusters.cluster_labels.plot(cmap="viridis", ax=ax)
 
     def fit(self, precursor: xr.DataArray) -> xr.DataArray:
-        """Perform DBSCAN clustering on a prepared Dataset, and then group the data by their
-        determined clusters, taking the weighted mean. The weight is based on the area of
-        each grid cell.
+        """Fits RGDR clusters to precursor data.
 
-        Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
-        Clusters gridcells together which are of the same sign and in proximity to
+        Performs DBSCAN clustering on a prepared DataArray, and then groups the data by
+        their determined clusters, using an weighted mean. The weight is based on the
+        area of each grid cell.
+
+        Density-Based Spatial Clustering of Applications with Noise (DBSCAN) clusters
+        gridcells together which are of the same sign and in proximity to
         each other using DBSCAN.
 
-        The input data will be processed in this function to ensure that the distance
-        is free of the impact from spherical curvature. The actual geodesic distance
-        will be obtained and passed to the DBSCAN clustering function.
+        Clusters labelled with a positive value represent a positive correlation with
+        the target timeseries, the clusters labelled with a negative value represent a
+        negative correlation. All locations not in a cluster are grouped together under
+        the label '0'.
 
         Args:
-            precursor: The precursor field.
+            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
+                and 'anchor_year'
+
+        Returns:
+            xr.DataArray: The precursor data, with the latitute and longitude dimensions
+                reduced to clusters.
         """
 
         corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
@@ -338,8 +379,13 @@ class RGDR:
 
         return weighted_groupby(masked_data, groupby="cluster_labels", weight="area")
 
-    def transform(self, data):
-        """Apply RGDR on data, based on the fit model"""
+    def transform(self, data: xr.DataArray) -> xr.DataArray:
+        """Apply RGDR on the input data, based on the previous fit.
+
+        Transform will use the clusters previously generated when RGDR was fit, and use
+        these clusters to reduce the latitude and longitude dimensions of the input
+        data."""
+
         if self._clusters is None:
             raise ValueError(
                 "Transform requires the model to be fit on other data first"
