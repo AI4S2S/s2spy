@@ -95,10 +95,10 @@ html_logo = 'ai4s2s_logo.png'
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    # Commonly used libraries, uncomment when used in package
-    # 'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    # 'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-    # 'scikit-learn': ('https://scikit-learn.org/stable/', None),
-    # 'matplotlib': ('https://matplotlib.org/stable/', None),
-    # 'pandas': ('http://pandas.pydata.org/docs/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'scikit-learn': ('https://scikit-learn.org/stable/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'pandas': ('http://pandas.pydata.org/docs/', None),
+    'xarray': ('https://docs.xarray.dev/en/stable/', None),
+    #'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
 }
