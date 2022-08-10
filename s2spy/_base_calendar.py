@@ -1,7 +1,7 @@
 """BaseCalendar is a template for specific implementations of different calendars.
 
 The BaseCalendar includes most methods required for all calendar operations, except for
-a set of abstract methods (e.g., __init__, _map_year_anchor, ...). These will have to be
+a set of abstract methods (e.g., __init__, _get_anchor, ...). These will have to be
 customized for each specific calendar.
 """
 from abc import ABC
@@ -31,7 +31,7 @@ class BaseCalendar(ABC):
         self.freq = freq
 
     @abstractmethod
-    def _map_year_anchor(self, year: int) -> pd.Timestamp:
+    def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
 
         The method should return the exact timestamp of the end of the anchor_year's
@@ -49,20 +49,22 @@ class BaseCalendar(ABC):
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
 
-        Since the WeeklyCalendar represents a periodic event, it is first
-        instantiated without a specific year. This method adds a specific year
-        to the calendar and returns an intervalindex, applying the
-        AdvenctCalendar to this specific year.
+        Since our calendars are used to study periodic events, they are first
+        instantiated without specific year(s). This method adds a specific year
+        to the calendar and returns an intervalindex, mapping the
+        Calendar to the given year.
+
+        Intended for internal use, in conjunction with map_years or map_to_data.
 
         Args:
-            year: The year for which the WeeklyCalendar will be realized
+            year: The year for which the Calendar will be realized
 
         Returns:
             Pandas Series filled with Intervals of the calendar's frequency, counting
             backwards from the calendar's achor.
         """
         year_intervals = pd.interval_range(
-            end=self._map_year_anchor(year),
+            end=self._get_anchor(year),
             periods=self._get_nintervals(),
             freq=self.freq,
         )
@@ -99,7 +101,7 @@ class BaseCalendar(ABC):
             else 0
         )
 
-    def map_years(self, start: int = 1979, end: int = 2020):
+    def map_years(self, start: int, end: int):
         """Adds a start and end year mapping to the calendar.
 
         If the start and end years are the same, the intervals for only that single
@@ -134,7 +136,7 @@ class BaseCalendar(ABC):
         Returns:
             The calendar mapped to the input data period.
         """
-        utils.check_input_data(input_data)
+        utils.check_timeseries(input_data)
 
         # check the datetime order of input data
         if isinstance(input_data, PandasData):
@@ -148,7 +150,7 @@ class BaseCalendar(ABC):
 
         return self
 
-    def _year_range_from_timestamps(self):
+    def _set_year_range_from_timestamps(self):
         map_first_year = self._first_timestamp.year
         map_last_year = self._last_timestamp.year
 
@@ -192,7 +194,7 @@ class BaseCalendar(ABC):
                 "map_to_data having configured the calendar."
             )
         if self._mapping == "data":
-            self._year_range_from_timestamps()
+            self._set_year_range_from_timestamps()
 
         year_range = range(
             self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
@@ -203,9 +205,13 @@ class BaseCalendar(ABC):
         intervals.index.name = "anchor_year"
         return intervals
 
-    @abstractmethod
     def show(self) -> pd.DataFrame:
-        """Display the intervals nicely."""
+        """Displays the intervals the Calendar will generate for the current setup.
+
+        Returns:
+            pd.Dataframe: Dataframe containing the calendar intervals, with the target
+                periods labelled.
+        """
         return self._label_targets(self.get_intervals())
 
     def __repr__(self) -> str:

@@ -6,7 +6,7 @@ PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
 
-def check_input_data(data) -> None:
+def check_timeseries(data) -> None:
     """Utility function to check input data.
 
     Checks if:

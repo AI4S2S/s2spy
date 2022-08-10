@@ -52,6 +52,9 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.get_intervals()
 
+    def test_incorrect_freq(self):
+        with pytest.raises(ValueError):
+            AdventCalendar(freq='2W')
 
 class TestMonthlyCalendar:
     """Test MonthlyCalendar methods."""
@@ -88,6 +91,9 @@ class TestMonthlyCalendar:
         with pytest.raises(ValueError):
             cal.get_intervals()
 
+    def test_incorrect_freq(self):
+        with pytest.raises(ValueError):
+            MonthlyCalendar(freq='2d')
 
 class TestWeeklyCalendar:
     """Test WeeklyCalendar methods."""
@@ -124,6 +130,9 @@ class TestWeeklyCalendar:
         with pytest.raises(ValueError):
             cal.get_intervals()
 
+    def test_incorrect_freq(self):
+        with pytest.raises(ValueError):
+            WeeklyCalendar(anchor=40, freq='2d')
 
 class TestMap:
     """Test map to year(s)/data methods"""
@@ -309,7 +318,7 @@ class TestResample:
 
     @pytest.fixture(autouse=True, params=[1, 2, 3])
     def dummy_calendar_targets(self, request):
-        return AdventCalendar(anchor=(5, 10), freq="100D", n_targets=request.param)
+        return AdventCalendar(anchor=(5, 10), freq="100d", n_targets=request.param)
 
     @pytest.fixture(params=["20151020", "20191020"])
     def dummy_series(self, request):
