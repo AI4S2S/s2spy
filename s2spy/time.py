@@ -206,7 +206,7 @@ class MonthlyCalendar(BaseCalendar):
     def _interval_as_month(self, interval):
         """Turns an interval with pandas Timestamp values to a formatted string.
 
-        The string will contain the the years and numbers, for a more intuitive
+        The string will contain the years and months, for a more intuitive
         representation to the user.
 
         Args:
@@ -293,7 +293,7 @@ class WeeklyCalendar(BaseCalendar):
     def _interval_as_weeknr(self, interval: pd.Interval) -> str:
         """Turns an interval with pandas Timestamp values to a formatted string.
 
-        The string will contain the the years and week numbers, for a more intuitive
+        The string will contain the years and week numbers, for a more intuitive
         representation to the user.
 
         Args:
