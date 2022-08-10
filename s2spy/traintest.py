@@ -105,3 +105,33 @@ def _split_dataframe(splitter, data, key):
         data[col_name] = data[key].map(train_test_dict)
 
     return data
+
+def split_iter(data):
+    """Train/test iterator.
+
+    Iterator of train/test splits from given data.
+
+    Args:
+        data (xr.Dataset or pd.DataFrame): Dataset with `split` as dimension or
+            DataFrame with `split_no.` as column. E.g. data resampled using
+            `s2spy.time.AdventCalendar`'s `resample` method will have the `key`
+            'anchor_year'.
+    return:
+        Generator contains train data and test data seperately based on splits.
+    """
+    # check the input data type
+    if isinstance(data, xr.Dataset):
+        # check if data contains train/test splits
+        if "split" not in data.coords:
+            raise ValueError("Input data must contain train/test splits."
+                             "Use 'split_groups' function to generate train/test splits.")
+        for i in data.coords["split"].values:
+            train_data = data.sel(split = i, anchor_year = data.traintest[i] == 'train')
+            test_data = data.sel(split = i, anchor_year = data.traintest[i] == 'test')
+            yield train_data, test_data
+
+    elif isinstance(data, pd.DataFrame):
+        pass
+
+    else:
+        raise ValueError("Input data should be of type xr.Dataset or pd.DataFrame")
