@@ -131,7 +131,14 @@ def split_iterate(data):
             yield train_data, test_data
 
     elif isinstance(data, pd.DataFrame):
-        pass
-
+        # get all column names marking train/test splits
+        splits = [key for key in data.keys() if 'split' in key]
+        if not splits:
+            raise ValueError("Input data must contain train/test splits."
+                             "Use 'split_groups' function to generate train/test splits.")
+        for split in splits:
+            train_data = data.loc[data[f'{split}'] == "train"]
+            test_data = data.loc[data[f'{split}'] == "test"]
+            yield train_data, test_data
     else:
         raise ValueError("Input data should be of type xr.Dataset or pd.DataFrame")
