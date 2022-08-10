@@ -1,3 +1,4 @@
+# type: ignore
 """Response Guided Dimensionality Reduction."""
 from typing import List
 from typing import Optional
@@ -55,11 +56,11 @@ def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> f
     Returns:
         float: Area of the cluster `cluster_label`.
     """
-    return float(
+    return (
         ds["area"]
         .where(ds["cluster_labels"] == cluster_label)
         .sum(skipna=True)
-        .values
+        .values.item()
     )
 
 
@@ -107,9 +108,9 @@ def weighted_groupby(
     groups = ds.groupby(groupby)
 
     # find stacked dim name
-    group_dims = list(groups)[0][1].dims  # type: ignore
-    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims  # type: ignore
-    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]  # type: ignore
+    group_dims = list(groups)[0][1].dims
+    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims
+    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]
 
     reduced_data = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
@@ -117,8 +118,8 @@ def weighted_groupby(
     reduced_data = xr.concat(reduced_data, dim=groupby)
 
     if isinstance(ds, xr.DataArray):  # Add back the labels of the groupby dim
-        reduced_data[groupby] = np.unique(ds[groupby])  # type: ignore
-    return reduced_data  # type: ignore
+        reduced_data[groupby] = np.unique(ds[groupby])
+    return reduced_data
 
 
 def masked_spherical_dbscan(
@@ -315,11 +316,11 @@ class RGDR:
                 "Either pass axis handles for both ax1 and ax2, or pass neither."
             )
 
-        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")  # type: ignore
-        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")  # type: ignore
+        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")
+        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
 
-        ax1.set_title("correlation")  # type: ignore
-        ax2.set_title("p-value")  # type: ignore
+        ax1.set_title("correlation")
+        ax2.set_title("p-value")
 
         return [plot1, plot2]
 
