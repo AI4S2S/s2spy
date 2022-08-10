@@ -2,6 +2,8 @@
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
+from typing import TypeVar
 from typing import Union
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -13,6 +15,7 @@ from sklearn.cluster import DBSCAN
 
 RADIUS_EARTH_KM = 6371
 SURFACE_AREA_EARTH_KM2 = 5.1e8
+XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 
 
 def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
@@ -57,9 +60,7 @@ def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> f
     )
 
 
-def remove_small_area_clusters(
-    ds: Union[xr.DataArray, xr.Dataset], min_area_km2: float
-) -> Union[xr.DataArray, xr.Dataset]:
+def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
     """Removes the clusters where the area is under the input threshold.
 
     Args:
@@ -82,8 +83,8 @@ def remove_small_area_clusters(
 
 
 def weighted_groupby(
-    ds: Union[xr.DataArray, xr.Dataset], groupby: str, weight: str, method: str = "mean"
-) -> Union[xr.DataArray, xr.Dataset]:
+    ds: XrType, groupby: str, weight: str, method: str = "mean"
+) -> XrType:
     """Apply a weighted reduction after a groupby call. xarray does not currently support
     combining `weighted` and `groupby`. An open PR adds supports for this functionality
     (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
@@ -97,7 +98,7 @@ def weighted_groupby(
             'mean'. Supports any of xarray's builtin methods, e.g. median, min, max.
 
     Returns:
-        xr.Dataset: Dataset reduced using the `groupby` coordinate, using weights =
+        Same as input: Dataset reduced using the `groupby` coordinate, using weights =
             based on `ds[weight]`.
     """
     groups = ds.groupby(groupby)
@@ -113,8 +114,8 @@ def weighted_groupby(
     reduced_data = xr.concat(reduced_data, dim=groupby)
 
     if isinstance(ds, xr.DataArray):  # Add back the labels of the groupby dim
-        reduced_data[groupby] = np.unique(ds[groupby])
-    return reduced_data
+        reduced_data[groupby] = np.unique(ds[groupby])  # type: ignore
+    return reduced_data  # type: ignore
 
 
 def masked_spherical_dbscan(
@@ -122,7 +123,7 @@ def masked_spherical_dbscan(
     corr: xr.DataArray,
     p_val: xr.DataArray,
     dbscan_params: dict,
-) -> xr.Dataset:
+) -> xr.DataArray:
 
     """Determines the clusters based on sklearn's DBSCAN implementation. Alpha determines
     the mask based on the minimum p_value. Grouping can be adjusted using the `eps_km`
@@ -277,22 +278,22 @@ class RGDR:
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
-    def preview_correlation(
+    def plot_correlation(
         self,
         precursor: xr.DataArray,
-        ax1: Optional[mpl.axes.Axes] = None,
-        ax2: Optional[mpl.axes.Axes] = None,
-    ) -> List[mpl.collections.QuadMesh]:
+        ax1: Optional[plt.Axes] = None,
+        ax2: Optional[plt.Axes] = None,
+    ) -> List[Type[mpl.collections.QuadMesh]]:
         """Generates a figure showing the correlation and p-value results with the
         initiated RGDR class and input precursor field.
 
         Args:
             precursor (xr.DataArray): Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
-            ax1 (mpl.axes.Axes, optional): a matplotlib axis handle to plot
+            ax1 (plt.Axes, optional): a matplotlib axis handle to plot
                 the correlation values into. If None, an axis handle will be created
                 instead.
-            ax2 (mpl.axes.Axes, optional): a matplotlib axis handle to plot
+            ax2 (plt.Axes, optional): a matplotlib axis handle to plot
                 the p-values into. If None, an axis handle will be created instead.
 
         Returns:
@@ -314,21 +315,21 @@ class RGDR:
         plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")
         plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
 
-        ax1.set_title("correlation")
-        ax2.set_title("p-value")
+        ax1.set_title("correlation")  # type: ignore
+        ax2.set_title("p-value")  # type: ignore
 
         return [plot1, plot2]
 
-    def preview_clusters(
-        self, precursor: xr.DataArray, ax: Optional[mpl.axes.Axes] = None
-    ) -> mpl.collections.QuadMesh:
+    def plot_clusters(
+        self, precursor: xr.DataArray, ax: Optional[plt.Axes] = None
+    ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
 
         Args:
             precursor: Precursor field data with the dimensions 'latitude', 'longitude',
                 and 'anchor_year'
-            ax (mpl.axes.Axes, optional): a matplotlib axis handle to plot the clusters
+            ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
 
         Returns:
