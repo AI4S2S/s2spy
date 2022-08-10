@@ -55,11 +55,11 @@ def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> f
     Returns:
         float: Area of the cluster `cluster_label`.
     """
-    return (
+    return float(
         ds["area"]
         .where(ds["cluster_labels"] == cluster_label)
         .sum(skipna=True)
-        .values[0]
+        .values
     )
 
 
