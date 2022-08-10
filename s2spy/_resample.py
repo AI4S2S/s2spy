@@ -1,7 +1,9 @@
+import warnings
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+from . import utils
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -159,3 +161,83 @@ def resample_xarray(
     bins = bins.transpose("anchor_year", "i_interval", ...)
 
     return bins
+
+
+def resample(
+    mapped_calendar,
+    input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset],
+) -> Union[pd.DataFrame, xr.Dataset]:
+    """Resample input data to the calendar frequency.
+
+    Pass a pandas Series/DataFrame with a datetime axis, or an
+    xarray DataArray/Dataset with a datetime coordinate called 'time'.
+    It will return the same object with the datetimes resampled onto
+    the Calendar's Index by binning the data into the Calendar's intervals
+    and calculating the mean of each bin.
+
+    Note: this function is intended for upscaling operations, which means
+    the calendar frequency is larger than the original frequency of input data (e.g.
+    `freq` is "7days" and the input is daily data). It supports downscaling
+    operations but the user need to be careful since the returned values may contain
+    "NaN".
+
+    Args:
+        mapped_calendar: Calendar object with either a map_year or map_to_data mapping.
+        input_data: Input data for resampling. For a Pandas object its index must be
+            either a pandas.DatetimeIndex. An xarray object requires a dimension
+            named 'time' containing datetime values.
+
+    Raises:
+        UserWarning: If the calendar frequency is smaller than the frequency of
+            input data
+
+    Returns:
+        Input data resampled based on the calendar frequency, similar data format as
+            given inputs.
+
+    Example:
+        Assuming the input data is pd.DataFrame containing random values with index
+        from 2021-11-11 to 2021-11-01 at daily frequency.
+
+        >>> import s2spy.time
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> cal = s2spy.time.AdventCalendar(freq='180d')
+        >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
+        >>> var = np.arange(len(time_index))
+        >>> input_data = pd.Series(var, index=time_index)
+        >>> cal = cal.map_to_data(input_data)
+        >>> bins = s2spy.time.resample(cal, input_data)
+        >>> bins # doctest: +NORMALIZE_WHITESPACE
+            anchor_year  i_interval                  interval  mean_data  target
+        0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
+        1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
+        2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
+        3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
+
+    """
+    if mapped_calendar.get_intervals() is None:
+        raise ValueError("Generate a calendar map before calling resample")
+
+    utils.check_timeseries(input_data)
+
+    if isinstance(input_data, PandasData):
+        # raise a warning for upscaling
+        # target frequency must be larger than the (absolute) input frequency
+        if input_data.index.freq:
+            input_freq = input_data.index.freq
+            input_freq = input_freq if input_freq.n > 0 else -input_freq
+            if pd.Timedelta(mapped_calendar.freq) < input_freq:
+                warnings.warn(
+                    """Target frequency is smaller than the original frequency.
+                    The resampled data will contain NaN values, as there is no data
+                    available within all intervals."""
+                )
+
+        resampled_data = resample_pandas(mapped_calendar, input_data)
+
+    else:
+        resampled_data = resample_xarray(mapped_calendar, input_data)
+
+    # mark target periods before returning the resampled data
+    return mark_target_period(mapped_calendar, resampled_data)
