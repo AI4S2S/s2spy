@@ -106,7 +106,7 @@ def _split_dataframe(splitter, data, key):
 
     return data
 
-def split_iter(data):
+def split_iterate(data):
     """Train/test iterator.
 
     Iterator of train/test splits from given data.
