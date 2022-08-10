@@ -66,7 +66,7 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
     return spherical_area * surface_area_earth_km2
 
 
-def cluster_area(ds: xr.Dataset, cluster_label: float) -> float:
+def cluster_area(ds: xr.Dataset, cluster_label: float) -> np.ndarray:
     """Determines the total area of a cluster. Requires the input dataset to have the
     variables `area` and `cluster_labels`.
 
@@ -125,7 +125,7 @@ def weighted_groupby(ds: xr.Dataset, groupby: str, weight: str, method: str = "m
 
     # find stacked dim name:
     group_dims = list(groups)[0][1].dims  # Get ds of first group
-    stacked_dims = [dim for dim in group_dims.keys() if "stacked_" in dim]
+    stacked_dims = [dim for dim in group_dims.keys() if "stacked_" in dim] # type: ignore
 
     reduced_data = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups

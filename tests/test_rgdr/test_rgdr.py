@@ -6,6 +6,7 @@ import xarray as xr
 from s2spy import RGDR
 from s2spy.rgdr import _rgdr
 from s2spy.time import AdventCalendar
+from s2spy.time import resample
 
 
 # pylint: disable=protected-access
@@ -104,7 +105,7 @@ test_file_path = "./tests/test_rgdr/test_data"
 class TestMapRegions:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        return AdventCalendar(anchor_date=(8, 31), freq="30d")
+        return AdventCalendar(anchor=(8, 31), freq="30d")
 
     @pytest.fixture(autouse=True)
     def example_target(self):
@@ -120,8 +121,9 @@ class TestMapRegions:
 
     @pytest.fixture(autouse=True)
     def example_corr(self, dummy_calendar, example_target, example_field):
-        field = dummy_calendar.resample(example_field)
-        target = dummy_calendar.resample(example_target)
+        cal = dummy_calendar.map_to_data(example_field)
+        field = resample(cal, example_field)
+        target = resample(cal, example_target)
 
         field["corr"], field["p_val"] = _rgdr.correlation(
             field.sst, target.ts.sel(i_interval=0), corr_dim="anchor_year"
