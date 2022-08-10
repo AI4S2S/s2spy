@@ -56,7 +56,10 @@ def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> f
         float: Area of the cluster `cluster_label`.
     """
     return (
-        ds["area"].where(ds["cluster_labels"] == cluster_label).sum(skipna=True).values
+        ds["area"]
+        .where(ds["cluster_labels"] == cluster_label)
+        .sum(skipna=True)
+        .values[0]
     )
 
 
@@ -103,10 +106,10 @@ def weighted_groupby(
     """
     groups = ds.groupby(groupby)
 
-    # find stacked dim name:
-    group_dims = list(groups)[0][1].dims  # Get ds of first group
-    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims
-    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]
+    # find stacked dim name
+    group_dims = list(groups)[0][1].dims  # type: ignore
+    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims  # type: ignore
+    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]  # type: ignore
 
     reduced_data = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
@@ -312,8 +315,8 @@ class RGDR:
                 "Either pass axis handles for both ax1 and ax2, or pass neither."
             )
 
-        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")
-        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
+        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")  # type: ignore
+        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")  # type: ignore
 
         ax1.set_title("correlation")  # type: ignore
         ax2.set_title("p-value")  # type: ignore
