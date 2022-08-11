@@ -1,11 +1,9 @@
-# type: ignore
 """Response Guided Dimensionality Reduction."""
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
-from typing import Union
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +41,7 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
     return spherical_area * SURFACE_AREA_EARTH_KM2
 
 
-def cluster_area(ds: Union[xr.DataArray, xr.Dataset], cluster_label: float) -> float:
+def cluster_area(ds: XrType, cluster_label: float) -> float:
     """Determines the total area of a cluster. Requires the input dataset to have the
     variables `area` and `cluster_labels`.
 
@@ -108,16 +106,17 @@ def weighted_groupby(
     groups = ds.groupby(groupby)
 
     # find stacked dim name
-    group_dims = list(groups)[0][1].dims
-    group_dims = group_dims.keys() if isinstance(ds, xr.Dataset) else group_dims
-    stacked_dims = [dim for dim in group_dims if "stacked_" in dim]
+    group0 = list(groups)[0][1]
+    dims = list(group0.dims)
+    stacked_dims = [dim for dim in dims if "stacked_" in str(dim)] # str() is just for mypy
 
-    reduced_data = [
+    reduced_groups = [
         getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
     ]
-    reduced_data = xr.concat(reduced_data, dim=groupby)
+    reduced_data: XrType
+    reduced_data = xr.concat(reduced_groups, dim=groupby)
 
-    if isinstance(ds, xr.DataArray):  # Add back the labels of the groupby dim
+    if isinstance(reduced_data, xr.DataArray):  # Add back the labels of the groupby dim
         reduced_data[groupby] = np.unique(ds[groupby])
     return reduced_data
 
@@ -311,13 +310,13 @@ class RGDR:
 
         if (ax1 is None) and (ax2 is None):
             _, (ax1, ax2) = plt.subplots(ncols=2)
-        elif (ax1 is None) ^ (ax2 is None):
+        elif (ax1 is None) or (ax2 is None):
             raise ValueError(
                 "Either pass axis handles for both ax1 and ax2, or pass neither."
             )
 
-        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")
-        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")
+        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")  # type: ignore
+        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")  # type: ignore
 
         ax1.set_title("correlation")
         ax2.set_title("p-value")
