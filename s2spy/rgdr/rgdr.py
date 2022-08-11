@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
+from . import utils
 
 
 RADIUS_EARTH_KM = 6371
@@ -82,43 +83,6 @@ def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
     )
 
     return ds
-
-
-def weighted_groupby(
-    ds: XrType, groupby: str, weight: str, method: str = "mean"
-) -> XrType:
-    """Apply a weighted reduction after a groupby call. xarray does not currently support
-    combining `weighted` and `groupby`. An open PR adds supports for this functionality
-    (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
-
-    Args:
-        ds (xr.DataArray or xr.Dataset): Data containing the coordinates or variables
-            specified in the `groupby` and `weight` kwargs.
-        groupby (str): Coordinate which should be used to make the groups.
-        weight (str): Variable in the Dataset containing the weights that should be used.
-        method (str): Method that should be used to reduce the dataset, by default
-            'mean'. Supports any of xarray's builtin methods, e.g. median, min, max.
-
-    Returns:
-        Same as input: Dataset reduced using the `groupby` coordinate, using weights =
-            based on `ds[weight]`.
-    """
-    groups = ds.groupby(groupby)
-
-    # find stacked dim name
-    group0 = list(groups)[0][1]
-    dims = list(group0.dims)
-    stacked_dims = [dim for dim in dims if "stacked_" in str(dim)] # str() is just for mypy
-
-    reduced_groups = [
-        getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
-    ]
-    reduced_data: XrType
-    reduced_data = xr.concat(reduced_groups, dim=groupby)
-
-    if isinstance(reduced_data, xr.DataArray):  # Add back the labels of the groupby dim
-        reduced_data[groupby] = np.unique(ds[groupby])
-    return reduced_data
 
 
 def masked_spherical_dbscan(
@@ -381,7 +345,12 @@ class RGDR:
         self._clusters = masked_data.cluster_labels
         self._area = masked_data.area
 
-        return weighted_groupby(masked_data, groupby="cluster_labels", weight="area")
+        reduced_precursor = utils.weighted_groupby(
+            masked_data, groupby="cluster_labels", weight="area"
+        )
+
+        # Add the geographical centers for later alignment between, e.g., splits
+        return utils.geographical_cluster_center(masked_data, reduced_precursor)
 
     def transform(self, data: xr.DataArray) -> xr.DataArray:
         """Apply RGDR on the input data, based on the previous fit.
@@ -397,4 +366,8 @@ class RGDR:
         data["cluster_labels"] = self._clusters
         data["area"] = self._area
 
-        return weighted_groupby(data, groupby="cluster_labels", weight="area")
+        reduced_data = utils.weighted_groupby(
+            data, groupby="cluster_labels", weight="area"
+        )
+
+        return utils.geographical_cluster_center(data, reduced_data)
