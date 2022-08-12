@@ -14,7 +14,7 @@ Example:
     >>> # Countdown the weeks until New Year's Eve
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
     >>> calendar
-    AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None)
+    AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None, allow_overlap=False)
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
