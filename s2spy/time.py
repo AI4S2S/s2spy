@@ -70,12 +70,13 @@ month_mapping_dict = {
 class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         anchor: Tuple[int, int] = (11, 30),
         freq: str = "7d",
         n_targets: int = 1,
         max_lag: Optional[int] = None,
+        allow_overlap: bool = False,
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -93,7 +94,12 @@ class AdventCalendar(BaseCalendar):
                 If a maximum lag is provided, the intervals can either only cover part
                 of the year, or extend over multiple years. In case of a large max_lag
                 number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
+                be skipped to avoid overlapping intervals. To allow overlapping
+                intervals, use the `allow_overlap` kwarg.
+            allow_overlap: Allows intervals to overlap between anchor years, if the
+                max_lag is set to a high enough number that intervals extend over
+                multiple years. `False` by default, to avoid train/test information
+                leakage.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -112,6 +118,7 @@ class AdventCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
+        self.allow_overlap = allow_overlap
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -128,12 +135,13 @@ class AdventCalendar(BaseCalendar):
 class MonthlyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         anchor: str = "Dec",
         freq: str = "1M",
         n_targets: int = 1,
         max_lag: Optional[int] = None,
+        allow_overlap: bool = False,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -151,7 +159,12 @@ class MonthlyCalendar(BaseCalendar):
                 If a maximum lag is provided, the intervals can either only cover part
                 of the year, or extend over multiple years. In case of a large max_lag
                 number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
+                be skipped to avoid overlapping intervals. To allow overlapping
+                intervals, use the `allow_overlap` kwarg.
+            allow_overlap: Allows intervals to overlap between anchor years, if the
+                max_lag is set to a high enough number that intervals extend over
+                multiple years. `False` by default, to avoid train/test information
+                leakage.
 
         Example:
             Instantiate a calendar counting down the quarters (3 month periods) until
@@ -165,10 +178,12 @@ class MonthlyCalendar(BaseCalendar):
         """
         if not re.fullmatch(r"\d*M", freq):
             raise ValueError("Please input a frequency in the form of '2M'")
+
         self.month = month_mapping_dict[anchor.upper()]
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
+        self.allow_overlap = allow_overlap
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -234,12 +249,13 @@ class MonthlyCalendar(BaseCalendar):
 class WeeklyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor week number, in steps of calendar weeks."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         anchor: int,
         freq: str = "1W",
         n_targets: int = 1,
         max_lag: Optional[int] = None,
+        allow_overlap: bool = False,
     ) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
@@ -259,7 +275,12 @@ class WeeklyCalendar(BaseCalendar):
                 If a maximum lag is provided, the intervals can either only cover part
                 of the year, or extend over multiple years. In case of a large max_lag
                 number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
+                be skipped to avoid overlapping intervals. To allow overlapping
+                intervals, use the `allow_overlap` kwarg.
+            allow_overlap: Allows intervals to overlap between anchor years, if the
+                max_lag is set to a high enough number that intervals extend over
+                multiple years. `False` by default, to avoid train/test information
+                leakage.
 
         Example:
             Instantiate a calendar counting down the weeks until week number 40.
@@ -277,6 +298,7 @@ class WeeklyCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
         self.max_lag = max_lag
+        self.allow_overlap = allow_overlap
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.

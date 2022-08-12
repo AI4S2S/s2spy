@@ -23,12 +23,20 @@ class BaseCalendar(ABC):
     _mapping = None
 
     @abstractmethod
-    def __init__(self, anchor, freq, n_targets: int = 1, max_lag: int = None):
-        """For initializing calendars, the following four variables will be required."""
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        anchor,
+        freq,
+        n_targets: int = 1,
+        max_lag: int = None,
+        allow_overlap: bool = False,
+    ):
+        """For initializing calendars, the following five variables will be required."""
         self.n_targets = n_targets
         self.max_lag = max_lag
         self.anchor = anchor
         self.freq = freq
+        self.allow_overlap = allow_overlap
 
     @abstractmethod
     def _get_anchor(self, year: int) -> pd.Timestamp:
@@ -196,8 +204,9 @@ class BaseCalendar(ABC):
         if self._mapping == "data":
             self._set_year_range_from_timestamps()
 
+        skip_years = 0 if self.allow_overlap else self._get_skip_nyears()
         year_range = range(
-            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
+            self._last_year, self._first_year - 1, -(skip_years + 1)
         )
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T

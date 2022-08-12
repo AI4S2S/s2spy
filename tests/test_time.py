@@ -30,7 +30,7 @@ class TestAdventCalendar:
     def test_repr(self):
         cal = AdventCalendar()
         assert repr(cal) == (
-            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1, max_lag=None)"
+            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1, max_lag=None, allow_overlap=False)"
         )
 
     def test_show(self, dummy_calendar):
@@ -71,7 +71,7 @@ class TestMonthlyCalendar:
     def test_repr(self):
         cal = MonthlyCalendar(anchor='Dec', freq="2M")
         assert repr(cal) == (
-            "MonthlyCalendar(month=12, freq=2M, n_targets=1, max_lag=None)"
+            "MonthlyCalendar(month=12, freq=2M, n_targets=1, max_lag=None, allow_overlap=False)"
         )
 
     def test_show(self, dummy_calendar):
@@ -110,7 +110,7 @@ class TestWeeklyCalendar:
     def test_repr(self):
         cal = WeeklyCalendar(anchor=48, freq="30W")
         assert repr(cal) == (
-            "WeeklyCalendar(week=48, freq=30W, n_targets=1, max_lag=None)"
+            "WeeklyCalendar(week=48, freq=30W, n_targets=1, max_lag=None, allow_overlap=False)"
         )
 
     def test_show(self, dummy_calendar):

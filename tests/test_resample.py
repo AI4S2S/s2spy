@@ -106,6 +106,17 @@ class TestResample:
         expected[: dummy_calendar_targets.n_targets] = True
         np.testing.assert_array_equal(resampled_data["target"].values, expected)
 
+    def test_allow_overlap_dataframe(self):
+        calendar = AdventCalendar(anchor=(10, 15), freq="100d", max_lag=5,
+                                  allow_overlap=True)
+        time_index = pd.date_range("20151101", "20211101", freq="50d")
+        test_data = np.random.random(len(time_index))
+        series = pd.Series(test_data, index=time_index)
+        calendar.map_to_data(series)
+        intervals = calendar.get_intervals()
+        # 4 anchor years are expected if overlap is allowed
+        assert len(intervals.index) == 4
+
     # Test data for missing intervals, too low frequency.
     def test_missing_intervals_dataframe(self, dummy_calendar, dummy_dataframe):
         dataframe, _ = dummy_dataframe
