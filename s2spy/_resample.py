@@ -97,8 +97,8 @@ def resample_pandas(
     interval_groups = interval_index.get_indexer(input_data.index)
     interval_means = input_data.groupby(interval_groups).mean()
 
-    # drop the -1 index, as it represents data outside of all intervals
-    interval_means = interval_means.loc[0:]
+    # Reindex the intervals. Empty intervals will contain NaN values.
+    interval_means = interval_means.reindex(np.arange(len(interval_index)))
 
     if isinstance(input_data, pd.DataFrame):
         for name in input_data.keys():
@@ -161,6 +161,37 @@ def resample_xarray(
     bins = bins.transpose("anchor_year", "i_interval", ...)
 
     return bins
+
+
+def check_empty_intervals(data: Union[pd.DataFrame, xr.Dataset]) -> None:
+    """Utility to check for empty intervals in data.
+
+    Note: For the Dataset, all values within a certain interval, anchor_year combination
+    have to be NaN, to allow for, e.g., empty gridcells in a latitude/longitude grid.
+
+    Args:
+        data (Union[pd.DataFrame, xr.Dataset]): Data that should be checked for empty
+            intervals. Should be done after resampling the data.
+
+    Raises:
+        UserWarning: If the data is insufficient.
+
+    Returns:
+        None
+    """
+    if isinstance(data, pd.DataFrame) and not np.any(np.isnan(data.iloc[:, 3:])):
+        return None
+    if isinstance(data, xr.Dataset) and not any(
+        data[var].isnull().any(dim=["i_interval", "anchor_year"]).all()
+        for var in data.data_vars
+    ):
+        return None
+
+    warnings.warn(
+        "The input data could not fully cover the calendar's intervals. "
+        "Intervals without available data will contain NaN values."
+    )
+    return None
 
 
 def resample(
@@ -239,5 +270,6 @@ def resample(
     else:
         resampled_data = resample_xarray(mapped_calendar, input_data)
 
+    check_empty_intervals(resampled_data)
     # mark target periods before returning the resampled data
     return mark_target_period(mapped_calendar, resampled_data)
