@@ -18,7 +18,7 @@ class TestResample:
     def dummy_calendar_targets(self, request):
         return AdventCalendar(anchor=(5, 10), freq="100d", n_targets=request.param)
 
-    @pytest.fixture(params=["20151020", "20191020"])
+    @pytest.fixture(params=["20151020", "20191015"])
     def dummy_series(self, request):
         time_index = pd.date_range(request.param, "20211001", freq="60d")
         test_data = np.random.random(len(time_index))
@@ -132,3 +132,13 @@ class TestResample:
         cal = cal.map_to_data(dataset)
         with pytest.warns(UserWarning):
             resample(cal, dataset)
+
+    def test_1day_freq_dataframe(self):
+        # Will test the regular expression match and pre-pending of '1' in the
+        # check_input_frequency utility function
+        calendar = AdventCalendar(anchor=(10, 15), freq="1d")
+        time_index = pd.date_range("20191101", "20211101", freq="1d")
+        test_data = np.random.random(len(time_index))
+        series = pd.Series(test_data, index=time_index, name="data1")
+        calendar.map_to_data(series)
+        calendar.get_intervals()

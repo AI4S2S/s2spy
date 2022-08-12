@@ -156,10 +156,10 @@ class BaseCalendar(ABC):
 
         # ensure that the input data could always cover the advent calendar
         # last date check
-        if self._map_year(map_last_year).iloc[0].right > self._last_timestamp:
+        while self._map_year(map_last_year).iloc[0].right > self._last_timestamp:
             map_last_year -= 1
         # first date check
-        if self._map_year(map_first_year).iloc[-1].left < self._first_timestamp:
+        while self._map_year(map_first_year).iloc[-1].right <= self._first_timestamp:
             map_first_year += 1
 
         # map year(s) and generate year realized advent calendar

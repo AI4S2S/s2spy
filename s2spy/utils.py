@@ -1,3 +1,4 @@
+import re
 import warnings
 from typing import Union
 import numpy as np
@@ -73,6 +74,12 @@ def check_empty_intervals(data: Union[pd.DataFrame, xr.Dataset]) -> None:
 
 
 def check_input_frequency(calendar, data):
+    """Checks the frequency of (input) data.
+
+    Note: Pandas and xarray have the builtin function `infer_freq`, but this function is
+    not robust enough for our purpose, so we have to manually infer the frequency if the
+    builtin one fails.
+    """
     if isinstance(data, PandasData):
         data_freq = pd.infer_freq(data.index)
         if data_freq is None: # Manually infer the frequency
@@ -82,7 +89,10 @@ def check_input_frequency(calendar, data):
         if data_freq is None: # Manually infer the frequency
             data_freq = (data.time.values[1:] - data.time.values[:-1]).min()
 
-    data_freq = data_freq.replace("-", "") if isinstance(data_freq, str) else data_freq
+    if isinstance(data_freq, str):
+        data_freq.replace("-", "")
+        if not re.match(r'\d+\D', data_freq):
+            data_freq = '1' + data_freq
 
     if pd.Timedelta(calendar.freq) < pd.Timedelta(data_freq):
         warnings.warn(
