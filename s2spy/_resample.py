@@ -1,4 +1,3 @@
-import warnings
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -163,37 +162,6 @@ def resample_xarray(
     return bins
 
 
-def check_empty_intervals(data: Union[pd.DataFrame, xr.Dataset]) -> None:
-    """Utility to check for empty intervals in data.
-
-    Note: For the Dataset, all values within a certain interval, anchor_year combination
-    have to be NaN, to allow for, e.g., empty gridcells in a latitude/longitude grid.
-
-    Args:
-        data (Union[pd.DataFrame, xr.Dataset]): Data that should be checked for empty
-            intervals. Should be done after resampling the data.
-
-    Raises:
-        UserWarning: If the data is insufficient.
-
-    Returns:
-        None
-    """
-    if isinstance(data, pd.DataFrame) and not np.any(np.isnan(data.iloc[:, 3:])):
-        return None
-    if isinstance(data, xr.Dataset) and not any(
-        data[var].isnull().any(dim=["i_interval", "anchor_year"]).all()
-        for var in data.data_vars
-    ):
-        return None
-
-    warnings.warn(
-        "The input data could not fully cover the calendar's intervals. "
-        "Intervals without available data will contain NaN values."
-    )
-    return None
-
-
 def resample(
     mapped_calendar,
     input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset],
@@ -251,25 +219,14 @@ def resample(
         raise ValueError("Generate a calendar map before calling resample")
 
     utils.check_timeseries(input_data)
+    utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
-        # raise a warning for upscaling
-        # target frequency must be larger than the (absolute) input frequency
-        if input_data.index.freq:
-            input_freq = input_data.index.freq
-            input_freq = input_freq if input_freq.n > 0 else -input_freq
-            if pd.Timedelta(mapped_calendar.freq) < input_freq:
-                warnings.warn(
-                    """Target frequency is smaller than the original frequency.
-                    The resampled data will contain NaN values, as there is no data
-                    available within all intervals."""
-                )
-
         resampled_data = resample_pandas(mapped_calendar, input_data)
-
     else:
         resampled_data = resample_xarray(mapped_calendar, input_data)
 
-    check_empty_intervals(resampled_data)
+    utils.check_empty_intervals(resampled_data)
+
     # mark target periods before returning the resampled data
     return mark_target_period(mapped_calendar, resampled_data)

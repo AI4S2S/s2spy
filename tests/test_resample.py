@@ -106,6 +106,7 @@ class TestResample:
         expected[: dummy_calendar_targets.n_targets] = True
         np.testing.assert_array_equal(resampled_data["target"].values, expected)
 
+    # Test data for missing intervals, too low frequency.
     def test_missing_intervals_dataframe(self, dummy_calendar, dummy_dataframe):
         dataframe, _ = dummy_dataframe
         cal = dummy_calendar.map_years(2020, 2025)
@@ -115,5 +116,19 @@ class TestResample:
     def test_missing_intervals_dataset(self, dummy_calendar, dummy_dataset):
         dataset, _ = dummy_dataset
         cal = dummy_calendar.map_years(2020, 2025)
+        with pytest.warns(UserWarning):
+            resample(cal, dataset)
+
+    def test_low_freq_dataframe(self, dummy_dataframe):
+        cal = AdventCalendar(anchor=(10, 15), freq="1d")
+        dataframe, _ = dummy_dataframe
+        cal = cal.map_to_data(dataframe)
+        with pytest.warns(UserWarning):
+            resample(cal, dataframe)
+
+    def test_low_freq_dataset(self, dummy_dataset):
+        cal = AdventCalendar(anchor=(10, 15), freq="1d")
+        dataset, _ = dummy_dataset
+        cal = cal.map_to_data(dataset)
         with pytest.warns(UserWarning):
             resample(cal, dataset)
