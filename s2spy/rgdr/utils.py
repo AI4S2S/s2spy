@@ -57,7 +57,7 @@ def geographical_cluster_center(
             geographical centers will be added
 
     Returns:
-        xr.DataArray: Reduced data with the latitude and longitude of the  geographical
+        xr.DataArray: Reduced data with the latitude and longitude of the geographical
             centers added as coordinates of the cluster labels.
     """
     clusters = np.unique(masked_data["cluster_labels"])

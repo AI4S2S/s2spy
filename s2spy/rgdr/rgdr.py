@@ -228,7 +228,7 @@ class RGDR:
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
-        Dimensionality reduction based on the correlation between
+        Dimensionality reduction based on the correlation between precursor field and target timeseries.
 
         Args:
             alpha (float): p-value below which the correlation is considered significant
