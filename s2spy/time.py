@@ -190,7 +190,11 @@ class MonthlyCalendar(BaseCalendar):
             int: Number of years that need to be skipped.
         """
         nmonths = int(self.freq.replace("M", ""))
-        return (np.ceil(nmonths / 12) - 1) if self._max_lag > 0 else 0
+        return (
+            0
+            if self._max_lag > 0 and self._allow_overlap
+            else int(np.ceil(nmonths / 12) - 1)
+        )
 
     def _interval_as_month(self, interval):
         """Turns an interval with pandas Timestamp values to a formatted string.

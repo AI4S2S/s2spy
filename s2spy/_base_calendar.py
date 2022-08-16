@@ -128,9 +128,9 @@ class BaseCalendar(ABC):
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(self.freq)
 
         return (
-            (np.ceil(nintervals / periods_per_year).astype(int) - 1)
-            if self._max_lag > 0
-            else 0
+            0
+            if self._max_lag > 0 and self._allow_overlap
+            else int(np.ceil(nintervals / periods_per_year).astype(int) - 1)
         )
 
     def map_years(self, start: int, end: int):
@@ -231,9 +231,8 @@ class BaseCalendar(ABC):
         if self._mapping == "data":
             self._set_year_range_from_timestamps()
 
-        skip_years = 0 if self._allow_overlap else self._get_skip_nyears()
         year_range = range(
-            self._last_year, self._first_year - 1, -(skip_years + 1)
+            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
         )
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
