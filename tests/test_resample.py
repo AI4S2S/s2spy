@@ -107,8 +107,8 @@ class TestResample:
         np.testing.assert_array_equal(resampled_data["target"].values, expected)
 
     def test_allow_overlap_dataframe(self):
-        calendar = AdventCalendar(anchor=(10, 15), freq="100d", max_lag=5,
-                                  allow_overlap=True)
+        calendar = AdventCalendar(anchor=(10, 15), freq="100d")
+        calendar.set_max_lag(5, allow_overlap=True)
         time_index = pd.date_range("20151101", "20211101", freq="50d")
         test_data = np.random.random(len(time_index))
         series = pd.Series(test_data, index=time_index)

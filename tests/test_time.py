@@ -30,7 +30,7 @@ class TestAdventCalendar:
     def test_repr(self):
         cal = AdventCalendar()
         assert repr(cal) == (
-            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1, max_lag=None, allow_overlap=False)"
+            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1)"
         )
 
     def test_show(self, dummy_calendar):
@@ -55,6 +55,16 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             AdventCalendar(freq='2W')
 
+    def test_set_max_lag(self):
+        cal = AdventCalendar()
+        cal.set_max_lag(max_lag=5)
+
+    def test_set_max_lag_incorrect_val(self):
+        cal = AdventCalendar()
+        with pytest.raises(ValueError):
+            cal.set_max_lag(-1)
+
+
 class TestMonthlyCalendar:
     """Test MonthlyCalendar methods."""
 
@@ -71,7 +81,7 @@ class TestMonthlyCalendar:
     def test_repr(self):
         cal = MonthlyCalendar(anchor='Dec', freq="2M")
         assert repr(cal) == (
-            "MonthlyCalendar(month=12, freq=2M, n_targets=1, max_lag=None, allow_overlap=False)"
+            "MonthlyCalendar(month=12, freq=2M, n_targets=1)"
         )
 
     def test_show(self, dummy_calendar):
@@ -110,7 +120,7 @@ class TestWeeklyCalendar:
     def test_repr(self):
         cal = WeeklyCalendar(anchor=48, freq="30W")
         assert repr(cal) == (
-            "WeeklyCalendar(week=48, freq=30W, n_targets=1, max_lag=None, allow_overlap=False)"
+            "WeeklyCalendar(week=48, freq=30W, n_targets=1)"
         )
 
     def test_show(self, dummy_calendar):
@@ -298,7 +308,8 @@ class TestMap:
     # and where the max_lag just causes the calendar to skip a year
     @pytest.mark.parametrize("max_lag,expected_index,expected_size", max_lag_edge_cases)
     def test_max_lag_skip_years(self, max_lag, expected_index, expected_size):
-        calendar = AdventCalendar(anchor=(12, 31), freq="5d", max_lag=max_lag)
+        calendar = AdventCalendar(anchor=(12, 31), freq="5d")
+        calendar.set_max_lag(max_lag)
         calendar = calendar.map_years(2018, 2019)
 
         np.testing.assert_array_equal(

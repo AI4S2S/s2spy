@@ -23,20 +23,19 @@ class BaseCalendar(ABC):
     _mapping = None
 
     @abstractmethod
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         anchor,
         freq,
         n_targets: int = 1,
-        max_lag: int = None,
-        allow_overlap: bool = False,
     ):
         """For initializing calendars, the following five variables will be required."""
         self.n_targets = n_targets
-        self.max_lag = max_lag
         self.anchor = anchor
         self.freq = freq
-        self.allow_overlap = allow_overlap
+
+        self._max_lag = 0
+        self._allow_overlap = False
 
     @abstractmethod
     def _get_anchor(self, year: int) -> pd.Timestamp:
@@ -53,6 +52,31 @@ class BaseCalendar(ABC):
             pd.Timestamp: Timestamp at the end of the anchor_years interval 0.
         """
         return pd.Timestamp()
+
+    def set_max_lag(self, max_lag: int, allow_overlap: bool = False) -> None:
+        """Set the maximum lag of a calendar.
+
+        Sets the maximum number of lag periods after the target period. If `0`,
+        the maximum lag will be determined by how many fit in each anchor year.
+        If a maximum lag is provided, the intervals can either only cover part
+        of the year, or extend over multiple years. In case of a large max_lag
+        number where the intervals extend over multiple years, anchor years will
+        be skipped to avoid overlapping intervals. To allow overlapping
+        intervals, use the `allow_overlap` kwarg.
+
+        Args:
+            max_lag: Maximum number of lag periods after the target period.
+            allow_overlap: Allows intervals to overlap between anchor years, if the
+                max_lag is set to a high enough number that intervals extend over
+                multiple years. `False` by default, to avoid train/test information
+                leakage.
+        """
+        if (max_lag < 0) or (max_lag % 1 > 0):
+            raise ValueError("Max lag should be an integer with a value of 0 or greater"
+                             f", not {max_lag} of type {type(max_lag)}.")
+
+        self._max_lag = max_lag
+        self._allow_overlap = allow_overlap
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -89,7 +113,7 @@ class BaseCalendar(ABC):
         """
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(self.freq)
         return (
-            (self.max_lag + self.n_targets) if self.max_lag else int(periods_per_year)
+            (self._max_lag + self.n_targets) if self._max_lag > 0 else int(periods_per_year)
         )
 
     def _get_skip_nyears(self) -> int:
@@ -105,7 +129,7 @@ class BaseCalendar(ABC):
 
         return (
             (np.ceil(nintervals / periods_per_year).astype(int) - 1)
-            if self.max_lag
+            if self._max_lag > 0
             else 0
         )
 
@@ -122,6 +146,9 @@ class BaseCalendar(ABC):
         Returns:
             The calendar mapped to the input start and end year.
         """
+        if start > end:
+            raise ValueError("The start year cannot be greater than the end year")
+
         self._first_year = start
         self._last_year = end
         self._mapping = "years"
@@ -159,21 +186,21 @@ class BaseCalendar(ABC):
         return self
 
     def _set_year_range_from_timestamps(self):
-        map_first_year = self._first_timestamp.year
-        map_last_year = self._last_timestamp.year
+        min_year = self._first_timestamp.year
+        max_year = self._last_timestamp.year
 
         # ensure that the input data could always cover the advent calendar
         # last date check
-        while self._map_year(map_last_year).iloc[0].right > self._last_timestamp:
-            map_last_year -= 1
+        if self._map_year(max_year).iloc[0].right > self._last_timestamp:
+            max_year -= 1
         # first date check
-        while self._map_year(map_first_year).iloc[-1].right <= self._first_timestamp:
-            map_first_year += 1
+        while self._map_year(min_year).iloc[-1].right <= self._first_timestamp:
+            min_year += 1
 
         # map year(s) and generate year realized advent calendar
-        if map_last_year >= map_first_year:
-            self._first_year = map_first_year
-            self._last_year = map_last_year
+        if max_year >= min_year:
+            self._first_year = min_year
+            self._last_year = max_year
         else:
             raise ValueError(
                 "The input data could not cover the target advent calendar."
@@ -204,7 +231,7 @@ class BaseCalendar(ABC):
         if self._mapping == "data":
             self._set_year_range_from_timestamps()
 
-        skip_years = 0 if self.allow_overlap else self._get_skip_nyears()
+        skip_years = 0 if self._allow_overlap else self._get_skip_nyears()
         year_range = range(
             self._last_year, self._first_year - 1, -(skip_years + 1)
         )
