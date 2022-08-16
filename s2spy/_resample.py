@@ -1,4 +1,3 @@
-import warnings
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -97,8 +96,8 @@ def resample_pandas(
     interval_groups = interval_index.get_indexer(input_data.index)
     interval_means = input_data.groupby(interval_groups).mean()
 
-    # drop the -1 index, as it represents data outside of all intervals
-    interval_means = interval_means.loc[0:]
+    # Reindex the intervals. Empty intervals will contain NaN values.
+    interval_means = interval_means.reindex(np.arange(len(interval_index)))
 
     if isinstance(input_data, pd.DataFrame):
         for name in input_data.keys():
@@ -220,24 +219,14 @@ def resample(
         raise ValueError("Generate a calendar map before calling resample")
 
     utils.check_timeseries(input_data)
+    utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
-        # raise a warning for upscaling
-        # target frequency must be larger than the (absolute) input frequency
-        if input_data.index.freq:
-            input_freq = input_data.index.freq
-            input_freq = input_freq if input_freq.n > 0 else -input_freq
-            if pd.Timedelta(mapped_calendar.freq) < input_freq:
-                warnings.warn(
-                    """Target frequency is smaller than the original frequency.
-                    The resampled data will contain NaN values, as there is no data
-                    available within all intervals."""
-                )
-
         resampled_data = resample_pandas(mapped_calendar, input_data)
-
     else:
         resampled_data = resample_xarray(mapped_calendar, input_data)
+
+    utils.check_empty_intervals(resampled_data)
 
     # mark target periods before returning the resampled data
     return mark_target_period(mapped_calendar, resampled_data)

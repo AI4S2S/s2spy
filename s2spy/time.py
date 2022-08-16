@@ -14,7 +14,7 @@ Example:
     >>> # Countdown the weeks until New Year's Eve
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
     >>> calendar
-    AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None)
+    AdventCalendar(month=12, day=31, freq=7d, n_targets=1)
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
@@ -49,7 +49,6 @@ Example:
 """
 import calendar as pycalendar
 import re
-from typing import Optional
 from typing import Tuple
 import numpy as np
 import pandas as pd
@@ -75,7 +74,6 @@ class AdventCalendar(BaseCalendar):
         anchor: Tuple[int, int] = (11, 30),
         freq: str = "7d",
         n_targets: int = 1,
-        max_lag: Optional[int] = None,
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -88,12 +86,6 @@ class AdventCalendar(BaseCalendar):
                 of the calendar. It will countdown until this date.
             freq: Frequency of the calendar.
             n_targets: integer specifying the number of target intervals in a period.
-            max_lag: Maximum number of lag periods after the target period. If `None`,
-                the maximum lag will be determined by how many fit in each anchor year.
-                If a maximum lag is provided, the intervals can either only cover part
-                of the year, or extend over multiple years. In case of a large max_lag
-                number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the weeks until new-year's
@@ -102,7 +94,7 @@ class AdventCalendar(BaseCalendar):
             >>> import s2spy.time
             >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
             >>> calendar
-            AdventCalendar(month=12, day=31, freq=7d, n_targets=1, max_lag=None)
+            AdventCalendar(month=12, day=31, freq=7d, n_targets=1)
 
         """
         if not re.fullmatch(r"\d*d", freq):
@@ -111,7 +103,9 @@ class AdventCalendar(BaseCalendar):
         self.day = anchor[1]
         self.freq = freq
         self.n_targets = n_targets
-        self.max_lag = max_lag
+
+        self._max_lag:int = 0
+        self._allow_overlap: bool = False
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -133,7 +127,6 @@ class MonthlyCalendar(BaseCalendar):
         anchor: str = "Dec",
         freq: str = "1M",
         n_targets: int = 1,
-        max_lag: Optional[int] = None,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -146,12 +139,6 @@ class MonthlyCalendar(BaseCalendar):
                 of the calendar. It will countdown up to this month.
             freq: Frequency of the calendar, in the form '1M', '2M', etc.
             n_targets: integer specifying the number of target intervals in a period.
-            max_lag: Maximum number of lag periods after the target period. If `None`,
-                the maximum lag will be determined by how many fit in each anchor year.
-                If a maximum lag is provided, the intervals can either only cover part
-                of the year, or extend over multiple years. In case of a large max_lag
-                number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the quarters (3 month periods) until
@@ -160,15 +147,17 @@ class MonthlyCalendar(BaseCalendar):
             >>> import s2spy.time
             >>> calendar = s2spy.time.MonthlyCalendar(anchor='Dec', freq="3M")
             >>> calendar
-            MonthlyCalendar(month=12, freq=3M, n_targets=1, max_lag=None)
+            MonthlyCalendar(month=12, freq=3M, n_targets=1)
 
         """
         if not re.fullmatch(r"\d*M", freq):
             raise ValueError("Please input a frequency in the form of '2M'")
+
         self.month = month_mapping_dict[anchor.upper()]
         self.freq = freq
         self.n_targets = n_targets
-        self.max_lag = max_lag
+        self._max_lag = 0
+        self._allow_overlap = False
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -189,7 +178,7 @@ class MonthlyCalendar(BaseCalendar):
         """
         periods_per_year = 12 / int(self.freq.replace("M", ""))
         return (
-            (self.max_lag + self.n_targets) if self.max_lag else int(periods_per_year)
+            (self._max_lag + self.n_targets) if self._max_lag > 0 else int(periods_per_year)
         )
 
     def _get_skip_nyears(self) -> int:
@@ -201,7 +190,11 @@ class MonthlyCalendar(BaseCalendar):
             int: Number of years that need to be skipped.
         """
         nmonths = int(self.freq.replace("M", ""))
-        return (np.ceil(nmonths / 12) - 1) if self.max_lag else 0
+        return (
+            0
+            if self._max_lag > 0 and self._allow_overlap
+            else int(np.ceil(nmonths / 12) - 1)
+        )
 
     def _interval_as_month(self, interval):
         """Turns an interval with pandas Timestamp values to a formatted string.
@@ -239,7 +232,6 @@ class WeeklyCalendar(BaseCalendar):
         anchor: int,
         freq: str = "1W",
         n_targets: int = 1,
-        max_lag: Optional[int] = None,
     ) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
@@ -254,12 +246,6 @@ class WeeklyCalendar(BaseCalendar):
                 It will countdown until this week.
             freq: Frequency of the calendar, e.g. '2W'.
             n_targets: integer specifying the number of target intervals in a period.
-            max_lag: Maximum number of lag periods after the target period. If `None`,
-                the maximum lag will be determined by how many fit in each anchor year.
-                If a maximum lag is provided, the intervals can either only cover part
-                of the year, or extend over multiple years. In case of a large max_lag
-                number where the intervals extend over multiple years, anchor years will
-                be skipped to avoid overlapping intervals.
 
         Example:
             Instantiate a calendar counting down the weeks until week number 40.
@@ -267,7 +253,7 @@ class WeeklyCalendar(BaseCalendar):
             >>> import s2spy.time
             >>> calendar = s2spy.time.WeeklyCalendar(anchor=40, freq="1W")
             >>> calendar
-            WeeklyCalendar(week=40, freq=1W, n_targets=1, max_lag=None)
+            WeeklyCalendar(week=40, freq=1W, n_targets=1)
 
         """
         if not re.fullmatch(r"\d*W", freq):
@@ -276,7 +262,9 @@ class WeeklyCalendar(BaseCalendar):
         self.week = anchor
         self.freq = freq
         self.n_targets = n_targets
-        self.max_lag = max_lag
+
+        self._max_lag: int = 0
+        self._allow_overlap: bool = False
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
