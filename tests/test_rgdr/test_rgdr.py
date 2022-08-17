@@ -167,11 +167,11 @@ class TestRGDR:
     """Test RGDR and its methods."""
 
     @pytest.fixture(autouse=True)
-    def dummy_rgdr(self, example_target):
-        return RGDR(example_target, min_area_km2=1000**2)
+    def dummy_rgdr(self):
+        return RGDR(min_area_km2=1000**2)
 
-    def test_init(self, example_target):
-        rgdr = RGDR(example_target, min_area_km2=1000**2)
+    def test_init(self):
+        rgdr = RGDR(min_area_km2=1000**2)
         assert isinstance(rgdr, RGDR)
 
     def test_transform_before_fit(self, dummy_rgdr, example_field):
@@ -179,27 +179,26 @@ class TestRGDR:
         with pytest.raises(ValueError):
             dummy_rgdr.transform(example_field)
 
-    def test_fit(self, dummy_rgdr, example_field):
-        clustered_data = dummy_rgdr.fit(example_field)
-        cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
-        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+    def test_fit(self, dummy_rgdr, example_field, example_target):
+        dummy_rgdr.fit(example_field, example_target)
+        assert dummy_rgdr._area is not None
 
-    def test_transform(self, dummy_rgdr, example_field):
-        clustered_data = dummy_rgdr.fit(example_field)
+    def test_transform(self, dummy_rgdr, example_field, example_target):
+        dummy_rgdr.fit(example_field, example_target)
         clustered_data = dummy_rgdr.transform(example_field)
         cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
-    def test_corr_plot(self, dummy_rgdr, example_field):
-        dummy_rgdr.plot_correlation(example_field)
+    def test_corr_plot(self, dummy_rgdr, example_field, example_target):
+        dummy_rgdr.plot_correlation(example_field, example_target)
 
-    def test_corr_plot_ax(self, dummy_rgdr, example_field):
+    def test_corr_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, (ax1, ax2) = plt.subplots(ncols=2)
-        dummy_rgdr.plot_correlation(example_field, ax1=ax1, ax2=ax2)
+        dummy_rgdr.plot_correlation(example_field, example_target, ax1=ax1, ax2=ax2)
 
-    def test_cluster_plot(self, dummy_rgdr, example_field):
-        dummy_rgdr.plot_clusters(example_field)
+    def test_cluster_plot(self, dummy_rgdr, example_field, example_target):
+        dummy_rgdr.plot_clusters(example_field, example_target)
 
-    def test_cluster_plot_ax(self, dummy_rgdr, example_field):
+    def test_cluster_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, ax = plt.subplots()
-        dummy_rgdr.plot_clusters(example_field, ax=ax)
+        dummy_rgdr.plot_clusters(example_field, example_target, ax=ax)
