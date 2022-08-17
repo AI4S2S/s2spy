@@ -120,7 +120,7 @@ def masked_spherical_dbscan(
     coords = np.radians(coords)
 
     # Prepare labels, default value is 0 (not in cluster)
-    labels = np.zeros(len(coords))
+    labels = np.zeros(len(coords), dtype=int)
 
     for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
         mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
