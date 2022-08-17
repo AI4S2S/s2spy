@@ -33,9 +33,10 @@ precursor_train, precursor_test, target_train, target_test = train_test_split(
 lag_clusters = []
 for lag in range(1, 4):
     print(lag)
-    rgdr = s2spy.RGDR(target_train)  # TODO: RGDR.fit(precuror_train, target_train)
-    clustered_data = rgdr.fit(precursor_train.isel(i_interval=lag))
-    clustered_df = clustered_data.to_pandas().T.drop(columns=[0.0])  # TODO: no float as column name
+    rgdr = s2spy.RGDR()
+    clustered_data = rgdr.fit(precursor_train.isel(i_interval=lag), target_train).transform(precursor_train.isel(i_interval=lag))
+    import IPython; IPython.embed(); quit()
+    clustered_df = clustered_data.to_pandas().T.drop(columns=[0])
     # TODO: catch "empty" cluster results (those with only a 0.0 column)
     clustered_df.columns = [f"lag_{lag}_cluster_{i}" for i in range(len(clustered_df.columns))]
     lag_clusters.append((lag, rgdr, clustered_df))
