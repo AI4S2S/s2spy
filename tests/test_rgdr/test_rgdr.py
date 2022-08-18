@@ -189,6 +189,18 @@ class TestRGDR:
         cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
+    def test_fit_transform_fits(self, example_field, example_target):
+        # Ensures that after fit_transform, the rgdr object is fit.
+        rgdr = RGDR()
+        _ = rgdr.fit_transform(example_field, example_target)
+        assert rgdr._area is not None
+
+    def test_fit_transform(self, example_field, example_target):
+        rgdr = RGDR(min_area_km2=1000**2)
+        clustered_data = rgdr.fit_transform(example_field, example_target)
+        cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
+        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+
     def test_corr_plot(self, dummy_rgdr, example_field, example_target):
         dummy_rgdr.plot_correlation(example_field, example_target)
 
