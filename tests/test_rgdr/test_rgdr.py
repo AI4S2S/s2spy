@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 from s2spy import RGDR
 from s2spy.rgdr import rgdr
+from s2spy.rgdr import utils
 from s2spy.time import AdventCalendar
 from s2spy.time import resample
 
@@ -36,6 +37,12 @@ def raw_field():
 def example_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return resample(cal, raw_field).sst.isel(i_interval=1)
+
+
+@pytest.fixture(autouse=True, scope="class")
+def example_field_multiple_lags(raw_field, dummy_calendar):
+    cal = dummy_calendar.map_to_data(raw_field)
+    return resample(cal, raw_field).sst.isel(i_interval=slice(1, 4))
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -146,6 +153,7 @@ class TestDBSCAN:
         clusters = rgdr.masked_spherical_dbscan(
             example_field, corr, p_val, dummy_dbscan_params
         )
+        clusters = utils.cluster_labels_to_ints(clusters)
 
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
 
@@ -158,6 +166,8 @@ class TestDBSCAN:
         clusters = rgdr.masked_spherical_dbscan(
             example_field, corr, p_val, dbscan_params
         )
+        clusters = utils.cluster_labels_to_ints(clusters)
+
         expected_labels[expected_labels == -1] = 0  # Small -1 cluster is missing
 
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
@@ -186,7 +196,8 @@ class TestRGDR:
     def test_transform(self, dummy_rgdr, example_field, example_target):
         dummy_rgdr.fit(example_field, example_target)
         clustered_data = dummy_rgdr.transform(example_field)
-        cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
+        clustered_data = utils.cluster_labels_to_ints(clustered_data)
+        cluster_labels = np.array([-1, -2, 1])
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
     def test_fit_transform_fits(self, example_field, example_target):
@@ -198,11 +209,31 @@ class TestRGDR:
     def test_fit_transform(self, example_field, example_target):
         rgdr = RGDR(min_area_km2=1000**2)
         clustered_data = rgdr.fit_transform(example_field, example_target)
-        cluster_labels = np.array([-2.0, -1.0, 0.0, 1.0])
+        cluster_labels = np.array(
+            ["lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1"])
+        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+
+    def test_fit_transform_multiple_lags(self, example_field_multiple_lags, example_target):
+        rgdr = RGDR()
+        clustered_data = rgdr.fit_transform(example_field_multiple_lags, example_target)
+        cluster_labels = np.array(
+            ["lag:1_cluster:-2", "lag:1_cluster:1", "lag:2_cluster:-1",
+             "lag:2_cluster:1", "lag:3_cluster:-1"])
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
     def test_corr_plot(self, dummy_rgdr, example_field, example_target):
         dummy_rgdr.plot_correlation(example_field, example_target)
+
+    def test_corr_plot_multiple_lags(
+        self, dummy_rgdr, example_field_multiple_lags, example_target
+        ):
+        dummy_rgdr.plot_correlation(example_field_multiple_lags, example_target, lag=1)
+
+    def test_corr_plot_multiple_lags_fail(
+        self, dummy_rgdr, example_field_multiple_lags, example_target
+        ):
+        with pytest.raises(ValueError):
+            dummy_rgdr.plot_correlation(example_field_multiple_lags, example_target)
 
     def test_corr_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, (ax1, ax2) = plt.subplots(ncols=2)
@@ -210,6 +241,17 @@ class TestRGDR:
 
     def test_cluster_plot(self, dummy_rgdr, example_field, example_target):
         dummy_rgdr.plot_clusters(example_field, example_target)
+
+    def test_cluster_plot_multiple_lags(
+        self, dummy_rgdr, example_field_multiple_lags, example_target
+        ):
+        dummy_rgdr.plot_clusters(example_field_multiple_lags, example_target, lag=1)
+
+    def test_cluster_plot_multiple_lags_fail(
+        self, dummy_rgdr, example_field_multiple_lags, example_target
+        ):
+        with pytest.raises(ValueError):
+            dummy_rgdr.plot_clusters(example_field_multiple_lags, example_target)
 
     def test_cluster_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, ax = plt.subplots()

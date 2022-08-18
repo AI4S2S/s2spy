@@ -79,10 +79,108 @@ def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
     valid_clusters = np.array([c for c, a in zip(clusters, areas) if a > min_area_km2])
 
     ds["cluster_labels"] = ds["cluster_labels"].where(
-        np.isin(ds["cluster_labels"], valid_clusters), 0
+        np.isin(ds["cluster_labels"], valid_clusters), "0"
     )
 
     return ds
+
+
+def add_gridcell_area(data: xr.DataArray):
+    """Adds the area of each gridcell (latitude) in km2.
+
+    Note: Assumes an even grid (in degrees)
+
+    Args:
+        data: Data containing lat, lon coordinates in degrees.
+
+    Returns:
+        Input data with an added coordinate "area".
+    """
+    dlat = np.abs(data.latitude.values[1] - data.latitude.values[0])
+    dlon = np.abs(data.longitude.values[1] - data.longitude.values[0])
+    data["area"] = spherical_area(data.latitude, dlat, dlon)
+    return data
+
+
+def assert_clusters_present(data: xr.DataArray) -> None:
+    """Asserts that any (non-'0') clusters are present in the data."""
+
+    if "i_interval" in data.dims:
+        n_clusters = np.zeros(data["i_interval"].size)
+        for i, _ in enumerate(n_clusters):
+            n_clusters[i] = np.unique(data.isel(i_interval=i).cluster_labels).size
+
+        if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
+            empty_lags = data["i_interval"].values[n_clusters == 0]
+            raise ValueError(
+                f"No significant clusters found in lag(s): i_interval={empty_lags}."
+                "Please remove these intervals from the model before continuing."
+            )
+
+    elif np.unique(data.cluster_labels).size == 1:
+        raise ValueError("No significant clusters found in the input DataArray")
+
+
+def _get_dbscan_labels(
+    data: xr.Dataset, coords: np.ndarray, lag: int, dbscan_params: dict
+) -> np.ndarray:
+    """Generates the DBSCAN cluster labels based on the correlation and p-value."""
+
+    labels = np.zeros(len(coords), dtype="<U20")
+    labels[:] = "0"
+
+    for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
+        mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
+
+        if np.sum(mask) > 0:  # Check if the mask contains any points to cluster
+            db = DBSCAN(
+                eps=dbscan_params["eps"] / RADIUS_EARTH_KM,
+                min_samples=1,
+                algorithm="auto",
+                metric="haversine",
+            ).fit(coords[mask])
+
+            cluster_labels = sign * (db.labels_ + 1)
+            labels[mask] = [f"lag:{lag}_cluster:{int(lbl)}" for lbl in cluster_labels]
+
+    return labels
+
+
+def _add_dbscan_labels(
+    precursor: xr.DataArray,
+    corr: xr.DataArray,
+    p_val: xr.DataArray,
+    dbscan_params: dict,
+) -> xr.DataArray:
+
+    """Adds the DBSCAN labels to the precursor dataset."""
+    data = precursor.to_dataset()
+    data["corr"], data["p_val"] = corr, p_val  # Will require less tracking of indices
+
+    if "i_interval" not in data.dims:
+        data = data.expand_dims("i_interval")
+    lags = data["i_interval"].values
+
+    data = data.stack(coord=["latitude", "longitude"])
+    coords = np.asarray(data["coord"].values.tolist())
+    coords = np.radians(coords)
+
+    # Prepare labels, default value is 0 (not in cluster)
+    labels = np.zeros((len(lags), len(coords)), dtype="<U20")
+
+    for i, lag in enumerate(lags):
+        labels[i] = _get_dbscan_labels(
+            data.isel(i_interval=i), coords, lag, dbscan_params
+        )
+
+    precursor = precursor.stack(coord=["latitude", "longitude"])
+    if "i_interval" not in precursor.dims:
+        precursor["cluster_labels"] = ("coord", labels[0])
+    else:
+        precursor["cluster_labels"] = (("i_interval", "coord"), labels)
+    precursor = precursor.unstack(("coord"))
+
+    return precursor
 
 
 def masked_spherical_dbscan(
@@ -111,41 +209,16 @@ def masked_spherical_dbscan(
     Returns:
         xr.DataArray: Precursor data grouped by the DBSCAN clusters.
     """
-    orig_name = precursor.name
-    data = precursor.to_dataset()
-    data["corr"], data["p_val"] = corr, p_val  # Will require less tracking of indices
+    precursor = add_gridcell_area(precursor)
 
-    data = data.stack(coord=["latitude", "longitude"])
-    coords = np.asarray(data["coord"].values.tolist())
-    coords = np.radians(coords)
-
-    # Prepare labels, default value is 0 (not in cluster)
-    labels = np.zeros(len(coords), dtype=int)
-
-    for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
-        mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
-        if np.sum(mask) > 0:  # Check if the mask contains any points to cluster
-            db = DBSCAN(
-                eps=dbscan_params["eps"] / RADIUS_EARTH_KM,
-                min_samples=1,
-                algorithm="auto",
-                metric="haversine",
-            ).fit(coords[mask])
-
-            labels[mask] = sign * (db.labels_ + 1)
-
-    precursor = precursor.stack(coord=["latitude", "longitude"])
-    precursor["cluster_labels"] = ("coord", labels)
-    precursor = precursor.unstack(("coord"))
-
-    dlat = np.abs(precursor.latitude.values[1] - precursor.latitude.values[0])
-    dlon = np.abs(precursor.longitude.values[1] - precursor.longitude.values[0])
-    precursor["area"] = spherical_area(precursor.latitude, dlat, dlon)
+    precursor = _add_dbscan_labels(precursor, corr, p_val, dbscan_params)
 
     if dbscan_params["min_area"]:
         precursor = remove_small_area_clusters(precursor, dbscan_params["min_area"])
 
-    precursor.name = orig_name
+    # Make sure a cluster is present in each lag
+    assert_clusters_present(precursor)
+
     return precursor
 
 
@@ -282,10 +355,11 @@ class RGDR:
         corr, p_val = self.get_correlation(precursor, timeseries)
         return masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
 
-    def plot_correlation(
+    def plot_correlation( #pylint: disable=too-many-arguments
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,
+        lag: Optional[int] = None,
         ax1: Optional[plt.Axes] = None,
         ax2: Optional[plt.Axes] = None,
     ) -> List[Type[mpl.collections.QuadMesh]]:
@@ -296,6 +370,8 @@ class RGDR:
             precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
             timeseries: Timeseries data with only the dimension 'anchor_year'
+            lag: The i_interval which should be plotted. Required if the precursor
+                has the dimension "i_interval".
             ax1: a matplotlib axis handle to plot
                 the correlation values into. If None, an axis handle will be created
                 instead.
@@ -305,6 +381,13 @@ class RGDR:
         Returns:
             List[mpl.collections.QuadMesh]: List of matplotlib artists.
         """
+
+        if "i_interval" in precursor.dims:
+            if lag is None:
+                raise ValueError("Precursor contains multiple intervals, please provide"
+                                 " the lag which should be plotted.")
+            precursor = precursor.sel(i_interval=lag)
+
         corr, p_val = self.get_correlation(precursor, timeseries)
 
         if (ax1 is None) and (ax2 is None):
@@ -326,6 +409,7 @@ class RGDR:
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,
+        lag: Optional[int] = None,
         ax: Optional[plt.Axes] = None,
     ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
@@ -335,18 +419,28 @@ class RGDR:
             precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
             timeseries: Timeseries data with only the dimension 'anchor_year'
+            lag: The i_interval which should be plotted. Required if the precursor
+                has the dimension "i_interval".
             ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
 
         Returns:
             matplotlib.collections.QuadMesh: Matplotlib artist.
         """
-        clusters = self.get_clusters(precursor, timeseries)
-
         if ax is None:
             _, ax = plt.subplots()
 
-        return clusters.cluster_labels.plot(cmap="viridis", ax=ax)
+        clusters = self.get_clusters(precursor, timeseries)
+
+        if "i_interval" in precursor.dims:
+            if lag is None:
+                raise ValueError("Precursor contains multiple intervals, please provide"
+                                 " the lag which should be plotted.")
+            clusters = clusters.sel(i_interval=lag)
+
+        clusters = utils.cluster_labels_to_ints(clusters)
+
+        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax)
 
     def fit(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data.
@@ -400,12 +494,18 @@ class RGDR:
         data["cluster_labels"] = self._clusters
         data["area"] = self._area
 
-        # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.weighted_groupby(
             data, groupby="cluster_labels", weight="area"
         )
 
-        return utils.geographical_cluster_center(data, reduced_data)
+        # Add the geographical centers for later alignment between, e.g., splits
+        reduced_data = utils.geographical_cluster_center(data, reduced_data)
+
+        # Remove the '0' cluster
+        reduced_data = reduced_data.where(reduced_data["cluster_labels"] != "0").dropna(
+            dim="cluster_labels"
+        )
+        return reduced_data
 
     def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
