@@ -224,10 +224,7 @@ class RGDR:
     """Response Guided Dimensionality Reduction."""
 
     def __init__(
-        self,
-        eps_km: float = 600,
-        alpha: float = 0.05,
-        min_area_km2: float = 3000**2
+        self, eps_km: float = 600, alpha: float = 0.05, min_area_km2: float = 3000**2
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
@@ -370,6 +367,8 @@ class RGDR:
         Args:
             precursor: Precursor field data with the dimensions 'latitude', 'longitude',
                 and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year', which
+                will be correlated with the precursor field.
 
         Returns:
             xr.DataArray: The precursor data, with the latitute and longitude dimensions
@@ -407,3 +406,20 @@ class RGDR:
         )
 
         return utils.geographical_cluster_center(data, reduced_data)
+
+    def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
+        """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
+
+        Args:
+            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
+                and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year', which
+                will be correlated with the precursor field.
+
+        Returns:
+            xr.DataArray: The precursor data, with the latitute and longitude dimensions
+                reduced to clusters.
+        """
+
+        self.fit(precursor, timeseries)
+        return self.transform(precursor)
