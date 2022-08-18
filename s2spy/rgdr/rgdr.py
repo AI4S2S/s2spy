@@ -120,7 +120,7 @@ def masked_spherical_dbscan(
     coords = np.radians(coords)
 
     # Prepare labels, default value is 0 (not in cluster)
-    labels = np.zeros(len(coords))
+    labels = np.zeros(len(coords), dtype=int)
 
     for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
         mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
@@ -224,7 +224,7 @@ class RGDR:
     """Response Guided Dimensionality Reduction."""
 
     def __init__(
-        self, timeseries, eps_km=600, alpha=0.05, min_area_km2=3000**2
+        self, eps_km: float = 600, alpha: float = 0.05, min_area_km2: float = 3000**2
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
@@ -240,14 +240,52 @@ class RGDR:
             min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
                 this minimum area will be discarded.
         """
-        self.timeseries = timeseries
         self._clusters = None
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
+    def get_correlation(
+        self,
+        precursor: xr.DataArray,
+        timeseries: xr.DataArray,
+    ) -> Tuple[xr.DataArray, xr.DataArray]:
+        """Calculates the correlation and p-value between input precursor and timeseries.
+
+        Args:
+            precursor: Precursor field data with the dimensions
+                'latitude', 'longitude', and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year'
+
+        Returns:
+            (correlation, p_value): DataArrays containing the correlation and p-value.
+        """
+        if not isinstance(precursor, xr.DataArray):
+            raise ValueError("Please provide an xr.DataArray, not a dataset")
+
+        return correlation(precursor, timeseries, corr_dim="anchor_year")
+
+    def get_clusters(
+        self,
+        precursor: xr.DataArray,
+        timeseries: xr.DataArray,
+    ) -> xr.DataArray:
+        """Generates clusters for the precursor data.
+
+        Args:
+            precursor: Precursor field data with the dimensions
+                'latitude', 'longitude', and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year'
+
+        Returns:
+            DataArray containing the clusters as masks.
+        """
+        corr, p_val = self.get_correlation(precursor, timeseries)
+        return masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
+
     def plot_correlation(
         self,
         precursor: xr.DataArray,
+        timeseries: xr.DataArray,
         ax1: Optional[plt.Axes] = None,
         ax2: Optional[plt.Axes] = None,
     ) -> List[Type[mpl.collections.QuadMesh]]:
@@ -255,22 +293,19 @@ class RGDR:
         initiated RGDR class and input precursor field.
 
         Args:
-            precursor (xr.DataArray): Precursor field data with the dimensions
+            precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
-            ax1 (plt.Axes, optional): a matplotlib axis handle to plot
+            timeseries: Timeseries data with only the dimension 'anchor_year'
+            ax1: a matplotlib axis handle to plot
                 the correlation values into. If None, an axis handle will be created
                 instead.
-            ax2 (plt.Axes, optional): a matplotlib axis handle to plot
+            ax2: a matplotlib axis handle to plot
                 the p-values into. If None, an axis handle will be created instead.
 
         Returns:
             List[mpl.collections.QuadMesh]: List of matplotlib artists.
         """
-
-        if not isinstance(precursor, xr.DataArray):
-            raise ValueError("Please provide an xr.DataArray, not a dataset")
-
-        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
+        corr, p_val = self.get_correlation(precursor, timeseries)
 
         if (ax1 is None) and (ax2 is None):
             _, (ax1, ax2) = plt.subplots(ncols=2)
@@ -288,30 +323,32 @@ class RGDR:
         return [plot1, plot2]
 
     def plot_clusters(
-        self, precursor: xr.DataArray, ax: Optional[plt.Axes] = None
+        self,
+        precursor: xr.DataArray,
+        timeseries: xr.DataArray,
+        ax: Optional[plt.Axes] = None,
     ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
 
         Args:
-            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
-                and 'anchor_year'
+            precursor: Precursor field data with the dimensions
+                'latitude', 'longitude', and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year'
             ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
 
         Returns:
             matplotlib.collections.QuadMesh: Matplotlib artist.
         """
-        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
-
-        clusters = masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
+        clusters = self.get_clusters(precursor, timeseries)
 
         if ax is None:
             _, ax = plt.subplots()
 
         return clusters.cluster_labels.plot(cmap="viridis", ax=ax)
 
-    def fit(self, precursor: xr.DataArray) -> xr.DataArray:
+    def fit(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data.
 
         Performs DBSCAN clustering on a prepared DataArray, and then groups the data by
@@ -330,13 +367,15 @@ class RGDR:
         Args:
             precursor: Precursor field data with the dimensions 'latitude', 'longitude',
                 and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year', which
+                will be correlated with the precursor field.
 
         Returns:
             xr.DataArray: The precursor data, with the latitute and longitude dimensions
                 reduced to clusters.
         """
 
-        corr, p_val = correlation(precursor, self.timeseries, corr_dim="anchor_year")
+        corr, p_val = correlation(precursor, timeseries, corr_dim="anchor_year")
 
         masked_data = masked_spherical_dbscan(
             precursor, corr, p_val, self._dbscan_params
@@ -345,12 +384,7 @@ class RGDR:
         self._clusters = masked_data.cluster_labels
         self._area = masked_data.area
 
-        reduced_precursor = utils.weighted_groupby(
-            masked_data, groupby="cluster_labels", weight="area"
-        )
-
-        # Add the geographical centers for later alignment between, e.g., splits
-        return utils.geographical_cluster_center(masked_data, reduced_precursor)
+        return self
 
     def transform(self, data: xr.DataArray) -> xr.DataArray:
         """Apply RGDR on the input data, based on the previous fit.
@@ -366,8 +400,26 @@ class RGDR:
         data["cluster_labels"] = self._clusters
         data["area"] = self._area
 
+        # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.weighted_groupby(
             data, groupby="cluster_labels", weight="area"
         )
 
         return utils.geographical_cluster_center(data, reduced_data)
+
+    def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
+        """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
+
+        Args:
+            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
+                and 'anchor_year'
+            timeseries: Timeseries data with only the dimension 'anchor_year', which
+                will be correlated with the precursor field.
+
+        Returns:
+            xr.DataArray: The precursor data, with the latitute and longitude dimensions
+                reduced to clusters.
+        """
+
+        self.fit(precursor, timeseries)
+        return self.transform(precursor)
