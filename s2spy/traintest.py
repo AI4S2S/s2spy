@@ -67,7 +67,15 @@ def _split_dataset(splitter, data, key):
         split_data[i, train_indices] = "train"
         split_data[i, test_indices] = "test"
 
-    data.expand_dims("split")
+    if 'split' not in data.dims:
+        data.expand_dims("split")
+        
+    if 'traintest' in data.coords:
+        identical = np.char.equal(data['traintest'].values, split_data).all()
+        if identical==False:
+            print('Traintest split was already present in data and unequal to '
+                  'newly generated split, Traintest split has been updated.')
+        
     data["split"] = np.arange(split_data.shape[0])
     data["traintest"] = (["split", key], split_data)
     data = data.set_coords("traintest")
