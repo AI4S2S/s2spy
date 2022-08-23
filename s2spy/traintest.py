@@ -72,7 +72,7 @@ def _split_dataset(splitter, data, key):
         
     if 'traintest' in data.coords:
         identical = np.char.equal(data['traintest'].values, split_data).all()
-        if identical is False:
+        if not identical:
             print('Traintest split was already present in data and unequal to '
                   'newly generated split, traintest split has been updated.')
         
