@@ -539,7 +539,7 @@ class RGDR:
         reduced_data = reduced_data.where(reduced_data["cluster_labels"] != "0").dropna(
             dim="cluster_labels"
         )
-        return reduced_data
+        return reduced_data.transpose(..., "cluster_labels")
 
     def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
