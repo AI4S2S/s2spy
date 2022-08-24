@@ -68,25 +68,45 @@ def geographical_cluster_center(
 
     for i, cluster in enumerate(clusters):
         # Select only the grid cells within the cluster
-        cluster_data = stacked_data.where(
+        cluster_area = stacked_data["area"].where(
             stacked_data["cluster_labels"] == cluster
-        ).dropna(dim="coords")
+        )
+
+        if "i_interval" in cluster_area.dims:
+            cluster_area = cluster_area.dropna('i_interval', how='all')
+        cluster_area = cluster_area.dropna("coords")
 
         # Area weighted mean to get the geographical center of the cluster
-        # for the 0 clusters (leftovers), set to nan as this will avoid them in e.g.
-        # plots
-        if cluster == 0:
-            cluster_lats[i] = np.nan
-            cluster_lons[i] = np.nan
-        else:
-            cluster_lats[i] = (
-                cluster_data["latitude"].weighted(cluster_data["area"]).mean().item()
-            )
-            cluster_lons[i] = (
-                cluster_data["longitude"].weighted(cluster_data["area"]).mean().item()
-            )
+        cluster_lats[i] = (
+            cluster_area["latitude"].weighted(cluster_area).mean().item()
+        )
+        cluster_lons[i] = (
+            cluster_area["longitude"].weighted(cluster_area).mean().item()
+        )
 
     reduced_data["latitude"] = ("cluster_labels", cluster_lats)
     reduced_data["longitude"] = ("cluster_labels", cluster_lons)
 
     return reduced_data
+
+
+def cluster_labels_to_ints(clustered_data: xr.DataArray) -> xr.DataArray:
+    """Converts the labels of already clustered data to integers.
+
+    Args:
+        clustered_data: Data already clustered and grouped by cluster.
+
+    Returns:
+        Same as input, but with the labels converted to integers
+    """
+    un_labels = np.unique(clustered_data.cluster_labels)
+    label_vals = [int(lb[-2:].replace(":","")) for lb in un_labels]
+    label_lookup = dict(zip(un_labels, label_vals))
+
+    clustered_data['cluster_labels'] = xr.apply_ufunc(
+        lambda val: label_lookup[val],
+        clustered_data['cluster_labels'],
+        vectorize=True
+    )
+
+    return clustered_data
