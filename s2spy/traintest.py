@@ -2,7 +2,6 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
-from itertools import chain
 from typing import Iterable
 from typing import Optional
 from typing import Type
@@ -11,7 +10,7 @@ import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
 
 
-def all_equal(arrays: Iterable[Iterable]):
+def _all_equal(arrays: Iterable[Iterable]):
     """Return true if all arrays are equal"""
     try:
         arrays = iter(arrays)
@@ -60,17 +59,23 @@ class TrainTestSplit():
                     f"Not all input data arrays have the {dim} dimension."
                 ) from err
 
-        if not all_equal(split_dim_coords):
-            raise ValueError(f"Input arrays are not equal along {dim} dimension.")
+        if not _all_equal(split_dim_coords):
+            raise ValueError(
+                f"Input arrays are not equal along {dim} dimension."
+                )
 
         if y is not None and not np.array_equal(y[dim], x[dim]):
-            raise ValueError(f"Input arrays are not equal along {dim} dimension.")
+            raise ValueError(
+                f"Input arrays are not equal along {dim} dimension."
+            )
 
         # Now we know that all inputs are equal..
         for (train_indices, test_indices) in self.splitter.split(x[dim]):
-            xs = [[da.isel({dim: train_indices}), da.isel({dim: test_indices})] for da in x_args]
-            ys = [y.isel({dim: train_indices}), y.isel({dim: test_indices})]
-            yield list(chain(*xs)) + ys
+            x_train = [da.isel({dim: train_indices}) for da in x_args]
+            x_test = [da.isel({dim: test_indices}) for da in x_args]
+            y_train = y.isel({dim: train_indices})
+            y_test = y.isel({dim: test_indices})
+            yield x_train, x_test, y_train, y_test
 
 
 if __name__ == "__main__":
@@ -84,9 +89,10 @@ if __name__ == "__main__":
     # Dummy data
     n = 50
     time_index = pd.date_range("20151020", periods=n, freq="60d")
-    x1 = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="precursor1")
-    x2 = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="precursor2")
-    y = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="target")
+    time_coord = {"time": time_index}
+    x1 = xr.DataArray(np.random.randn(n), coords=time_coord, name="precursor1")
+    x2 = xr.DataArray(np.random.randn(n), coords=time_coord, name="precursor2")
+    y = xr.DataArray(np.random.randn(n), coords=time_coord, name="target")
 
     # Fit to calendar
     calendar = s2spy.time.AdventCalendar(anchor=(10, 15), freq="180d")
@@ -98,6 +104,14 @@ if __name__ == "__main__":
     # Cross-validation
     kfold = KFold(n_splits=3)
     cv = s2spy.traintest.TrainTestSplit(kfold)
-    for x1_train, x1_test, x2_train, x2_test, y_train, y_test in cv.split(x1, x2, y=y):
+    for (x1_train, x2_train), (x1_test, x2_test), y_train, y_test in cv.split(x1, x2, y=y):
+        print("Train:", x1_train.anchor_year.values)
+        print("Test:", x1_test.anchor_year.values)
+
+    # Shorthand notation
+    x = [x1, x2]
+    for x_train, x_test, y_train, y_test in cv.split(*x, y=y):
+        x1_train, x2_train = x_train
+        x1_test, x2_test = x_test
         print("Train:", x1_train.anchor_year.values)
         print("Test:", x1_test.anchor_year.values)
