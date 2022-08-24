@@ -2,209 +2,102 @@
 
 A collection of train/test splitting approaches for cross-validation.
 """
+from itertools import chain
+from typing import Iterable
 from typing import Optional
 from typing import Type
-from typing import Union
 import numpy as np
-import pandas as pd
 import xarray as xr
-from .time import AdventCalendar, MonthlyCalendar
-from ._resample import resample_bins_constructor
 from sklearn.model_selection._split import BaseCrossValidator
 
 
-class traintest_splits:
-    """ Train-test splitter build upon s2spy.time.calender"""
+def all_equal(arrays: Iterable[Iterable]):
+    """Return true if all arrays are equal"""
+    try:
+        arrays = iter(arrays)
+        first = next(arrays)
+        return all(np.array_equal(first, rest) for rest in arrays)
+    except StopIteration:
+        return True
 
-    def __init__(
-        self, 
-        splitter: Type[BaseCrossValidator], 
-        calendar: Type[Union[AdventCalendar, MonthlyCalendar]],
-        key: Optional[str] = "anchor_year"
-    ) -> None:
-        """Train-test splitter.
-        
-        Splits calendar DataFrame into train/test groups, based on the input key.
-        As splitter, a Splitter Class such as sklearn's KFold can be passed.
 
-        For an overview of the sklearn Splitter Classes see:
-        https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
+class TrainTestSplit():
+    """Splitters (multiple) xr.DataArrays across a given dimension.
 
-        Similarly to sklearn's GroupKFold, `split_groups` makes sure to split the data into
-        non-overlapping groups. 
+    Calling `split()` on this object returns an iterator that allows passing in
+    multiple input arrays at once. They need to have matching coordinates along
+    the given dimension.
+
+    For an overview of the sklearn Splitter Classes see:
+    https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
+
+    Args:
+        splitter (SplitterClass): Initialized splitter class, much have a
+            `fit(X)` method which splits up `X` into multiple folds of
+            train/test data.
+    """
+    def __init__(self, splitter: Type[BaseCrossValidator]) -> None:
+        self.splitter = splitter
+
+    def split(self, *x_args: Iterable[xr.DataArray], y: Optional[xr.DataArray]=None, dim: str="anchor_year"):
+        """Iterate over splits.
 
         Args:
-            splitter (SplitterClass): Initialized splitter class, much have a `fit(X)` method
-                which splits up `X` into multiple folds of train/test data.
-            calendar (s2spy.time._base_calendar.BaseCalendar): instance of s2spy Calendar type 
-                for which calendar.map_years() or calendar.map_to_data(data) has been executed. 
-            key (str): Key by which to group the data. Defaults to 'anchor_year'
+            x_args: one or multiple xr.DataArray's that share the same coordinate along the given dimension
+            y: (optional) xr.DataArray that shares the same coordinate along the given dimension
+            dim: name of the dimension along which to split the data.
 
         Returns:
-            Initialized traintest_splits
+            Iterator over the splits
         """
-        
-        self.splitter = splitter
-        df = resample_bins_constructor(calendar.get_intervals())
-        self.traintest_df = _split_dataframe(splitter, df, key)
-        
-        # tranform to xr.DataArray
-        splits = [key for key in self.traintest_df.keys() if 'split' in key]
-        anchor_years = np.unique(self.traintest_df['anchor_year'].values)
-        n_intervals = self.traintest_df['i_interval'].max()+1
-        data = self.traintest_df[splits].values[::n_intervals].swapaxes(0,1)
-        self.traintest_xr = xr.DataArray(data=data, 
-                             dims=['split', 'anchor_year'], 
-                             coords=[range(len(splits)), anchor_years])
-        
-    def split_iterate(self, *data_args, y=None):
-        """Train/test iterator.
+        # Check that all inputs share the dim coordinate over which they will be split.
+        split_dim_coords = []
+        for x in x_args:
+            try:
+                split_dim_coords.append(x[dim])
+            except KeyError as err:
+                raise ValueError(
+                    f"Not all input data arrays have the {dim} dimension."
+                ) from err
 
-        Iterator of train/test splits from given data.
+        if not all_equal(split_dim_coords):
+            raise ValueError(f"Input arrays are not equal along {dim} dimension.")
 
-        Args:
-            data (xr.Dataset or pd.DataFrame): Dataset with `split` as dimension or
-                DataFrame with `split_no.` as column. E.g. data resampled using
-                `s2spy.time.AdventCalendar`'s `resample` method will have the `key`
-                'anchor_year'.
-        return:
-            Generator contains train data and test data seperately based on splits.
-        """
-        
-        splits = [key for key in self.traintest_df.keys() if 'split' in key]
-        if not splits:
-            raise ValueError("Input data must contain train/test splits."
-                             "Initialize traintest_splits with a splitter and calendar.")        
-        
-        # check the input data type
-        train_Xs = [] ; test_Xs = []
-        for data in data_args:
-            for i, split in enumerate(splits):
-                if isinstance(data, xr.Dataset):
-                    train_X = data.sel(anchor_year = self.traintest_xr.sel(split=i) == "train")
-                    test_X = data.sel(anchor_year = self.traintest_xr.sel(split=i) == "test")
-                elif isinstance(data, pd.DataFrame):
-                    train_X = data.loc[self.traintest_df[f'{split}'] == "train"]
-                    test_X = data.loc[self.traintest_df[f'{split}'] == "test"]
-                else:
-                    raise ValueError("Input data_args should be (list of) type xr.Dataset or pd.DataFrame")
-            train_Xs.append(train_X)
-            test_Xs.append(test_X)
+        if y is not None and not np.array_equal(y[dim], x[dim]):
+            raise ValueError(f"Input arrays are not equal along {dim} dimension.")
 
-        # if user does not pas list of data_args, it will expect return of input dtype
-        if len(train_Xs) == 1:
-            train_Xs = train_Xs[0]
-            test_Xs = test_Xs[0]
-
-        # check the input y type
-        if y is None:
-            yield train_Xs, test_Xs
-        else:
-            for i, split in enumerate(splits):
-                if isinstance(y, xr.Dataset):
-                    train_y = y.sel(anchor_year = self.traintest_xr.sel(split=i) == "train")
-                    test_y = y.sel(anchor_year = self.traintest_xr.sel(split=i) == "test")
-                elif isinstance(y, pd.DataFrame):
-                    train_y = y.loc[self.traintest_df[f'{split}'] == "train"]
-                    test_y = y.loc[self.traintest_df[f'{split}'] == "test"]
-                else:
-                    raise ValueError("Input y should be of type xr.Dataset or pd.DataFrame")
-
-            yield train_Xs, train_y, test_Xs, test_y
-        
-        
-# def split_groups(
-#     splitter: Type[BaseCrossValidator],
-#     data: Union[xr.Dataset, pd.DataFrame],
-#     key: Optional[str] = "anchor_year",
-# ):
-#     """Splits calendar resampled data into train/test groups, based on the input key.
-#     As splitter, a Splitter Class such as sklearn's KFold can be passed.
-
-#     For an overview of the sklearn Splitter Classes see:
-#     https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
-
-#     Similarly to sklearn's GroupKFold, `split_groups` makes sure to split the data into
-#     non-overlapping groups. However, `split_groups` is designed to work directly with
-#     panda's DataFrames and xarray's Datasets, and determines the groups based on an input
-#     key.
-
-#     Args:
-#         splitter (SplitterClass): Initialized splitter class, much have a `fit(X)` method
-#             which splits up `X` into multiple folds of train/test data.
-#         data (xr.Dataset or pd.DataFrame): Dataset with `key` as dimension or
-#             DataFrame with `key` as column. E.g. data resampled using
-#             `s2spy.time.AdventCalendar`'s `resample` method will have the `key`
-#             'anchor_year'.
-#         key (str): Key by which to group the data. Defaults to 'anchor_year'
-
-#     Returns:
-#         The input dataset with extra coordinates or columns added for each fold,
-#             containing the labels 'train', 'test', and possibly 'skip'.
-#     """
-#     if isinstance(data, xr.Dataset):
-#         return _split_dataset(splitter, data, key)
-#     if isinstance(data, pd.DataFrame):
-#         return _split_dataframe(splitter, data, key)
-#     raise ValueError("Input data should be of type xr.Dataset or pd.DataFrame")
+        # Now we know that all inputs are equal..
+        for (train_indices, test_indices) in self.splitter.split(x[dim]):
+            xs = [[da.isel({dim: train_indices}), da.isel({dim: test_indices})] for da in x_args]
+            ys = [y.isel({dim: train_indices}), y.isel({dim: test_indices})]
+            yield list(chain(*xs)) + ys
 
 
-# def _split_dataset(splitter, data, key):
-#     """Splitter implementation for xarray's Dataset."""
-#     if key not in data.dims:
-#         raise ValueError(f"'{key}' is not a dimension in the Dataset.")
-#     if data[key].size <= 1:
-#         raise ValueError(f"Input data must have more than 1 unique {key} to split data.")
+if __name__ == "__main__":
+    # Just for testing
+    import numpy as np
+    import pandas as pd
+    from sklearn.model_selection import KFold
+    import s2spy.time
+    import s2spy.traintest
 
-#     data = data.copy()  # otherwise the dataset is modified inplace
+    # Dummy data
+    n = 50
+    time_index = pd.date_range("20151020", periods=n, freq="60d")
+    x1 = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="precursor1")
+    x2 = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="precursor2")
+    y = xr.DataArray(np.random.random(n), coords = {"time": time_index}, name="target")
 
-#     splits = splitter.split(data[key])
+    # Fit to calendar
+    calendar = s2spy.time.AdventCalendar(anchor=(10, 15), freq="180d")
+    calendar.map_to_data(x1)  # TODO: would be nice to pass in multiple at once.
+    x1 = s2spy.time.resample(calendar, x1)
+    x2 = s2spy.time.resample(calendar, x2)
+    y = s2spy.time.resample(calendar, y)
 
-#     split_data = np.empty(
-#         (splitter.get_n_splits(data[key].size), data[key].size), dtype="<U6"
-#     )
-
-#     for i, (train_indices, test_indices) in enumerate(splits):
-#         split_data[i, :] = "skip"
-#         split_data[i, train_indices] = "train"
-#         split_data[i, test_indices] = "test"
-
-#     data.expand_dims("split")
-#     data["split"] = np.arange(split_data.shape[0])
-#     data["traintest"] = (["split", key], split_data)
-#     data = data.set_coords("traintest")
-
-#     return data
-
-
-def _split_dataframe(splitter, data, key):
-    """Splitter implementation for Pandas DataFrame."""
-    if key not in data.keys():
-        raise ValueError(f"'{key}' is not a key in the input DataFrame.")
-
-    group_labels = np.unique(data[key])
-    if group_labels.size <= 1:
-        raise ValueError(f"Input data must have more than 1 unique {key} to split data.")
-
-    splits = splitter.split(group_labels)
-
-    # label every row in the dataframe
-    for i, (train_indices, test_indices) in enumerate(splits):
-        # create column split_# filled with "skip" in dataframe
-        col_name = f"split_{i}"
-        data[col_name] = ""
-
-        # create dictionary with key and train/test labels
-        indices = np.empty(group_labels.size, dtype="<U6")
-        indices[:] = "skip"
-        indices[train_indices] = "train"
-        indices[test_indices] = "test"
-        train_test_dict = dict(zip(group_labels, indices))
-
-        # map key row values with train/test
-        data[col_name] = data[key].map(train_test_dict)
-
-    return data
-
-
-    
+    # Cross-validation
+    kfold = KFold(n_splits=3)
+    cv = s2spy.traintest.TrainTestSplit(kfold)
+    for x1_train, x1_test, x2_train, x2_test, y_train, y_test in cv.split(x1, x2, y=y):
+        print("Train:", x1_train.anchor_year.values)
+        print("Test:", x1_test.anchor_year.values)
