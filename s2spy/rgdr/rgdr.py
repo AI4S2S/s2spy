@@ -534,11 +534,15 @@ class RGDR:
 
         # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.geographical_cluster_center(data, reduced_data)
+        # Include explanations about geographical centers as attributes
+        reduced_data.attrs['data'] = "Clustered data with Response Guided Dimensionality Reduction."
+        reduced_data.attrs['coordinates'] = "Latitudes and longitudes are geographical centers associated with clusters."
 
         # Remove the '0' cluster
         reduced_data = reduced_data.where(reduced_data["cluster_labels"] != "0").dropna(
             dim="cluster_labels"
         )
+
         return reduced_data.transpose(..., "cluster_labels")
 
     def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
