@@ -343,7 +343,7 @@ class RGDR:
             min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
                 this minimum area will be discarded.
         """
-        self._clusters = None
+        self.cluster_map = None
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
@@ -508,8 +508,9 @@ class RGDR:
         masked_data = masked_spherical_dbscan(
             precursor, corr, p_val, self._dbscan_params
         )
-
-        self._clusters = masked_data.cluster_labels
+        self.corr_map = corr
+        self.pval_map = corr
+        self.cluster_map = masked_data.cluster_labels
         self._area = masked_data.area
 
         return self
@@ -521,11 +522,11 @@ class RGDR:
         these clusters to reduce the latitude and longitude dimensions of the input
         data."""
 
-        if self._clusters is None:
+        if self.cluster_map is None:
             raise ValueError(
                 "Transform requires the model to be fit on other data first"
             )
-        data["cluster_labels"] = self._clusters
+        data["cluster_labels"] = self.cluster_map
         data["area"] = self._area
 
         reduced_data = utils.weighted_groupby(
