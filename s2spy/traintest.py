@@ -12,6 +12,7 @@ import numpy as np
 import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
 
+
 # Mypy type aliases
 X = Union[xr.DataArray, List[xr.DataArray]]
 MaybeY = xr.DataArray
