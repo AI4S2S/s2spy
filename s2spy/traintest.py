@@ -15,7 +15,9 @@ from sklearn.model_selection._split import BaseCrossValidator
 
 # Mypy type aliases
 X = Union[xr.DataArray, List[xr.DataArray]]
-MaybeY = xr.DataArray
+MaybeY = Type[xr.DataArray]
+
+# For output types, variables are duplicated as train/test
 XOnly = Tuple[X, X]
 XAndY = Tuple[X, X, MaybeY, MaybeY]
 XMaybeY = Iterable[Union[XOnly, XAndY]]
