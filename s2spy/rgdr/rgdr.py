@@ -7,6 +7,7 @@ from typing import TypeVar
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
@@ -112,13 +113,13 @@ def assert_clusters_present(data: xr.DataArray) -> None:
 
         if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
             empty_lags = data["i_interval"].values[n_clusters == 1]
-            raise ValueError(
+            warnings.warn(
                 f"No significant clusters found in lag(s): i_interval={empty_lags}."
                 "Please remove these intervals from the model before continuing."
             )
 
     elif np.unique(data.cluster_labels).size == 1:
-        raise ValueError("No significant clusters found in the input DataArray")
+        warnings.warn("No significant clusters found in the input DataArray")
 
 
 def _get_dbscan_clusters(
