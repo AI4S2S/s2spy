@@ -1,4 +1,5 @@
 """Response Guided Dimensionality Reduction."""
+import warnings
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -7,7 +8,6 @@ from typing import TypeVar
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
 import xarray as xr
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
