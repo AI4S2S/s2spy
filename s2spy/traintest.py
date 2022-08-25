@@ -72,6 +72,7 @@ class TrainTestSplit():
         """
         # Check that all inputs share the same dim coordinate
         coords = []
+        x: xr.DataArray  # Initialize x to set scope outside loop
         for x in x_args:
             try:
                 coords.append(x[dim])

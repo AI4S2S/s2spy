@@ -78,7 +78,7 @@ def test_kfold_too_short(dummy_data):
 
 
 def test_kfold_different_xcoords(dummy_data):
-    x1, x2, y = dummy_data
+    x1, x2, _ = dummy_data
     x1 = x1.isel(anchor_year=slice(1, None, None))
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
 
