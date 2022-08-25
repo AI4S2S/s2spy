@@ -3,19 +3,28 @@
 Wrapper around sklearn splitters for working with (multiple) xarray dataarrays.
 """
 from typing import Iterable
+from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
+from typing import Union
 import numpy as np
 import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
 
+# Mypy type aliases
+X = Union[xr.DataArray, List[xr.DataArray]]
+MaybeY = xr.DataArray
+XOnly = Tuple[X, X]
+XAndY = Tuple[X, X, MaybeY, MaybeY]
+XMaybeY = Iterable[Union[XOnly, XAndY]]
+
 
 class CoordinateMismatch(Exception):
     """Custom exception for unmatching coordinates"""
-    pass
 
 
-def _all_equal(arrays: Iterable[Iterable]):
+def _all_equal(arrays):
     """Return true if all arrays are equal"""
     try:
         arrays = iter(arrays)
@@ -45,10 +54,10 @@ class TrainTestSplit():
 
     def split(
         self,
-        *x_args: Iterable[xr.DataArray],
+        *x_args: xr.DataArray,
         y: Optional[xr.DataArray] = None,
         dim: str = "anchor_year"
-    ):
+    ) -> XMaybeY:
         """Iterate over splits.
 
         Args:
@@ -88,17 +97,16 @@ class TrainTestSplit():
 
         # Now we know that all inputs are equal..
         for (train_indices, test_indices) in self.splitter.split(x[dim]):
-            x_train = [da.isel({dim: train_indices}) for da in x_args]
-            x_test = [da.isel({dim: test_indices}) for da in x_args]
+            if len(x_args) == 1:
+                x_train: X = x.isel({dim: train_indices})
+                x_test: X = x.isel({dim: test_indices})
+            else:
+                x_train = [da.isel({dim: train_indices}) for da in x_args]
+                x_test = [da.isel({dim: test_indices}) for da in x_args]
 
-            if len(x_train) == 1:
-                # Return x rather than [x]
-                x_train = x_train[0]
-                x_test = x_test[0]
-
-            if y is not None:
+            if y is None:
+                yield x_train, x_test
+            else:
                 y_train = y.isel({dim: train_indices})
                 y_test = y.isel({dim: test_indices})
                 yield x_train, x_test, y_train, y_test
-
-            yield x_train, x_test

@@ -30,7 +30,7 @@ def dummy_data():
 
 def test_kfold_x(dummy_data):
     """Correctly split x."""
-    x1, x2, y = dummy_data
+    x1, _, _ = dummy_data
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
     x_train, x_test = next(cv.split(x1))
     expected_train = [2019, 2020, 2021, 2022, 2023]
@@ -41,7 +41,7 @@ def test_kfold_x(dummy_data):
 
 def test_kfold_xy(dummy_data):
     """Correctly split x and y."""
-    x1, x2, y = dummy_data
+    x1, _, y = dummy_data
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
     x_train, x_test, y_train, y_test = next(cv.split(x1, y=y))
     expected_train = [2019, 2020, 2021, 2022, 2023]
@@ -69,12 +69,12 @@ def test_kfold_xxy(dummy_data):
 
 def test_kfold_too_short(dummy_data):
     "Fail if there is only a single anchor year: no splits can be made"
-    x1, x2, y = dummy_data
+    x1, _, _ = dummy_data
     x = x1.isel(anchor_year=1)
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
 
     with pytest.raises(ValueError):
-        x_train, x_test = next(cv.split(x))
+        next(cv.split(x))
 
 
 def test_kfold_different_xcoords(dummy_data):
@@ -83,14 +83,14 @@ def test_kfold_different_xcoords(dummy_data):
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
 
     with pytest.raises(s2spy.traintest.CoordinateMismatch):
-        x_train, x_test = next(cv.split(x1, x2))
+        next(cv.split(x1, x2))
 
 
 def test_custom_dim(dummy_data):
-    x1, x2, y = dummy_data
+    x1, _, _ = dummy_data
     x = x1.rename(anchor_year="custom_coord")
     cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
-    x_train, x_test = next(cv.split(x, dim="custom_coord"))
+    x_train, _ = next(cv.split(x, dim="custom_coord"))
     expected_train = [2019, 2020, 2021, 2022, 2023]
 
     assert np.array_equal(x_train.custom_coord, expected_train)
