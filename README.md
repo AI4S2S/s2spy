@@ -10,7 +10,17 @@ A high-level python package integrating expert knowledge and artificial intellig
 [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
 
 ## Why s2spy?
-We work with climate community.
+Producing reliable (sub) seasonal (S2S) forecasts with machine learning techniques remains a huge challenge. Currently, these data-driven S2S forecasts generally suffers from a lack of trust because:
+- Intransparent data processing and poorly reproducible scientific outcomes
+- Technical pitfalls related to machine learning based predictability (e.g. overfitting)
+- Black-box methods without sufficient explanation
+
+To tackle these challenges, we build this open-source, high-level python package, `s2spy`. It provides an interface between artificial intelligence and expert knowledge, to boost predictability and physical understanding of S2S processes. By implementing optimal data-handling and parallel-computing packages, it can efficiently run across different Big Climate Data platforms. Key components will be explainable AI and causal discovery, which will support the classical scientific interplay between theory, hypothesis-generation and data-driven hypothesis-testing, enabling knowledge-mining from data.
+
+This tool will be a community effort. It will help us achieve trustworthy data-driven forecasts by providing the user with:
+- Transparent and reproducible analyses
+- Best practices in model verification
+- Understanding of the sources of predictability
 
 ## Installation
 [![workflow pypi badge](https://img.shields.io/pypi/v/s2spy.svg?colorB=blue)](https://pypi.python.org/project/s2spy/)
