@@ -95,7 +95,7 @@ class TrainTestSplit():
 
         if x[dim].size <=1:
             raise ValueError(
-                f"Cannot split: need at least 2 values along dimension {dim}"
+                f"Invalid input: need at least 2 values along dimension {dim}"
             )
 
         # Now we know that all inputs are equal.
