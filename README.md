@@ -51,12 +51,55 @@ python setup.py develop
 ```
 
 ## Getting started
-- work with xarray
-- about calendar
-- resample data
-- cross-validation
+`s2spy` provides end-to-end solutions for machine learning (ML) based S2S forecasting.
 
-Working progress, more to be added.
+![workflow](./docs/assets/images/workflow.png)
+
+### Datetime operations & Data processing
+In a typical ML based S2S project, the first step is always data processing.  A calendar-based datetime operation module is implemented to help the user prepared their data. For instance, if a user is looking for predictors for winter climate at seasonal timescale (~180 days), a `AdventCalendar` can be used to prepare their data:
+
+```py
+calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
+calendar = calendar.map_years(2020, 2021)
+calendar
+>>>    i_interval                 (target) 0                         1
+>>>    anchor_year
+>>>    2021         (2021-06-03, 2021-11-30]  (2020-12-05, 2021-06-03]
+>>>    2020         (2020-06-03, 2020-11-30]  (2019-12-06, 2020-06-03]
+```
+
+`s2spy` works with `xarray` data. Now, the user can load their data and easily resample their data to the desired timescales configured in the calendar:
+
+```py
+calendar = calendar.map_to_data(input_data)
+bins = s2spy.time.resample(calendar, input_data)
+>>>       anchor_year  i_interval                  interval  mean_data  target
+>>>     0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
+>>>     1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
+>>>     2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
+>>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
+```
+
+Depending on their tasks, the user can choose their desired calendar from a collection of different type of calendars, to process their data (e.g. `MonthlyCalendar` and `WeeklyCalendar`).
+
+### Dimensionality reduction
+In `s2spy`, users can perform dimensionality reduction on their data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), the user only need to configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to tranform the data to the reduced clusters:
+```py
+rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=3000**2)
+rgdr.fit(precursor_field, target_timeseries)
+clustered_data = rgdr.transform(precursor_field)
+_ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
+```
+![workflow](./docs/assets/images/rgdr_clusters.png)
+
+### Cross-validation
+More information will follow soon.
+
+### Train a model
+More information will follow soon.
+
+### eXplanable AI (XAI) analysis
+More information will follow soon.
 
 ## Tutorials
 TODO: add link to all tutorials and add link to api from readthedoc.
