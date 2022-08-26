@@ -17,7 +17,7 @@ Producing reliable (sub) seasonal (S2S) forecasts with machine learning techniqu
 
 To tackle these challenges, we build this open-source, high-level python package, `s2spy`. It provides an interface between artificial intelligence and expert knowledge, to boost predictability and physical understanding of S2S processes. By implementing optimal data-handling and parallel-computing packages, it can efficiently run across different Big Climate Data platforms. Key components will be explainable AI and causal discovery, which will support the classical scientific interplay between theory, hypothesis-generation and data-driven hypothesis-testing, enabling knowledge-mining from data.
 
-This tool will be a community effort. It will help us achieve trustworthy data-driven forecasts by providing the user with:
+This tool will be a community effort. It can help us achieve trustworthy data-driven forecasts by providing the user with:
 - Transparent and reproducible analyses
 - Best practices in model verification
 - Understanding of the sources of predictability
@@ -64,7 +64,7 @@ TODO: add link to all tutorials and add link to api from readthedoc.
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 
-The full documentation of the `s2spy` package can be found [here](https://ai4s2s.readthedocs.io/en/latest/).
+For detailed information on using `s2spy` package, please visit the [documentation page](https://ai4s2s.readthedocs.io/en/latest/) hosted at Readthedocs.
 
 ## Contributing
 
@@ -74,7 +74,9 @@ have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 ## How to cite us
 <!-- [![RSD](https://img.shields.io/badge/rsd-s2s-00a3e3.svg)](https://www.research-software.nl/software/s2spy) -->
 <!-- [![DOI](https://zenodo.org/badge/DOI/<replace-with-created-DOI>.svg)](https://doi.org/<replace-with-created-DOI>) -->
-TODO: add links to zenodo and rsd.
+
+<!--TODO: add links to zenodo and rsd. -->
+More information will follow soon.
 
 ## Credits
 
