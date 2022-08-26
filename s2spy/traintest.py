@@ -37,7 +37,7 @@ def _all_equal(arrays):
 
 
 class TrainTestSplit():
-    """Splitters (multiple) xr.DataArrays across a given dimension.
+    """Split (multiple) xr.DataArrays across a given dimension.
 
     Calling `split()` on this object returns an iterator that allows passing in
     multiple input arrays at once. They need to have matching coordinates along
@@ -98,7 +98,7 @@ class TrainTestSplit():
                 f"Cannot split: need at least 2 values along dimension {dim}"
             )
 
-        # Now we know that all inputs are equal..
+        # Now we know that all inputs are equal.
         for (train_indices, test_indices) in self.splitter.split(x[dim]):
             if len(x_args) == 1:
                 x_train: X = x.isel({dim: train_indices})
