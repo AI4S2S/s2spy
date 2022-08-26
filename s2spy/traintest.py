@@ -14,11 +14,11 @@ from sklearn.model_selection._split import BaseCrossValidator
 
 
 # Mypy type aliases
-X = Union[xr.DataArray, List[xr.DataArray]]
+XType = Union[xr.DataArray, List[xr.DataArray]]
 
 # For output types, variables are split in 2
-XOnly = Tuple[X, X]
-XAndY = Tuple[X, X, xr.DataArray, xr.DataArray]
+XOnly = Tuple[XType, XType]
+XAndY = Tuple[XType, XType, xr.DataArray, xr.DataArray]
 XMaybeY = Iterable[Union[XOnly, XAndY]]
 
 
@@ -101,8 +101,8 @@ class TrainTestSplit():
         # Now we know that all inputs are equal.
         for (train_indices, test_indices) in self.splitter.split(x[dim]):
             if len(x_args) == 1:
-                x_train: X = x.isel({dim: train_indices})
-                x_test: X = x.isel({dim: test_indices})
+                x_train: XType = x.isel({dim: train_indices})
+                x_test: XType = x.isel({dim: test_indices})
             else:
                 x_train = [da.isel({dim: train_indices}) for da in x_args]
                 x_test = [da.isel({dim: test_indices}) for da in x_args]
