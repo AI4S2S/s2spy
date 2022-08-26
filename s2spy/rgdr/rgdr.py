@@ -115,7 +115,6 @@ def assert_clusters_present(data: xr.DataArray) -> None:
             empty_lags = data["i_interval"].values[n_clusters == 1]
             warnings.warn(
                 f"No significant clusters found in lag(s): i_interval={empty_lags}."
-                "Please remove these intervals from the model before continuing."
             )
 
     elif np.unique(data.cluster_labels).size == 1:
