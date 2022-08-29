@@ -1,6 +1,6 @@
-# s2spy
+<img width="300" alt="Logo" src="./docs/assets/images/ai4s2s_logo.png">
 
-A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
+# s2spy
 
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
@@ -9,10 +9,12 @@ A high-level python package integrating expert knowledge and artificial intellig
 [![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
 [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
 
+A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
+
 ## Why s2spy?
-Producing reliable (sub) seasonal (S2S) forecasts with machine learning techniques remains a huge challenge. Currently, these data-driven S2S forecasts generally suffers from a lack of trust because:
+Producing reliable (sub) seasonal (S2S) forecasts with machine learning techniques remains a huge challenge. Currently, these data-driven S2S forecasts generally suffer from a lack of trust because:
 - Intransparent data processing and poorly reproducible scientific outcomes
-- Technical pitfalls related to machine learning based predictability (e.g. overfitting)
+- Technical pitfalls related to machine learning-based predictability (e.g. overfitting)
 - Black-box methods without sufficient explanation
 
 To tackle these challenges, we build this open-source, high-level python package, `s2spy`. It provides an interface between artificial intelligence and expert knowledge, to boost predictability and physical understanding of S2S processes. By implementing optimal data-handling and parallel-computing packages, it can efficiently run across different Big Climate Data platforms. Key components will be explainable AI and causal discovery, which will support the classical scientific interplay between theory, hypothesis-generation and data-driven hypothesis-testing, enabling knowledge-mining from data.
@@ -20,11 +22,11 @@ To tackle these challenges, we build this open-source, high-level python package
 This tool will be a community effort. It can help us achieve trustworthy data-driven forecasts by providing the user with:
 - Transparent and reproducible analyses
 - Best practices in model verification
-- Understanding of the sources of predictability
+- Understanding the sources of predictability
 
 ## Installation
 [![workflow pypi badge](https://img.shields.io/pypi/v/s2spy.svg?colorB=blue)](https://pypi.python.org/project/s2spy/)
-[![supported python versions](https://img.shields.io/pypi/pyversions/dianna)](https://pypi.python.org/project/s2spy/)
+[![supported python versions](https://img.shields.io/pypi/pyversions/s2spy)](https://pypi.python.org/project/s2spy/)
 
 To install the latest release of s2spy, do:
 ```console
@@ -40,7 +42,7 @@ python3 -m pip install .
 ```
 
 ### Configure the package for development and testing
-The testing framework used here is [pytest](https://pytest.org). Before running the test, the package need to be installed and configured as via the command:
+The testing framework used here is [pytest](https://pytest.org). Before running the test, the package need to be installed and configured via the command:
 
 ```py
 pip install -e .
@@ -56,7 +58,7 @@ python setup.py develop
 ![workflow](./docs/assets/images/workflow.png)
 
 ### Datetime operations & Data processing
-In a typical ML based S2S project, the first step is always data processing.  A calendar-based datetime operation module is implemented to help the user prepared their data. For instance, if a user is looking for predictors for winter climate at seasonal timescale (~180 days), a `AdventCalendar` can be used to prepare their data:
+In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime operation module is implemented to help the users prepare their data. For instance, if a user is looking for predictors for winter climate at seasonal timescales (~180 days), a `AdventCalendar` can be used to prepare the data:
 
 ```py
 calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
@@ -80,7 +82,7 @@ bins = s2spy.time.resample(calendar, input_data)
 >>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 ```
 
-Depending on their tasks, the user can choose their desired calendar from a collection of different type of calendars, to process their data (e.g. `MonthlyCalendar` and `WeeklyCalendar`).
+Depending on their tasks, the user can choose their desired calendar from a collection of different types of calendars, to process their data (e.g. `MonthlyCalendar` and `WeeklyCalendar`).
 
 ### Cross-validation
 Using `s2spy`, users can easily perform cross-validation by calling a splitter and generating train/test splits with the resampled data:
@@ -93,10 +95,10 @@ splitter = ShuffleSplit(n_splits=3)
 s2spy.traintest.split_groups(splitter, bins)
 ```
 
-All splitter classes from sklearn are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes).
+All splitter classes from `scikit-learn` are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes).
 
 ### Dimensionality reduction
-In `s2spy`, users can perform dimensionality reduction on their data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), the user only need to configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to tranform the data to the reduced clusters:
+In `s2spy`, users can perform dimensionality reduction on their data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), the user only needs to configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
 ```py
 rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=3000**2)
 rgdr.fit(precursor_field, target_timeseries)
@@ -105,7 +107,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 ```
 ![workflow](./docs/assets/images/rgdr_clusters.png)
 
-Currently, `s2spy` supports dimensionality reduction approaches from [`scikit-learn`](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster). We are actively working on it to support more approaches in the future.
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. We are actively working on it to support more approaches in the future.
 
 ### Train a model
 More information will follow soon.
