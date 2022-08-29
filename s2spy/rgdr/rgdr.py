@@ -1,4 +1,5 @@
 """Response Guided Dimensionality Reduction."""
+import warnings
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -112,13 +113,12 @@ def assert_clusters_present(data: xr.DataArray) -> None:
 
         if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
             empty_lags = data["i_interval"].values[n_clusters == 1]
-            raise ValueError(
+            warnings.warn(
                 f"No significant clusters found in lag(s): i_interval={empty_lags}."
-                "Please remove these intervals from the model before continuing."
             )
 
     elif np.unique(data.cluster_labels).size == 1:
-        raise ValueError("No significant clusters found in the input DataArray")
+        warnings.warn("No significant clusters found in the input DataArray")
 
 
 def _get_dbscan_clusters(
@@ -534,12 +534,16 @@ class RGDR:
 
         # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.geographical_cluster_center(data, reduced_data)
+        # Include explanations about geographical centers as attributes
+        reduced_data.attrs['data'] = "Clustered data with Response Guided Dimensionality Reduction."
+        reduced_data.attrs['coordinates'] = "Latitudes and longitudes are geographical centers associated with clusters."
 
         # Remove the '0' cluster
         reduced_data = reduced_data.where(reduced_data["cluster_labels"] != "0").dropna(
             dim="cluster_labels"
         )
-        return reduced_data
+
+        return reduced_data.transpose(..., "cluster_labels")
 
     def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
