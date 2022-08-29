@@ -13,7 +13,6 @@
 
   Readme <readme_link>
   Project Setup <project_setup.md>
-  User Guide <user_guide.md>
   Developer Readme <README.dev.md>
   Contributing <CONTRIBUTING.md>
   Code of Conduct <CODE_OF_CONDUCT.md>
