@@ -82,6 +82,19 @@ bins = s2spy.time.resample(calendar, input_data)
 
 Depending on their tasks, the user can choose their desired calendar from a collection of different type of calendars, to process their data (e.g. `MonthlyCalendar` and `WeeklyCalendar`).
 
+### Cross-validation
+Using `s2spy`, users can easily perform cross-validation by calling a splitter and generating train/test splits with the resampled data:
+
+```py
+bins = s2spy.time.resample(calendar, input_data)
+
+from sklearn.model_selection import ShuffleSplit
+splitter = ShuffleSplit(n_splits=3)
+s2spy.traintest.split_groups(splitter, bins)
+```
+
+All splitter classes from sklearn are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes).
+
 ### Dimensionality reduction
 In `s2spy`, users can perform dimensionality reduction on their data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), the user only need to configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to tranform the data to the reduced clusters:
 ```py
@@ -92,8 +105,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 ```
 ![workflow](./docs/assets/images/rgdr_clusters.png)
 
-### Cross-validation
-More information will follow soon.
+Currently, `s2spy` supports dimensionality reduction approaches from [`scikit-learn`](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster). We are actively working on it to support more approaches in the future.
 
 ### Train a model
 More information will follow soon.
@@ -102,7 +114,9 @@ More information will follow soon.
 More information will follow soon.
 
 ## Tutorials
-TODO: add link to all tutorials and add link to api from readthedoc.
+`s2spy` supports operations that are common in a machine learning pipeline of sub-seasonal to seasonal forecasting research. Tutorials covering supported methods and functionalities are listed in [notebooks](https://github.com/AI4S2S/s2spy/tree/main/notebooks).
+
+More details about each method can be found in this [API reference documentation](https://ai4s2s.readthedocs.io/en/latest/autoapi/index.html).
 
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
