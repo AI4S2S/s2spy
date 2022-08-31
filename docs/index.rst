@@ -14,7 +14,7 @@
   Readme <readme_link>
   Project Setup <project_setup.md>
   Developer Readme <README.dev.md>
-  Contributing <CONTRIBUTING.md>
+  Contribution guide <CONTRIBUTING.md>
   Code of Conduct <CODE_OF_CONDUCT.md>
   Changelog <changelog_link>
 
