@@ -21,7 +21,7 @@ To tackle these challenges, we build `s2spy` which is an open-source, high-level
 
 This tool will be a community effort. It can help us achieve trustworthy data-driven forecasts by providing the user with:
 - Transparent and reproducible analyses
-- Best practices in model verification
+- Best practices in model verifications
 - Understanding the sources of predictability
 
 ## Installation
