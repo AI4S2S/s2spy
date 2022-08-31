@@ -19,7 +19,7 @@ Producing reliable sub-seasonal to seasonal (S2S) forecasts with machine learnin
 
 To tackle these challenges, we build `s2spy` which is an open-source, high-level python package. It provides an interface between artificial intelligence and expert knowledge, to boost predictability and physical understanding of S2S processes. By implementing optimal data-handling and parallel-computing packages, it can efficiently run across different Big Climate Data platforms. Key components will be explainable AI and causal discovery, which will support the classical scientific interplay between theory, hypothesis-generation and data-driven hypothesis-testing, enabling knowledge-mining from data.
 
-This tool will be a community effort. It can help us achieve trustworthy data-driven forecasts by providing the user with:
+Developing this tool will be a community effort. It helps us achieve trustworthy data-driven forecasts by providing:
 - Transparent and reproducible analyses
 - Best practices in model verifications
 - Understanding the sources of predictability
