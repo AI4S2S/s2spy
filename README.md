@@ -45,9 +45,6 @@ The testing framework used here is [pytest](https://pytest.org). Before running 
 ```py
 python3 -m pip install -e .
 ```
-or
-```py
-```
 
 Then, run tests:
 ```py
@@ -85,7 +82,7 @@ bins
 >>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 ```
 
-Depending on their tasks, the user can choose their desired calendar from a collection of different types of calendars, to process their data (e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar)).
+Depending on data preparations, we can choose different types of calendars e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar).
 
 ### Cross-validation
 Using `s2spy`, we can generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
@@ -96,7 +93,7 @@ splitter = ShuffleSplit(n_splits=3)
 s2spy.traintest.split_groups(splitter, bins)
 ```
 
-All splitter classes from `scikit-learn` are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes).
+All splitter classes from `scikit-learn` are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes). Users should follow `scikit-learn` documentation on how to use a different splitter class.
 
 ### Dimensionality reduction
 In `s2spy`, we can perform dimensionality reduction on data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), we configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
@@ -108,7 +105,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 ```
 ![clusters](./docs/assets/images/rgdr_clusters.png)
 
-(for the complete example, check [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
+(for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
 Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
 
@@ -119,7 +116,7 @@ More information will follow soon.
 More information will follow soon.
 
 ## Tutorials
-`s2spy` supports operations that are common in a machine learning pipeline of sub-seasonal to seasonal forecasting research. Tutorials covering supported methods and functionalities are listed in [notebooks](https://github.com/AI4S2S/s2spy/tree/main/notebooks). More details about each method can be found in this [API reference documentation](https://ai4s2s.readthedocs.io/en/latest/autoapi/index.html).
+`s2spy` supports operations that are common in a machine learning pipeline of sub-seasonal to seasonal forecasting research. Tutorials covering supported methods and functionalities are listed in [notebooks](https://github.com/AI4S2S/s2spy/tree/main/notebooks). To check these notebooks, users need to install [`Jupyter lab`](https://jupyter.org/). More details about each method can be found in this [API reference documentation](https://ai4s2s.readthedocs.io/en/latest/autoapi/index.html).
 
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
