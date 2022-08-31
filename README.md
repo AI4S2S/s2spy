@@ -92,8 +92,6 @@ Depending on their tasks, the user can choose their desired calendar from a coll
 Using `s2spy`, we can generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
 
 ```py
-bins = s2spy.time.resample(calendar, input_data)
-
 from sklearn.model_selection import ShuffleSplit
 splitter = ShuffleSplit(n_splits=3)
 s2spy.traintest.split_groups(splitter, bins)
