@@ -43,7 +43,7 @@ python3 -m pip install git+https://github.com/AI4S2S/s2spy.git
 The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code via the command:
 
 ```py
-pip install -e .
+python3 -m pip install -e .
 ```
 or
 ```py
