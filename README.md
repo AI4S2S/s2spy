@@ -78,6 +78,7 @@ calendar
 ```py
 calendar = calendar.map_to_data(input_data)
 bins = s2spy.time.resample(calendar, input_data)
+bins
 >>>       anchor_year  i_interval                  interval  mean_data  target
 >>>     0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
 >>>     1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
