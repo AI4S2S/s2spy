@@ -40,7 +40,7 @@ python3 -m pip install git+https://github.com/AI4S2S/s2spy.git
 ```
 
 ### Configure the package for development and testing
-The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code via the command:
+The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code and install `s2spy` via the command:
 
 ```py
 python3 -m pip install -e .
