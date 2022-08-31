@@ -12,7 +12,7 @@
 A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
 
 ## Why s2spy?
-Producing reliable (sub) seasonal (S2S) forecasts with machine learning techniques remains a huge challenge. Currently, these data-driven S2S forecasts generally suffer from a lack of trust because:
+Producing reliable sub-seasonal to seasonal (S2S) forecasts with machine learning techniques remains a challenge. Currently, these data-driven S2S forecasts generally suffer from a lack of trust because of:
 - Intransparent data processing and poorly reproducible scientific outcomes
 - Technical pitfalls related to machine learning-based predictability (e.g. overfitting)
 - Black-box methods without sufficient explanation
