@@ -71,7 +71,7 @@ calendar.show()
 >>>    2020         (2020-06-03, 2020-11-30]  (2019-12-06, 2020-06-03]
 ```
 
-`s2spy` works with `xarray` data. Now, the user can load the data `input_data` and resample it to the desired timescales configured in the calendar:
+Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and resample it to the desired timescales configured in the calendar:
 
 ```py
 calendar = calendar.map_to_data(input_data)
