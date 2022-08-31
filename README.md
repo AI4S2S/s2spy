@@ -113,7 +113,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 
 (for the complete example, check [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
-Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. We are actively working on it to support more approaches in the future.
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
 
 ### Train a model
 More information will follow soon.
