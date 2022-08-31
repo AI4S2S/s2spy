@@ -61,7 +61,7 @@ python3 -m pytest
 ![workflow](./docs/assets/images/workflow.png)
 
 ### Datetime operations & Data processing
-In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime operation module is implemented to help the users prepare their data. For instance, if a user is looking for predictors for winter climate at seasonal timescales (~180 days), a `AdventCalendar` can be used to prepare the data:
+In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime module `time` is implemented for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `calendar` object is created using `AdventCalendar`:
 
 ```py
 calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
