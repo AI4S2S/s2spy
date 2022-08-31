@@ -89,7 +89,7 @@ bins
 Depending on their tasks, the user can choose their desired calendar from a collection of different types of calendars, to process their data (e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar)).
 
 ### Cross-validation
-Using `s2spy`, users can easily perform cross-validation by calling a splitter and generating train/test splits with the resampled data:
+Using `s2spy`, we can generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
 
 ```py
 bins = s2spy.time.resample(calendar, input_data)
