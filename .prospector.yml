@@ -4,7 +4,7 @@
 
 output-format: grouped
 
-strictness: medium
+strictness: medium  # Note that this can suppress many pylint warnings
 doc-warnings: false
 test-warnings: true
 member-warnings: false
