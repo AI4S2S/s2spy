@@ -96,7 +96,7 @@ s2spy.traintest.split_groups(splitter, bins)
 All splitter classes from `scikit-learn` are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes). Users should follow `scikit-learn` documentation on how to use a different splitter class.
 
 ### Dimensionality reduction
-In `s2spy`, we can perform dimensionality reduction on data. For instance, to perform the Response Guided Dimensionality Reduction (RGDR), we configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
+In `s2spy`, we can perform dimensionality reduction on data. For instance, to perform the [Response Guided Dimensionality Reduction (RGDR)](https://www.nature.com/articles/s41612-022-00237-7), we configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
 ```py
 rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=3000**2)
 rgdr.fit(precursor_field, target_timeseries)
