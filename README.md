@@ -66,7 +66,7 @@ In a typical ML-based S2S project, the first step is always data processing.  A 
 ```py
 calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
 calendar = calendar.map_years(2020, 2021)
-calendar
+calendar.show()
 >>>    i_interval                 (target) 0                         1
 >>>    anchor_year
 >>>    2021         (2021-06-03, 2021-11-30]  (2020-12-05, 2021-06-03]
