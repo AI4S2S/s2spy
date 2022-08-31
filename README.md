@@ -112,7 +112,7 @@ Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit
 ### Train a model
 More information will follow soon.
 
-### eXplanable AI (XAI) analysis
+### eXplainable AI (XAI) analysis
 More information will follow soon.
 
 ## Tutorials
