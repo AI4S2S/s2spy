@@ -71,9 +71,9 @@ This section is for maintainers of the package.
         record](https://zenodo.org/search?page=1&size=20&q=s2spy)
         been created?
     2. Has [stable
-        ReadTheDocs](https://s2spy.readthedocs.io/en/stable/) been
+        ReadTheDocs](https://ai4s2s.readthedocs.io/en/stable/) been
         updated?
     3. Can new version be installed with pip using
-        `pip3 install s2spy==<new version>`?
+        `python3 -m pip install s2spy==<new version>`?
 
 11. Celebrate
