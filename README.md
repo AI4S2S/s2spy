@@ -47,7 +47,6 @@ python3 -m pip install -e .
 ```
 or
 ```py
-python setup.py develop
 ```
 
 Then, run tests:
