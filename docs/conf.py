@@ -89,7 +89,7 @@ html_sidebars = {
     ]
 }
 
-html_logo = 'ai4s2s_logo.png'
+html_logo = './assets/images/ai4s2s_logo.png'
 
 # -- Options for Intersphinx
 
