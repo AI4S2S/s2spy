@@ -125,7 +125,7 @@ More information will follow soon.
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 
-For detailed information on using `s2spy` package, please visit the [documentation page](https://ai4s2s.readthedocs.io/en/latest/) hosted at Readthedocs.
+For detailed information on using `s2spy` package, visit the [documentation page](https://ai4s2s.readthedocs.io/en/latest/) hosted at Readthedocs.
 
 ## Contributing
 
