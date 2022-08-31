@@ -36,13 +36,11 @@ python3 -m pip install s2spy
 To install the in-development version from the GitHub repository, do:
 
 ```console
-git clone https://github.com/AI4S2S/s2spy.git
-cd s2spy
-python3 -m pip install .
+python3 -m pip install git+https://github.com/AI4S2S/s2spy.git
 ```
 
 ### Configure the package for development and testing
-The testing framework used here is [pytest](https://pytest.org). Before running the test, the package need to be installed and configured via the command:
+The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code via the command:
 
 ```py
 pip install -e .
@@ -50,6 +48,11 @@ pip install -e .
 or
 ```py
 python setup.py develop
+```
+
+Then, run tests:
+```py
+python3 -m pytest
 ```
 
 ## Getting started
@@ -82,7 +85,7 @@ bins = s2spy.time.resample(calendar, input_data)
 >>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 ```
 
-Depending on their tasks, the user can choose their desired calendar from a collection of different types of calendars, to process their data (e.g. `MonthlyCalendar` and `WeeklyCalendar`).
+Depending on their tasks, the user can choose their desired calendar from a collection of different types of calendars, to process their data (e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar)).
 
 ### Cross-validation
 Using `s2spy`, users can easily perform cross-validation by calling a splitter and generating train/test splits with the resampled data:
@@ -105,7 +108,9 @@ rgdr.fit(precursor_field, target_timeseries)
 clustered_data = rgdr.transform(precursor_field)
 _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 ```
-![workflow](./docs/assets/images/rgdr_clusters.png)
+![clusters](./docs/assets/images/rgdr_clusters.png)
+
+(for the complete example, check [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
 Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. We are actively working on it to support more approaches in the future.
 
