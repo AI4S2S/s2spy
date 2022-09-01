@@ -348,8 +348,8 @@ class RGDR:
             pval_map (float): p-values map of correlation
             cluster_map (U20): cluster labels for precursor field masked by p-values
         """
-        self.corr_map = None
-        self.pval_map = None
+        self.corr_map: xr.DataArray
+        self.pval_map: xr.DataArray
         self.cluster_map = None
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
