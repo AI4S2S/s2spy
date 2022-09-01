@@ -342,9 +342,14 @@ class RGDR:
                 important DBSCAN parameter to choose appropriately.
             min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
                 this minimum area will be discarded.
+
+        Attributes:
+            corr_map (float): correlation coefficient map of given precursor field and target series
+            pval_map (float): p-values map of correlation
+            cluster_map (U20): cluster labels for precursor field masked by p-values
         """
         self.corr_map = None
-        self.pval_map = None        
+        self.pval_map = None
         self.cluster_map = None
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
