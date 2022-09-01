@@ -1,4 +1,4 @@
-<img width="300" alt="Logo" src="./docs/assets/images/ai4s2s_logo.png">
+<img width="300" alt="Logo" src="https://github.com/AI4S2S/s2spy/blob/main/docs/assets/images/ai4s2s_logo.png">
 
 # s2spy
 
@@ -56,7 +56,7 @@ python3 -m pytest
 ## Getting started
 `s2spy` provides end-to-end solutions for machine learning (ML) based S2S forecasting.
 
-![workflow](./docs/assets/images/workflow.png)
+![workflow](https://github.com/AI4S2S/s2spy/blob/main/docs/assets/images/workflow.png)
 
 ### Datetime operations & Data processing
 In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime module `time` is implemented for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `calendar` object is created using `AdventCalendar`:
@@ -105,7 +105,7 @@ rgdr.fit(precursor_field, target_timeseries)
 clustered_data = rgdr.transform(precursor_field)
 _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 ```
-![clusters](./docs/assets/images/rgdr_clusters.png)
+![clusters](https://github.com/AI4S2S/s2spy/blob/main/docs/assets/images/rgdr_clusters.png)
 
 (for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
