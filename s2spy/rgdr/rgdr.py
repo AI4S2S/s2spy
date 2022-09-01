@@ -343,6 +343,8 @@ class RGDR:
             min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
                 this minimum area will be discarded.
         """
+        self.corr_map = None
+        self.pval_map = None        
         self.cluster_map = None
         self._area = None
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
@@ -509,7 +511,7 @@ class RGDR:
             precursor, corr, p_val, self._dbscan_params
         )
         self.corr_map = corr
-        self.pval_map = corr
+        self.pval_map = p_val
         self.cluster_map = masked_data.cluster_labels
         self._area = masked_data.area
 
