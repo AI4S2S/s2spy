@@ -3,68 +3,94 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 from sklearn.model_selection import KFold
+import s2spy.time
 import s2spy.traintest
-from s2spy.time import AdventCalendar
-from s2spy.time import resample
 
 
-class TestTrainTest:
-    # Define all required inputs as fixtures:
-    @pytest.fixture(autouse=True)
-    def dummy_calendar(self):
-        return AdventCalendar(anchor=(10, 15), freq="180d")
+@pytest.fixture(autouse=True)
+def dummy_data():
+    # Generate random data
+    n = 50
+    time_index = pd.date_range("20151020", periods=n, freq="60d")
+    time_coord = {"time": time_index}
+    x1 = xr.DataArray(np.random.randn(n), coords=time_coord, name="x1")
+    x2 = xr.DataArray(np.random.randn(n), coords=time_coord, name="x2")
+    y = xr.DataArray(np.random.randn(n), coords=time_coord, name="y")
 
-    @pytest.fixture(autouse=True)
-    def dummy_dataframe(self):
-        time_index = pd.date_range("20181020", "20211001", freq="60d")
-        test_data = np.random.random(len(time_index))
-        return pd.DataFrame(test_data, index=time_index, columns=["data1"])
+    # Map data to calendar and store for later reference
+    calendar = s2spy.time.AdventCalendar(anchor=(10, 15), freq="180d")
+    calendar.map_to_data(x1)
+    x1 = s2spy.time.resample(calendar, x1)
+    x2 = s2spy.time.resample(calendar, x2)
+    y = s2spy.time.resample(calendar, y)
+    return x1, x2, y
 
-    @pytest.fixture(autouse=True)
-    def dummy_dataset(self, dummy_dataframe):
-        return dummy_dataframe.to_xarray().rename({"index": "time"})
 
-    @pytest.fixture(autouse=True)
-    def dummy_dataframe_short(self):
-        time_index = pd.date_range("20191020", "20211001", freq="60d")
-        test_data = np.random.random(len(time_index))
-        return pd.DataFrame(test_data, index=time_index, columns=["data1"])
+def test_kfold_x(dummy_data):
+    """Correctly split x."""
+    x1, _, _ = dummy_data
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+    x_train, x_test = next(cv.split(x1))
+    expected_train = [2019, 2020, 2021, 2022, 2023]
+    expected_test = [2016, 2017, 2018]
+    assert np.array_equal(x_train.anchor_year, expected_train)
+    xr.testing.assert_equal(x_test, x1.sel(anchor_year=expected_test))
 
-    @pytest.fixture(autouse=True)
-    def dummy_dataset_short(self, dummy_dataframe_short):
-        return dummy_dataframe_short.to_xarray().rename({"index": "time"})
 
-    def test_kfold_df(self, dummy_calendar, dummy_dataframe):
-        mapped_calendar = dummy_calendar.map_to_data(dummy_dataframe)
-        df = resample(mapped_calendar, dummy_dataframe)
-        df = s2spy.traintest.split_groups(KFold(n_splits=2), df)
-        expected_group = ["test", "test", "train", "train"]
-        assert np.array_equal(df["split_0"].values, expected_group)
+def test_kfold_xy(dummy_data):
+    """Correctly split x and y."""
+    x1, _, y = dummy_data
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+    x_train, x_test, y_train, y_test = next(cv.split(x1, y=y))
+    expected_train = [2019, 2020, 2021, 2022, 2023]
+    expected_test = [2016, 2017, 2018]
 
-    def test_kfold_ds(self, dummy_calendar, dummy_dataset):
-        mapped_calendar = dummy_calendar.map_to_data(dummy_dataset)
-        ds = resample(mapped_calendar, dummy_dataset)
-        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds)
-        expected_group = ["test", "train"]
-        assert np.array_equal(ds.traintest.values[0], expected_group)
+    assert np.array_equal(x_train.anchor_year, expected_train)
+    xr.testing.assert_equal(x_test, x1.sel(anchor_year=expected_test))
+    assert np.array_equal(y_train.anchor_year, expected_train)
+    xr.testing.assert_equal(y_test, y.sel(anchor_year=expected_test))
 
-    def test_kfold_df_short(self, dummy_calendar, dummy_dataframe_short):
-        "Should fail as there is only a single anchor year: no splits can be made"
-        mapped_calendar = dummy_calendar.map_to_data(dummy_dataframe_short)
-        df = resample(mapped_calendar, dummy_dataframe_short)
-        with pytest.raises(ValueError):
-            df = s2spy.traintest.split_groups(KFold(n_splits=2), df)
 
-    def test_kfold_ds_short(self, dummy_calendar, dummy_dataset_short):
-        "Should fail as there is only a single anchor year: no splits can be made"
-        mapped_calendar = dummy_calendar.map_to_data(dummy_dataset_short)
-        ds = resample(mapped_calendar, dummy_dataset_short)
-        with pytest.raises(ValueError):
-            ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds)
+def test_kfold_xxy(dummy_data):
+    """Correctly split x1, x2, and y."""
+    x1, x2, y = dummy_data
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+    x_train, x_test, y_train, y_test = next(cv.split(x1, x2, y=y))
+    expected_train = [2019, 2020, 2021, 2022, 2023]
+    expected_test = [2016, 2017, 2018]
 
-    def test_alternative_key(self, dummy_calendar, dummy_dataset):
-        mapped_calendar = dummy_calendar.map_to_data(dummy_dataset)
-        ds = resample(mapped_calendar, dummy_dataset)
-        ds = s2spy.traintest.split_groups(KFold(n_splits=2), ds, key="i_interval")
-        assert "i_interval" in ds.traintest.dims
+    assert np.array_equal(x_train[0].anchor_year, expected_train)
+    xr.testing.assert_equal(x_test[1], x2.sel(anchor_year=expected_test))
+    assert np.array_equal(y_train.anchor_year, expected_train)
+    xr.testing.assert_equal(y_test, y.sel(anchor_year=expected_test))
+
+
+def test_kfold_too_short(dummy_data):
+    "Fail if there is only a single anchor year: no splits can be made"
+    x1, _, _ = dummy_data
+    x = x1.isel(anchor_year=1)
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+
+    with pytest.raises(ValueError):
+        next(cv.split(x))
+
+
+def test_kfold_different_xcoords(dummy_data):
+    x1, x2, _ = dummy_data
+    x1 = x1.isel(anchor_year=slice(1, None, None))
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+
+    with pytest.raises(s2spy.traintest.CoordinateMismatch):
+        next(cv.split(x1, x2))
+
+
+def test_custom_dim(dummy_data):
+    x1, _, _ = dummy_data
+    x = x1.rename(anchor_year="custom_coord")
+    cv = s2spy.traintest.TrainTestSplit(KFold(n_splits=3))
+    x_train, _ = next(cv.split(x, dim="custom_coord"))
+    expected_train = [2019, 2020, 2021, 2022, 2023]
+
+    assert np.array_equal(x_train.custom_coord, expected_train)
