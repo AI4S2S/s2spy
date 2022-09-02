@@ -67,12 +67,8 @@ This section is for maintainers of the package.
 
 10. Verify
 
-    1. Has [new Zenodo
-        record](https://zenodo.org/search?page=1&size=20&q=s2spy)
-        been created?
-    2. Has stable
-        ReadTheDocs been
-        updated?
+    1. Has [new Zenodo record](https://zenodo.org/search?page=1&size=20&q=s2spy) been created?
+    2. Has [stable](https://ai4s2s.readthedocs.io/en/stable/) ReadTheDocs been updated?
     3. Can new version be installed with pip using
         `python3 -m pip install s2spy==<new version>`?
 
