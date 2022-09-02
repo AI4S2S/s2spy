@@ -131,7 +131,7 @@ If you want to contribute to the development of s2spy,
 have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## How to cite us
-<!-- [![RSD](https://img.shields.io/badge/rsd-s2s-00a3e3.svg)](https://www.research-software.nl/software/s2spy) -->
+[![RSD](https://img.shields.io/badge/rsd-s2spy-00a3e3.svg)](https://research-software-directory.org/software/s2spy)
 <!-- [![DOI](https://zenodo.org/badge/DOI/<replace-with-created-DOI>.svg)](https://doi.org/<replace-with-created-DOI>) -->
 
 <!--TODO: add links to zenodo and rsd. -->
