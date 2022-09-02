@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## 0.2.1 (2022-09-02)
+
+### Fixed
+- Display of images on ReadtheDocs and PyPi ([#97](https://github.com/AI4S2S/s2spy/pull/97))
+
 ## 0.2.0 (2022-09-01)
 
 ### Added
