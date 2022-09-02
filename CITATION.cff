@@ -33,7 +33,7 @@ authors:
     affiliation: "Vrije Universiteit Amsterdam"
 
 date-released: 2022-09-01
-version: "0.2.0""
+version: "0.2.0"
 repository-code: "https://github.com/AI4S2S/s2spy"
 keywords:
   - s2s
