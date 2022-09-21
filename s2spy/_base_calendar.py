@@ -13,41 +13,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from matplotlib.patches import Patch
-from matplotlib.patches import Rectangle
 from . import utils
 
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
-
-
-def plot_interval(
-    anchor_date: pd.Timestamp, interval: pd.Interval, ax: plt.Axes, color: str
-):
-    """Utility for the calendar visualization.
-
-    Plots a rectangle representing a single interval.
-
-    Args:
-        anchor_date: Pandas timestamp representing the anchor date.
-        interval: Interval that should be added to the plot.
-        ax: Axis to plot the interval in.
-        color: (Matplotlib compatible) color that the rectangle should have.
-    """
-    right = (anchor_date - interval.right).days
-    hwidth = (interval.right - interval.left).days
-
-    ax.add_patch(
-        Rectangle(
-            (right, anchor_date.year - 0.4),
-            hwidth,
-            0.8,
-            facecolor=color,
-            alpha=1,
-            edgecolor="k",
-            linewidth=1.5,
-        )
-    )
 
 
 class BaseCalendar(ABC):
@@ -294,8 +264,13 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
-    def visualize(self) -> None:
-        """Plots a visualization of the current calendar setup, to aid in user setup."""
+    def visualize(self, add_freq: bool = False) -> None:
+        """Plots a visualization of the current calendar setup, to aid in user setup.
+
+        Args:
+            add_freq: Toggles if the frequency of the intervals should be displayed.
+                      Defaults to False.
+        """
         intervals = self.get_intervals()
 
         _, ax = plt.subplots()
@@ -305,15 +280,23 @@ class BaseCalendar(ABC):
 
             # Plot the anchor intervals
             for interval in year_intervals[0 : self.n_targets : 2]:
-                plot_interval(anchor_date, interval, ax=ax, color="tab:orange")
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="tab:orange", add_freq=add_freq
+                )
             for interval in year_intervals[1 : self.n_targets : 2]:
-                plot_interval(anchor_date, interval, ax=ax, color="tab:red")
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="tab:red", add_freq=add_freq
+                )
 
             # Plot the precursor intervals
             for interval in year_intervals[self.n_targets :: 2]:
-                plot_interval(anchor_date, interval, ax=ax, color="tab:blue")
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="tab:blue", add_freq=add_freq
+                )
             for interval in year_intervals[self.n_targets + 1 :: 2]:
-                plot_interval(anchor_date, interval, ax=ax, color="tab:cyan")
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="tab:cyan", add_freq=add_freq
+                )
 
         left_bound = (anchor_date - intervals.values[-1][-1].left).days
         ax.set_xlim([left_bound + 5, -5])
