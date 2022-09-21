@@ -118,8 +118,5 @@ def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
     """
     stacked = data.stack(coord=["anchor_year", "i_interval"])
     bounds = np.array([[val.left, val.right] for val in stacked.interval.values])
-
-    stacked["interval"] = stacked["interval"].expand_dims({"bounds": ["left", "right"]})
     stacked["interval"] = (("coord", "bounds"), bounds)
-
     return stacked.unstack("coord")
