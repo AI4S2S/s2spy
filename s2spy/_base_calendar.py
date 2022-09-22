@@ -267,11 +267,14 @@ class BaseCalendar(ABC):
     def visualize(self, add_freq: bool = False) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
+        Note: the visualization will only visualize the most recent 3 anchor years, to
+        ensure that the visualization fits within the plot.
+
         Args:
             add_freq: Toggles if the frequency of the intervals should be displayed.
                       Defaults to False.
         """
-        intervals = self.get_intervals()
+        intervals = self.get_intervals()[:3]  # Load only the first three anchor years
 
         _, ax = plt.subplots()
 
@@ -281,21 +284,21 @@ class BaseCalendar(ABC):
             # Plot the anchor intervals
             for interval in year_intervals[0 : self.n_targets : 2]:
                 utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="tab:orange", add_freq=add_freq
+                    anchor_date, interval, ax=ax, color="#ff7700", add_freq=add_freq
                 )
             for interval in year_intervals[1 : self.n_targets : 2]:
                 utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="tab:red", add_freq=add_freq
+                    anchor_date, interval, ax=ax, color="#ffa100", add_freq=add_freq
                 )
 
             # Plot the precursor intervals
             for interval in year_intervals[self.n_targets :: 2]:
                 utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="tab:blue", add_freq=add_freq
+                    anchor_date, interval, ax=ax, color="#1f9ce9", add_freq=add_freq
                 )
             for interval in year_intervals[self.n_targets + 1 :: 2]:
                 utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="tab:cyan", add_freq=add_freq
+                    anchor_date, interval, ax=ax, color="#137fc1", add_freq=add_freq
                 )
 
         left_bound = (anchor_date - intervals.values[-1][-1].left).days
@@ -313,17 +316,13 @@ class BaseCalendar(ABC):
         # Add a custom legend to explain to users what the colors mean
         legend_elements = [
             Patch(
-                facecolor="tab:orange",
-                edgecolor="tab:red",
+                facecolor="#ff8c00",
                 label="Target interval",
-                hatch="//",
                 linewidth=1.5,
             ),
             Patch(
-                facecolor="tab:cyan",
-                edgecolor="tab:blue",
+                facecolor="#137fc1",
                 label="Precursor interval",
-                hatch="//",
                 linewidth=1.5,
             ),
         ]
