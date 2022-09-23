@@ -159,7 +159,7 @@ def resample_xarray(
     bins = bins.unstack()
     bins = bins.transpose("anchor_year", "i_interval", ...)
 
-    return bins
+    return utils.convert_interval_to_bounds(bins)
 
 
 def resample(
