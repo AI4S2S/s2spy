@@ -104,6 +104,26 @@ def check_input_frequency(calendar, data):
         )
 
 
+def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
+    """Converts pandas intervals to bounds in a xarray Dataset.
+
+    pd.Interval objects cannot be written to netCDF. To allow writing the
+    calendar-resampled data to netCDF these intervals have to be converted to bounds.
+    This function adds a 'bounds' dimension, with 'left' and 'right' coordinates, and
+    converts the 'interval' coordinates to this system.
+
+    Args:
+        data: Input data with intervals as pd.Interval objects.
+
+    Returns:
+        Input data with the intervals converted to bounds.
+    """
+    stacked = data.stack(coord=["anchor_year", "i_interval"])
+    bounds = np.array([[val.left, val.right] for val in stacked.interval.values])
+    stacked["interval"] = (("coord", "bounds"), bounds)
+    return stacked.unstack("coord")
+
+
 def plot_interval(
     anchor_date: pd.Timestamp,
     interval: pd.Interval,
