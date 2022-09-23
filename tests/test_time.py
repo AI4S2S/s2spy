@@ -64,6 +64,12 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
+    def test_visualize(self, dummy_calendar):
+        dummy_calendar.visualize()
+
+    def test_visualize_with_text(self, dummy_calendar):
+        dummy_calendar.visualize(add_freq=True)
+
 
 class TestMonthlyCalendar:
     """Test MonthlyCalendar methods."""
@@ -104,6 +110,13 @@ class TestMonthlyCalendar:
         with pytest.raises(ValueError):
             MonthlyCalendar(freq='2d')
 
+    def test_visualize(self, dummy_calendar):
+        dummy_calendar.visualize()
+
+    def test_visualize_with_text(self, dummy_calendar):
+        dummy_calendar.visualize(add_freq=True)
+
+
 class TestWeeklyCalendar:
     """Test WeeklyCalendar methods."""
 
@@ -142,6 +155,13 @@ class TestWeeklyCalendar:
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
             WeeklyCalendar(anchor=40, freq='2d')
+
+    def test_visualize(self, dummy_calendar):
+        dummy_calendar.visualize()
+
+    def test_visualize_with_text(self, dummy_calendar):
+        dummy_calendar.visualize(add_freq=True)
+
 
 class TestMap:
     """Test map to year(s)/data methods"""
