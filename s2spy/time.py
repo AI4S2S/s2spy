@@ -304,3 +304,26 @@ class WeeklyCalendar(BaseCalendar):
         return self._label_targets(self.get_intervals()).applymap(
             self._interval_as_weeknr
         )
+
+class CustomCalendar(BaseCalendar):
+    """Build a calendar from sratch with basic construction elements."""
+    def __init__(self, anchor: Tuple[int, int] = (11, 30)):
+        self.month = anchor[0]
+        self.day = anchor[1]
+        self.bins = []
+
+    def append(self, bin):
+        self.bins.append(bin)
+
+class Period:
+    """Basic construction element of calendar for defining target period."""
+    def __init__(self, length: int=0, gap: int=0, target: bool=False) -> None:
+        self.length = length
+        self.gap = gap
+        self._target = target    
+
+def target_period(length, gap):
+    return Period(length = length, gap = gap, target = True)
+
+def precursor_period(length, gap):
+    return Period(length = length, gap = gap, target = False)
