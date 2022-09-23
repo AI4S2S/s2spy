@@ -264,17 +264,17 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
-    def visualize(self, add_freq: bool = False) -> None:
+    def visualize(self, add_freq: bool = False, n_years: int = 3) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
-
-        Note: the visualization will only visualize the most recent 3 anchor years, to
-        ensure that the visualization fits within the plot.
 
         Args:
             add_freq: Toggles if the frequency of the intervals should be displayed.
                       Defaults to False.
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
         """
-        intervals = self.get_intervals()[:3]  # Load only the first three anchor years
+        intervals = self.get_intervals()[:n_years]
 
         _, ax = plt.subplots()
 
