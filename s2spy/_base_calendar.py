@@ -6,10 +6,13 @@ customized for each specific calendar.
 """
 from abc import ABC
 from abc import abstractmethod
+from calendar import month_abbr
 from typing import Union
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from matplotlib.patches import Patch
 from . import utils
 
 
@@ -72,8 +75,10 @@ class BaseCalendar(ABC):
                 leakage.
         """
         if (max_lag < 0) or (max_lag % 1 > 0):
-            raise ValueError("Max lag should be an integer with a value of 0 or greater"
-                             f", not {max_lag} of type {type(max_lag)}.")
+            raise ValueError(
+                "Max lag should be an integer with a value of 0 or greater"
+                f", not {max_lag} of type {type(max_lag)}."
+            )
 
         self._max_lag = max_lag
         self._allow_overlap = allow_overlap
@@ -113,7 +118,9 @@ class BaseCalendar(ABC):
         """
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(self.freq)
         return (
-            (self._max_lag + self.n_targets) if self._max_lag > 0 else int(periods_per_year)
+            (self._max_lag + self.n_targets)
+            if self._max_lag > 0
+            else int(periods_per_year)
         )
 
     def _get_skip_nyears(self) -> int:
@@ -256,6 +263,70 @@ class BaseCalendar(ABC):
         )
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
+
+    def visualize(self, add_freq: bool = False, n_years: int = 3) -> None:
+        """Plots a visualization of the current calendar setup, to aid in user setup.
+
+        Args:
+            add_freq: Toggles if the frequency of the intervals should be displayed.
+                      Defaults to False.
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
+        """
+        intervals = self.get_intervals()[:n_years]
+
+        _, ax = plt.subplots()
+
+        for year_intervals in intervals.values:
+            anchor_date = year_intervals[0].right
+
+            # Plot the anchor intervals
+            for interval in year_intervals[0 : self.n_targets : 2]:
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="#ff7700", add_freq=add_freq
+                )
+            for interval in year_intervals[1 : self.n_targets : 2]:
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="#ffa100", add_freq=add_freq
+                )
+
+            # Plot the precursor intervals
+            for interval in year_intervals[self.n_targets :: 2]:
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="#1f9ce9", add_freq=add_freq
+                )
+            for interval in year_intervals[self.n_targets + 1 :: 2]:
+                utils.plot_interval(
+                    anchor_date, interval, ax=ax, color="#137fc1", add_freq=add_freq
+                )
+
+        left_bound = (anchor_date - intervals.values[-1][-1].left).days
+        ax.set_xlim([left_bound + 5, -5])
+        ax.set_xlabel(
+            f"Days before anchor date ({anchor_date.day}"
+            f" {month_abbr[anchor_date.month]})"
+        )
+
+        anchor_years = intervals.index.astype(int).values
+        ax.set_ylim([anchor_years.min() - 0.5, anchor_years.max() + 0.5])
+        ax.set_yticks(anchor_years)
+        ax.set_ylabel("Anchor year")
+
+        # Add a custom legend to explain to users what the colors mean
+        legend_elements = [
+            Patch(
+                facecolor="#ff8c00",
+                label="Target interval",
+                linewidth=1.5,
+            ),
+            Patch(
+                facecolor="#137fc1",
+                label="Precursor interval",
+                linewidth=1.5,
+            ),
+        ]
+        ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
 
     @property
     def flat(self) -> pd.DataFrame:
