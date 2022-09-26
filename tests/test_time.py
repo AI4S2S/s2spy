@@ -64,11 +64,25 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
+    # The following tests only check if the plotter completely fails,
+    # visuals are not checked.
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
 
     def test_visualize_with_text(self, dummy_calendar):
         dummy_calendar.visualize(add_freq=True)
+
+    # def test_visualize_bokeh_single(self, dummy_calendar):
+    #     dummy_calendar.visualize(n_years=1, plotter='bokeh')
+
+    # def test_visualize_bokeh(self):
+    #     cal = AdventCalendar(anchor=(12, 31), freq="240d")
+    #     cal.map_years(2018, 2021)
+    #     cal.visualize(plotter='bokeh')
+
+    def test_visualize_incorrect_plotter(self, dummy_calendar):
+        with pytest.raises(ValueError):
+            dummy_calendar.visualize(plotter='invalid')
 
 
 class TestMonthlyCalendar:

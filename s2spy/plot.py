@@ -5,6 +5,7 @@ from matplotlib.patches import Rectangle
 from calendar import month_abbr
 from matplotlib.patches import Patch
 
+XLABEL = "Anchor year"
 
 def plot_mpl_interval(
     anchor_date: pd.Timestamp,
@@ -89,7 +90,7 @@ def matplotlib_visualization(calendar, n_years, add_freq):
     anchor_years = intervals.index.astype(int).values
     ax.set_ylim([anchor_years.min() - 0.5, anchor_years.max() + 0.5])
     ax.set_yticks(anchor_years)
-    ax.set_ylabel("Anchor year")
+    ax.set_ylabel(XLABEL)
 
     # Add a custom legend to explain to users what the colors mean
     legend_elements = [
@@ -107,10 +108,11 @@ def matplotlib_visualization(calendar, n_years, add_freq):
     ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
 
 
-def import_bokeh():
+def bokeh_available():
     """Util that attempts to load the optional module bokeh"""
     try:
         import bokeh as _  # pylint: disable=import-outside-toplevel
+        return True
     except ImportError as e:
         raise ImportError(
             "Could not import the `bokeh` module.\nPlease install this"
@@ -119,6 +121,7 @@ def import_bokeh():
 
 
 def make_color_array(n_targets, n_intervals):
+    """Util that generates the colormap for the intervals."""
     colors = np.array(["#ffffff"] * n_intervals)
     colors[0:n_targets:2] = "#ff7700"
     colors[1:n_targets:2] = "#ffa100"
@@ -128,7 +131,9 @@ def make_color_array(n_targets, n_intervals):
 
 
 def bohek_visualization_single(calendar):
-    import_bokeh()
+    """Visualization routine for a single anchor year. Has a datetime x-axis."""
+    if not bokeh_available():
+        return None
     from bokeh import plotting  # pylint: disable=import-outside-toplevel
 
     intervals = calendar.get_intervals()
@@ -183,15 +188,19 @@ def bohek_visualization_single(calendar):
     )
 
     plot.xaxis.axis_label = "Date"
-    plot.yaxis.axis_label = "Anchor year"
+    plot.yaxis.axis_label = XLABEL
 
     plot.yaxis.ticker = [anchor_date.year]
 
     plotting.show(plot)
 
+    return None
+
 
 def bohek_visualization_multiple(calendar):
-    import_bokeh()
+    """Visualization routine for multiple anchor years. Has a datetime x-axis."""
+    if not bokeh_available():
+        return None
     from bokeh import plotting  # pylint: disable=import-outside-toplevel
 
     tooltips = [("Interval", "@desc"), ("Size", "@width days"), ("Type", "@type")]
@@ -247,7 +256,7 @@ def bohek_visualization_multiple(calendar):
         )
 
     plot.xaxis.axis_label = "Days before anchor date"
-    plot.yaxis.axis_label = "Anchor year"
+    plot.yaxis.axis_label = XLABEL
 
     plot.x_range.start = np.max(x_data) + np.max(widths) + 10
     plot.x_range.end = -10
@@ -255,3 +264,5 @@ def bohek_visualization_multiple(calendar):
     plot.yaxis.ticker = [int(x) for x in intervals.index.to_list()]
 
     plotting.show(plot)
+
+    return None
