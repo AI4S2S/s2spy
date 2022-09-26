@@ -130,11 +130,8 @@ def make_color_array(n_targets, n_intervals):
     return colors
 
 
-def bohek_visualization_single(calendar):
+def _bokeh_visualization_single(calendar, plotting):
     """Visualization routine for a single anchor year. Has a datetime x-axis."""
-    if not bokeh_available():
-        return None
-    from bokeh import plotting  # pylint: disable=import-outside-toplevel
 
     intervals = calendar.get_intervals()
 
@@ -192,16 +189,11 @@ def bohek_visualization_single(calendar):
 
     plot.yaxis.ticker = [anchor_date.year]
 
-    plotting.show(plot)
-
-    return None
+    return plot
 
 
-def bohek_visualization_multiple(calendar):
+def _bokeh_visualization_multiple(calendar, plotting):
     """Visualization routine for multiple anchor years. Has a datetime x-axis."""
-    if not bokeh_available():
-        return None
-    from bokeh import plotting  # pylint: disable=import-outside-toplevel
 
     tooltips = [("Interval", "@desc"), ("Size", "@width days"), ("Type", "@type")]
 
@@ -263,6 +255,19 @@ def bohek_visualization_multiple(calendar):
 
     plot.yaxis.ticker = [int(x) for x in intervals.index.to_list()]
 
-    plotting.show(plot)
+    return plot
+
+
+def bokeh_visualization(calendar, n_years):
+    if not bokeh_available():
+        return None
+    from bokeh import plotting  # pylint: disable=import-outside-toplevel
+
+    if n_years == 1:
+        figure = _bokeh_visualization_single(calendar, plotting)
+    else:
+        figure = _bokeh_visualization_multiple(calendar, plotting)
+
+    plotting.show(figure)
 
     return None

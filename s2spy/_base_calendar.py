@@ -280,13 +280,12 @@ class BaseCalendar(ABC):
                      'bokeh'.
         """
         n_years = max(n_years, 1)
+        n_years = min(n_years, len(self.get_intervals().index))
 
         if plotter == "mpl":
             plot.matplotlib_visualization(self, n_years, add_freq)
-        elif n_years == 1 and plotter == "bokeh":
-            plot.bohek_visualization_single(self)
-        elif n_years > 1 and plotter == "bokeh":
-            plot.bohek_visualization_multiple(self)
+        elif plotter == "bokeh":
+            plot.bokeh_visualization(self, n_years)
         else:
             raise ValueError(
                 f"'{plotter}' is not a valid plotter. Please input either"
