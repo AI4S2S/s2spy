@@ -70,10 +70,7 @@ class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(
-        self,
-        anchor: Tuple[int, int] = (11, 30),
-        freq: str = "7d",
-        n_targets: int = 1,
+        self, anchor: Tuple[int, int] = (11, 30), freq: str = "7d", n_targets: int = 1,
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -104,7 +101,7 @@ class AdventCalendar(BaseCalendar):
         self.freq = freq
         self.n_targets = n_targets
 
-        self._max_lag:int = 0
+        self._max_lag: int = 0
         self._allow_overlap: bool = False
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
@@ -123,10 +120,7 @@ class MonthlyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
 
     def __init__(
-        self,
-        anchor: str = "Dec",
-        freq: str = "1M",
-        n_targets: int = 1,
+        self, anchor: str = "Dec", freq: str = "1M", n_targets: int = 1,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -178,7 +172,9 @@ class MonthlyCalendar(BaseCalendar):
         """
         periods_per_year = 12 / int(self.freq.replace("M", ""))
         return (
-            (self._max_lag + self.n_targets) if self._max_lag > 0 else int(periods_per_year)
+            (self._max_lag + self.n_targets)
+            if self._max_lag > 0
+            else int(periods_per_year)
         )
 
     def _get_skip_nyears(self) -> int:
@@ -227,12 +223,7 @@ class MonthlyCalendar(BaseCalendar):
 class WeeklyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor week number, in steps of calendar weeks."""
 
-    def __init__(
-        self,
-        anchor: int,
-        freq: str = "1W",
-        n_targets: int = 1,
-    ) -> None:
+    def __init__(self, anchor: int, freq: str = "1W", n_targets: int = 1,) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
         Set up the calendar with given freq ending exactly on the anchor week.
@@ -305,25 +296,88 @@ class WeeklyCalendar(BaseCalendar):
             self._interval_as_weeknr
         )
 
+
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
+
     def __init__(self, anchor: Tuple[int, int] = (11, 30)):
+        """Instantiate a basic container for building calendar using basic blocks.
+
+        This is a highly flexible calendar which allows the user to build their own
+        calendar with the basic building blocks of target and precursor periods.
+        """
         self.month = anchor[0]
         self.day = anchor[1]
-        self.bins = []
+        self._list_periods = []
+        self._total_days = 0
 
-    def append(self, bin):
-        self.bins.append(bin)
+    def _get_anchor(self, year: int) -> pd.Timestamp:
+        """Generates a timestamp for the end of interval 0 in year.
+
+        Args:
+            year (int): anchor year for which the anchor timestamp should be generated
+
+        Returns:
+            pd.Timestamp: Timestamp at the end of the anchor_years interval 0.
+        """
+        return pd.Timestamp(year, self.month, self.day)
+
+    def append(self, period_block):
+        """Append target/precursor periods to the calendar."""
+        # TO DO: make sure the first building block should not contain gap
+        # TO DO: add check to ensure that no target will be inserted between precursors
+        self._list_periods.append(period_block)
+        # count length
+        self._total_days += period_block.length + period_block.gap
+
+    def map_year(self, year: int):
+        """Replace old map_year function"""
+        # calculate start date
+        start_date = self._get_anchor(year) - pd.Timedelta(self._total_days, unit="D")
+        # generate date range based on the anchor year and the appended blocks
+        date_range = pd.date_range(start=start_date, end=self._get_anchor(year))
+        date_range = date_range[::-1]
+
+        # generate intervals based on the building blocks
+        year_intervals = []
+        target_labels = []
+        # pointer to the index of date for right boundary of interval
+        current_date_index = 0
+        for block in self._list_periods:
+            current_date_index += block.gap
+            # pointer to the index of date for left boundary of interval
+            early_date_index = current_date_index + block.length - 1
+            year_intervals.append(
+                pd.Interval(
+                    date_range[early_date_index],
+                    date_range[current_date_index],
+                    closed="right",
+                )
+            )
+            target_labels.append(block._target)
+            # move pointer to new start
+            current_date_index = early_date_index + 1
+
+        # turn the list of intervals into pandas series
+        year_intervals = pd.Series(year_intervals[:], name=str(year))
+        year_intervals.index.name = "i_interval"
+        return year_intervals
+
 
 class Period:
     """Basic construction element of calendar for defining target period."""
-    def __init__(self, length: int=0, gap: int=0, target: bool=False) -> None:
+
+    def __init__(self, length: int, gap: int = 0, target: bool = False) -> None:
         self.length = length
         self.gap = gap
-        self._target = target    
+        self._target = target
 
-def target_period(length, gap):
-    return Period(length = length, gap = gap, target = True)
 
-def precursor_period(length, gap):
-    return Period(length = length, gap = gap, target = False)
+def target_period(length, gap: int = 0):
+    """Instantiate a build block as target period. """
+    return Period(length=length, gap=gap, target=True)
+
+
+def precursor_period(length, gap: int = 0):
+    """Instantiate a build block as precursor period."""
+    return Period(length=length, gap=gap, target=False)
