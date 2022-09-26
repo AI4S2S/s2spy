@@ -1,11 +1,9 @@
 import re
 import warnings
 from typing import Union
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from matplotlib.patches import Rectangle
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -122,48 +120,3 @@ def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
     bounds = np.array([[val.left, val.right] for val in stacked.interval.values])
     stacked["interval"] = (("coord", "bounds"), bounds)
     return stacked.unstack("coord")
-
-
-def plot_interval(
-    anchor_date: pd.Timestamp,
-    interval: pd.Interval,
-    ax: plt.Axes,
-    color: str,
-    add_freq: bool = False,
-):
-    """Utility for the calendar visualization.
-
-    Plots a rectangle representing a single interval.
-
-    Args:
-        anchor_date: Pandas timestamp representing the anchor date.
-        interval: Interval that should be added to the plot.
-        ax: Axis to plot the interval in.
-        color: (Matplotlib compatible) color that the rectangle should have.
-        add_freq: Toggles if the frequency will be displayed on the rectangle
-    """
-    right = (anchor_date - interval.right).days
-    hwidth = (interval.right - interval.left).days
-
-    ax.add_patch(
-        Rectangle(
-            (right, anchor_date.year - 0.4),
-            hwidth,
-            0.8,
-            facecolor=color,
-            alpha=0.7,
-            edgecolor="k",
-            linewidth=1.5,
-        )
-    )
-
-    if add_freq:
-        ax.text(
-            x=right + hwidth / 2,
-            y=anchor_date.year,
-            s=hwidth,
-            c="k",
-            size=8,
-            ha="center",
-            va="center",
-        )

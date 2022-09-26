@@ -6,14 +6,12 @@ customized for each specific calendar.
 """
 from abc import ABC
 from abc import abstractmethod
-from calendar import month_abbr
 from typing import Union
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from matplotlib.patches import Patch
 from . import utils
+from . import plot
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -264,69 +262,36 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
-    def visualize(self, add_freq: bool = False, n_years: int = 3) -> None:
+    def visualize(
+        self,
+        add_freq: bool = False,
+        n_years: int = 3,
+        plotter: str = "mpl",
+    ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
         Args:
             add_freq: Toggles if the frequency of the intervals should be displayed.
-                      Defaults to False.
+                      Defaults to False (Matplotlib plotter only)
             n_years: Sets the maximum number of anchor years that should be shown. By
                      default only the most recent 3 are visualized, to ensure that they
                      fit within the plot.
+            plotter: Which plotter should be used, either 'mpl' for matplotlib, or
+                     'bokeh'.
         """
-        intervals = self.get_intervals()[:n_years]
+        n_years = max(n_years, 1)
 
-        _, ax = plt.subplots()
-
-        for year_intervals in intervals.values:
-            anchor_date = year_intervals[0].right
-
-            # Plot the anchor intervals
-            for interval in year_intervals[0 : self.n_targets : 2]:
-                utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="#ff7700", add_freq=add_freq
-                )
-            for interval in year_intervals[1 : self.n_targets : 2]:
-                utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="#ffa100", add_freq=add_freq
-                )
-
-            # Plot the precursor intervals
-            for interval in year_intervals[self.n_targets :: 2]:
-                utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="#1f9ce9", add_freq=add_freq
-                )
-            for interval in year_intervals[self.n_targets + 1 :: 2]:
-                utils.plot_interval(
-                    anchor_date, interval, ax=ax, color="#137fc1", add_freq=add_freq
-                )
-
-        left_bound = (anchor_date - intervals.values[-1][-1].left).days
-        ax.set_xlim([left_bound + 5, -5])
-        ax.set_xlabel(
-            f"Days before anchor date ({anchor_date.day}"
-            f" {month_abbr[anchor_date.month]})"
-        )
-
-        anchor_years = intervals.index.astype(int).values
-        ax.set_ylim([anchor_years.min() - 0.5, anchor_years.max() + 0.5])
-        ax.set_yticks(anchor_years)
-        ax.set_ylabel("Anchor year")
-
-        # Add a custom legend to explain to users what the colors mean
-        legend_elements = [
-            Patch(
-                facecolor="#ff8c00",
-                label="Target interval",
-                linewidth=1.5,
-            ),
-            Patch(
-                facecolor="#137fc1",
-                label="Precursor interval",
-                linewidth=1.5,
-            ),
-        ]
-        ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
+        if plotter == "mpl":
+            plot.matplotlib_visualization(self, n_years, add_freq)
+        elif n_years == 1 and plotter == "bokeh":
+            plot.bohek_visualization_single(self)
+        elif n_years > 1 and plotter == "bokeh":
+            plot.bohek_visualization_multiple(self)
+        else:
+            raise ValueError(
+                f"'{plotter}' is not a valid plotter. Please input either"
+                " 'mpl' or 'bokeh'."
+            )
 
     @property
     def flat(self) -> pd.DataFrame:
