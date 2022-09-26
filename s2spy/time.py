@@ -309,7 +309,10 @@ class CustomCalendar(BaseCalendar):
         self.month = anchor[0]
         self.day = anchor[1]
         self._list_periods = []
-        self._total_days = 0
+        self._periods_labels = []
+        self._total_length = 0
+        self.n_targets = 0
+        self._end_indentifier = True # true for target
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -324,25 +327,37 @@ class CustomCalendar(BaseCalendar):
 
     def append(self, period_block):
         """Append target/precursor periods to the calendar."""
-        # TO DO: make sure the first building block should not contain gap
-        # TO DO: add check to ensure that no target will be inserted between precursors
+        if not self._list_periods:
+            if not period_block.target:
+                raise ValueError("First period must be a target period.")
+            if period_block.gap:
+                raise ValueError("First target period should not contain a gap.")
+        # make sure a target cannot be inserted after a precursor
+        if not period_block.target:
+            self._end_indentifier = False
+        else:
+            # count the number of target periods
+            self.n_targets += 1
+        if period_block.target != self._end_indentifier:
+            raise ValueError("Target period cannot be inserted among precursor periods.")
+
         self._list_periods.append(period_block)
         # count length
-        self._total_days += period_block.length + period_block.gap
+        self._total_length += period_block.length + period_block.gap
 
     def map_year(self, year: int):
         """Replace old map_year function"""
         # calculate start date
-        start_date = self._get_anchor(year) - pd.Timedelta(self._total_days, unit="D")
+        start_date = self._get_anchor(year) - pd.Timedelta(self._total_length, unit="D")
         # generate date range based on the anchor year and the appended blocks
         date_range = pd.date_range(start=start_date, end=self._get_anchor(year))
         date_range = date_range[::-1]
 
         # generate intervals based on the building blocks
         year_intervals = []
-        target_labels = []
         # pointer to the index of date for right boundary of interval
         current_date_index = 0
+        # loop through all the building blocks to
         for block in self._list_periods:
             current_date_index += block.gap
             # pointer to the index of date for left boundary of interval
@@ -354,7 +369,6 @@ class CustomCalendar(BaseCalendar):
                     closed="right",
                 )
             )
-            target_labels.append(block._target)
             # move pointer to new start
             current_date_index = early_date_index + 1
 
@@ -370,7 +384,7 @@ class Period:
     def __init__(self, length: int, gap: int = 0, target: bool = False) -> None:
         self.length = length
         self.gap = gap
-        self._target = target
+        self.target = target
 
 
 def target_period(length, gap: int = 0):
