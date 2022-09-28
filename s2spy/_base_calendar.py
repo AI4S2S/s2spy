@@ -302,7 +302,7 @@ class BaseCalendar(ABC):
         """
         if utils.bokeh_available():
             # pylint: disable=import-outside-toplevel
-            from _bokeh_plots import bokeh_visualization
+            from ._bokeh_plots import bokeh_visualization
             return bokeh_visualization(self, n_years, relative_dates)
         return None
 
