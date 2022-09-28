@@ -10,8 +10,8 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from . import utils
 from . import plot
+from . import utils
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -264,9 +264,8 @@ class BaseCalendar(ABC):
 
     def visualize(
         self,
-        add_freq: bool = False,
         n_years: int = 3,
-        plotter: str = "mpl",
+        add_freq: bool = False,
     ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
@@ -276,21 +275,36 @@ class BaseCalendar(ABC):
             n_years: Sets the maximum number of anchor years that should be shown. By
                      default only the most recent 3 are visualized, to ensure that they
                      fit within the plot.
-            plotter: Which plotter should be used, either 'mpl' for matplotlib, or
-                     'bokeh'.
         """
         n_years = max(n_years, 1)
         n_years = min(n_years, len(self.get_intervals().index))
+        plot.matplotlib_visualization(self, n_years, add_freq)
 
-        if plotter == "mpl":
-            plot.matplotlib_visualization(self, n_years, add_freq)
-        elif plotter == "bokeh":
-            plot.bokeh_visualization(self, n_years)
-        else:
-            raise ValueError(
-                f"'{plotter}' is not a valid plotter. Please input either"
-                " 'mpl' or 'bokeh'."
-            )
+    def visualize_bokeh(
+        self,
+        relative_dates: bool,
+        n_years: int = 3,
+    ) -> None:
+        """Plots a visualization of the current calendar setup using `bokeh`.
+
+        Note: Requires the `bokeh` package to be installed in the active enviroment.
+
+        Args:
+            relative_dates: If False, absolute dates will be used. If True, each anchor
+                            year is aligned by the anchor date, so that all anchor years
+                            line up vertically.
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
+
+        Returns:
+            None
+        """
+        if utils.bokeh_available():
+            # pylint: disable=import-outside-toplevel
+            from _bokeh_plots import bokeh_visualization
+            return bokeh_visualization(self, n_years, relative_dates)
+        return None
 
     @property
     def flat(self) -> pd.DataFrame:

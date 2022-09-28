@@ -120,3 +120,16 @@ def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
     bounds = np.array([[val.left, val.right] for val in stacked.interval.values])
     stacked["interval"] = (("coord", "bounds"), bounds)
     return stacked.unstack("coord")
+
+
+def bokeh_available():
+    """Util that attempts to load the optional module bokeh"""
+    try:
+        import bokeh as _  # pylint: disable=import-outside-toplevel
+
+        return True
+    except ImportError as e:
+        raise ImportError(
+            "Could not import the `bokeh` module.\nPlease install this"
+            " before continuing, with either `pip` or `conda`."
+        ) from e

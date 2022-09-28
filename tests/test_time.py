@@ -72,10 +72,6 @@ class TestAdventCalendar:
     def test_visualize_with_text(self, dummy_calendar):
         dummy_calendar.visualize(add_freq=True)
 
-    def test_visualize_incorrect_plotter(self, dummy_calendar):
-        with pytest.raises(ValueError):
-            dummy_calendar.visualize(plotter='invalid')
-
 
 class TestMonthlyCalendar:
     """Test MonthlyCalendar methods."""
