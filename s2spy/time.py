@@ -319,7 +319,10 @@ class CustomCalendar(BaseCalendar):
         self._total_length_target = 0
         self._total_length_precursor = 0
         self.n_targets = 0
-        self._end_indentifier = False  # identifier for completion of appending
+        # identifier for completion of appending
+        self._end_indentifier = False
+
+        self._allow_overlap: bool = False
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Generates a timestamp for the end of interval 0 in year.
@@ -364,7 +367,7 @@ class CustomCalendar(BaseCalendar):
                     + " the length of precedent period block."
                 )
 
-    def map_year(self, year: int):
+    def _map_year(self, year: int):
         """Replace old map_year function"""
         # flag the calendar as existed
         self._end_indentifier = True
@@ -394,7 +397,9 @@ class CustomCalendar(BaseCalendar):
             date_range = pd.date_range(start=start_date, end=end_date)
         else:
             # anchor date is excluded
-            start_date = self._get_anchor(year) - pd.Timedelta(total_length + 1, unit="D")
+            start_date = self._get_anchor(year) - pd.Timedelta(
+                total_length + 1, unit="D"
+            )
             end_date = self._get_anchor(year) - pd.Timedelta(1, unit="D")
             # generate date ranges
             date_range = pd.date_range(start=start_date, end=end_date)
@@ -428,6 +433,83 @@ class CustomCalendar(BaseCalendar):
             left_date_index = right_date_index + 1
 
         return intervals
+
+    def map_years(self, start: int, end: int):
+        """Adds a start and end year mapping to the calendar.
+
+        If the start and end years are the same, the intervals for only that single
+        year are returned by calendar.get_intervals().
+
+        Args:
+            start: The first year for which the calendar will be realized
+            end: The last year for which the calendar will be realized
+
+        Returns:
+            The calendar mapped to the input start and end year.
+        """
+        if start > end:
+            raise ValueError("The start year cannot be greater than the end year")
+
+        self._first_year = start
+        self._last_year = end
+        self._mapping = "years"
+        return self
+
+    def _label_targets(self, intervals: pd.DataFrame) -> pd.DataFrame:
+        """Adds target labels to the header row of the intervals.
+
+        Args:
+            intervals (pd.Dataframe): Dataframe with intervals.
+
+        Returns:
+            pd.Dataframe: Dataframe with target periods labelled.
+        """
+        return intervals.rename(
+            columns={i: f"(target) {i}" for i in range(self.n_targets)}
+        )
+
+    def get_intervals(self) -> pd.DataFrame:
+        """Method to retrieve updated intervals from the Calendar object."""
+        if self._mapping is None:
+            raise ValueError(
+                "Cannot retrieve intervals without map_years or "
+                "map_to_data having configured the calendar."
+            )
+        # if self._mapping == "data":
+        #     self._set_year_range_from_timestamps()
+
+        year_range = range(
+            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
+        )
+
+        intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
+
+        intervals.index.name = "anchor_year"
+        return intervals
+
+    def _get_skip_nyears(self) -> int:
+        """Determine how many years need to be skipped to avoid overlapping data.
+
+        Required to prevent information leakage between anchor years.
+
+        Returns:
+            int: Number of years that need to be skipped.
+        """
+        years = pd.to_timedelta(
+            self._total_length_target + self._total_length_precursor
+        ) / pd.Timedelta("365days")
+
+        return 0 if self._allow_overlap else int(np.ceil(years).astype(int) - 1)
+
+    def show(self) -> pd.DataFrame:
+        """Displays the intervals the Calendar will generate for the current setup.
+
+        Returns:
+            pd.Dataframe: Dataframe containing the calendar intervals, with the target
+                periods labelled.
+        """
+        return self._label_targets(self.get_intervals())
+
 
 class Period:
     """Basic construction element of calendar for defining target period."""
