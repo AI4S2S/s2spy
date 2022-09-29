@@ -64,6 +64,8 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
+    # The following tests only check if the plotter completely fails,
+    # visuals are not checked.
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
 

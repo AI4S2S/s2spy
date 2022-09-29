@@ -1,4 +1,5 @@
 """Tests for the s2s.rgdr module."""
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,6 +13,11 @@ from s2spy.time import resample
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
+
+"""Setting this matplotlib setting is required for running tests on windows. If this
+option is not set, matplotlib tries to use an interactive backend, which will result in
+a "_tkinter.TclError"."""
+matplotlib.use("Agg")
 
 # pylint: disable=protected-access
 
@@ -210,15 +216,24 @@ class TestRGDR:
         rgdr = RGDR(min_area_km2=1000**2)
         clustered_data = rgdr.fit_transform(example_field, example_target)
         cluster_labels = np.array(
-            ["lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1"])
+            ["lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1"]
+        )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
-    def test_fit_transform_multiple_lags(self, example_field_multiple_lags, example_target):
+    def test_fit_transform_multiple_lags(
+        self, example_field_multiple_lags, example_target
+    ):
         rgdr = RGDR()
         clustered_data = rgdr.fit_transform(example_field_multiple_lags, example_target)
         cluster_labels = np.array(
-            ["lag:1_cluster:-2", "lag:1_cluster:1", "lag:2_cluster:-1",
-             "lag:2_cluster:1", "lag:3_cluster:-1"])
+            [
+                "lag:1_cluster:-2",
+                "lag:1_cluster:1",
+                "lag:2_cluster:-1",
+                "lag:2_cluster:1",
+                "lag:3_cluster:-1",
+            ]
+        )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
     def test_corr_preview(self, dummy_rgdr, example_field, example_target):
@@ -231,7 +246,7 @@ class TestRGDR:
 
     def test_corr_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
-        ):
+    ):
         with pytest.raises(ValueError):
             dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target)
 
@@ -249,7 +264,7 @@ class TestRGDR:
 
     def test_cluster_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
-        ):
+    ):
         with pytest.raises(ValueError):
             dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target)
 
