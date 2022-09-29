@@ -221,38 +221,38 @@ class TestRGDR:
              "lag:2_cluster:1", "lag:3_cluster:-1"])
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
-    def test_corr_plot(self, dummy_rgdr, example_field, example_target):
-        dummy_rgdr.plot_correlation(example_field, example_target)
+    def test_corr_preview(self, dummy_rgdr, example_field, example_target):
+        dummy_rgdr.preview_correlation(example_field, example_target)
 
-    def test_corr_plot_multiple_lags(
+    def test_corr_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.plot_correlation(example_field_multiple_lags, example_target, lag=1)
+        dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target, lag=1)
 
-    def test_corr_plot_multiple_lags_fail(
+    def test_corr_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
         with pytest.raises(ValueError):
-            dummy_rgdr.plot_correlation(example_field_multiple_lags, example_target)
+            dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target)
 
     def test_corr_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, (ax1, ax2) = plt.subplots(ncols=2)
-        dummy_rgdr.plot_correlation(example_field, example_target, ax1=ax1, ax2=ax2)
+        dummy_rgdr.preview_correlation(example_field, example_target, ax1=ax1, ax2=ax2)
 
     def test_cluster_plot(self, dummy_rgdr, example_field, example_target):
-        dummy_rgdr.plot_clusters(example_field, example_target)
+        dummy_rgdr.preview_clusters(example_field, example_target)
 
-    def test_cluster_plot_multiple_lags(
+    def test_cluster_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.plot_clusters(example_field_multiple_lags, example_target, lag=1)
+        dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target, lag=1)
 
-    def test_cluster_plot_multiple_lags_fail(
+    def test_cluster_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
         with pytest.raises(ValueError):
-            dummy_rgdr.plot_clusters(example_field_multiple_lags, example_target)
+            dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target)
 
     def test_cluster_plot_ax(self, dummy_rgdr, example_field, example_target):
         _, ax = plt.subplots()
-        dummy_rgdr.plot_clusters(example_field, example_target, ax=ax)
+        dummy_rgdr.preview_clusters(example_field, example_target, ax=ax)
