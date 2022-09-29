@@ -416,7 +416,7 @@ class CustomCalendar(BaseCalendar):
             if is_target:
                 intervals.append(
                     pd.Interval(
-                        date_range[left_date_index],
+                        date_range[left_date_index] - pd.Timedelta(1, unit="D"), # open left close right
                         date_range[right_date_index],
                         closed="right",
                     )
@@ -424,7 +424,7 @@ class CustomCalendar(BaseCalendar):
             else:
                 intervals.append(
                     pd.Interval(
-                        date_range[right_date_index],
+                        date_range[right_date_index] - pd.Timedelta(1, unit="D"),
                         date_range[left_date_index],
                         closed="right",
                     )
