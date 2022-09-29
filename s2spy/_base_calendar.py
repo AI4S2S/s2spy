@@ -10,7 +10,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from . import plot
+from . import _plot
 from . import utils
 
 
@@ -278,9 +278,9 @@ class BaseCalendar(ABC):
         """
         n_years = max(n_years, 1)
         n_years = min(n_years, len(self.get_intervals().index))
-        plot.matplotlib_visualization(self, n_years, add_freq)
+        _plot.matplotlib_visualization(self, n_years, add_freq)
 
-    def visualize_bokeh(
+    def visualize_interactive(
         self,
         relative_dates: bool,
         n_years: int = 3,
