@@ -348,15 +348,8 @@ class CustomCalendar(BaseCalendar):
 
     def _map_year(self, year: int):
         """Replace old map_year function"""
-        # flag the calendar as existed
-        self._end_indentifier = True
-
-        intervals_target = self._concatenate_periods(
-            year, self._target, self._total_length_target, True
-        )
-        intervals_precursor = self._concatenate_periods(
-            year, self._precursor, self._total_length_precursor, False
-        )
+        intervals_target = self._concatenate_periods(year, self._target, True)
+        intervals_precursor = self._concatenate_periods(year, self._precursor, False)
 
         self.n_targets = len(intervals_target)
         year_intervals = intervals_precursor[::-1] + intervals_target
@@ -366,50 +359,29 @@ class CustomCalendar(BaseCalendar):
         year_intervals.index.name = "i_interval"
         return year_intervals
 
-    def _concatenate_periods(self, year, list_periods, total_length, is_target):
-        # calculate start and end date
-        if is_target:
-            # anchor date is included
-            start_date = self._get_anchor(year)
-            end_date = start_date + pd.Timedelta(total_length, unit="D")
-            # generate date ranges
-            date_range = pd.date_range(start=start_date, end=end_date)
-        else:
-            # anchor date is excluded
-            start_date = self._get_anchor(year) - pd.Timedelta(
-                total_length + 1, unit="D"
-            )
-            end_date = self._get_anchor(year) - pd.Timedelta(1, unit="D")
-            # generate date ranges
-            date_range = pd.date_range(start=start_date, end=end_date)
-            date_range = date_range[::-1]
+    def _concatenate_periods(self, year, list_periods, is_target):
         # generate intervals based on the building blocks
         intervals = []
-        # pointer to the index of date for right boundary of interval
-        left_date_index = 0
-        # loop through all the building blocks to
-        for block in list_periods:
-            left_date_index += block.gap
-            # pointer to the index of date for left boundary of interval
-            right_date_index = left_date_index + block.length - 1
-            if is_target:
-                intervals.append(
-                    pd.Interval(
-                        date_range[left_date_index] - pd.Timedelta(1, unit="D"), # open left close right
-                        date_range[right_date_index],
-                        closed="right",
-                    )
-                )
-            else:
-                intervals.append(
-                    pd.Interval(
-                        date_range[right_date_index] - pd.Timedelta(1, unit="D"),
-                        date_range[left_date_index],
-                        closed="right",
-                    )
-                )
-            # move pointer to new start
-            left_date_index = right_date_index + 1
+        if is_target:
+            # build from left to right
+            left_date = self._get_anchor(year)
+            # loop through all the building blocks to
+            for block in list_periods:
+                left_date += pd.Timedelta(block.gap, unit="D")
+                right_date = left_date + pd.Timedelta(block.length, unit="D")
+                intervals.append(pd.Interval(left_date, right_date, closed="left"))
+                # update left date
+                left_date = right_date
+        else:
+            # build from right to left
+            right_date = self._get_anchor(year)
+            # loop through all the building blocks to
+            for block in list_periods:
+                right_date -= pd.Timedelta(block.gap, unit="D")
+                left_date = right_date - pd.Timedelta(block.length, unit="D")
+                intervals.append(pd.Interval(left_date, right_date, closed="left"))
+                # update right date
+                right_date = left_date
 
         return intervals
 
