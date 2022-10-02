@@ -51,12 +51,14 @@ from abc import ABC
 import calendar as pycalendar
 import re
 from typing import Tuple
+from typing import Union
 import warnings
 import numpy as np
 import pandas as pd
 import xarray as xr
 from ._base_calendar import BaseCalendar
 from ._resample import resample  # pylint: disable=unused-import
+from . import utils
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -406,6 +408,60 @@ class CustomCalendar(BaseCalendar):
         self._mapping = "years"
         return self
 
+    def map_to_data(
+        self,
+        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+    ):
+        """Map the calendar to input data period.
+
+        Stores the first and last intervals of the input data to the calendar, so that
+        the intervals can cover the data to the greatest extent.
+
+        Args:
+            input_data: Input data for datetime mapping. Its index must be either
+                pandas.DatetimeIndex, or an xarray `time` coordinate with datetime
+                data.
+
+        Returns:
+            The calendar mapped to the input data period.
+        """
+        utils.check_timeseries(input_data)
+
+        # check the datetime order of input data
+        if isinstance(input_data, PandasData):
+            self._first_timestamp = input_data.index.min()
+            self._last_timestamp = input_data.index.max()
+        else:
+            self._first_timestamp = pd.Timestamp(input_data.time.min().values)
+            self._last_timestamp = pd.Timestamp(input_data.time.max().values)
+
+        self._mapping = "data"
+
+        return self
+
+    def _set_year_range_from_timestamps(self):
+        min_year = self._first_timestamp.year
+        max_year = self._last_timestamp.year
+
+        # ensure that the input data could always cover the advent calendar
+        # last date check
+        if self._map_year(max_year).iloc[0].right > self._last_timestamp:
+            max_year -= 1
+        # first date check
+        while self._map_year(min_year).iloc[-1].right <= self._first_timestamp:
+            min_year += 1
+
+        # map year(s) and generate year realized advent calendar
+        if max_year >= min_year:
+            self._first_year = min_year
+            self._last_year = max_year
+        else:
+            raise ValueError(
+                "The input data could not cover the target advent calendar."
+            )
+
+        return self
+
     def _label_targets(self, intervals: pd.DataFrame) -> pd.DataFrame:
         """Adds target labels to the header row of the intervals.
 
@@ -426,8 +482,8 @@ class CustomCalendar(BaseCalendar):
                 "Cannot retrieve intervals without map_years or "
                 "map_to_data having configured the calendar."
             )
-        # if self._mapping == "data":
-        #     self._set_year_range_from_timestamps()
+        if self._mapping == "data":
+            self._set_year_range_from_timestamps()
 
         year_range = range(
             self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
@@ -460,7 +516,6 @@ class CustomCalendar(BaseCalendar):
                 periods labelled.
         """
         return self._label_targets(self.get_intervals())
-
 
 
 class Period(ABC):
