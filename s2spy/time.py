@@ -47,6 +47,7 @@ Example:
     dtype: interval
 
 """
+from abc import ABC
 import calendar as pycalendar
 import re
 from typing import Tuple
@@ -301,7 +302,7 @@ class WeeklyCalendar(BaseCalendar):
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    def __init__(self, anchor: Tuple[int, int] = (11, 30)):
+    def __init__(self, anchor: Tuple[int, int]):
         """Instantiate a basic container for building calendar using basic blocks.
 
         This is a highly flexible calendar which allows the user to build their own
@@ -314,13 +315,11 @@ class CustomCalendar(BaseCalendar):
         """
         self.month = anchor[0]
         self.day = anchor[1]
-        self._list_target = []
-        self._list_precursor = []
+        self._target = []
+        self._precursor = []
         self._total_length_target = 0
         self._total_length_precursor = 0
         self.n_targets = 0
-        # identifier for completion of appending
-        self._end_indentifier = False
 
         self._allow_overlap: bool = False
 
@@ -337,35 +336,15 @@ class CustomCalendar(BaseCalendar):
 
     def append(self, period_block):
         """Append target/precursor periods to the calendar."""
-        if self._end_indentifier:
-            warnings.warn(
-                "Calerdar already exists and this overwrites the old calendar."
-            )
         if period_block.target:
-            self._append_check(self._list_target, period_block)
-            self._list_target.append(period_block)
+            self._target.append(period_block)
             # count length
             self._total_length_target += period_block.length + period_block.gap
 
         else:
-            self._append_check(self._list_precursor, period_block)
-            self._list_precursor.append(period_block)
+            self._precursor.append(period_block)
             # count length
             self._total_length_precursor += period_block.length + period_block.gap
-
-    def _append_check(self, list_period, period_block):
-        """Rules check for appending target precursor blocks."""
-        if not list_period:
-            if period_block.gap < 0:
-                raise ValueError(
-                    "First appended period block should not contain a negative gap."
-                )
-        else:
-            if (period_block.gap + list_period[-1].length) < 0:
-                raise ValueError(
-                    "Appended period block has negative gap larger than"
-                    + " the length of precedent period block."
-                )
 
     def _map_year(self, year: int):
         """Replace old map_year function"""
@@ -373,10 +352,10 @@ class CustomCalendar(BaseCalendar):
         self._end_indentifier = True
 
         intervals_target = self._concatenate_periods(
-            year, self._list_target, self._total_length_target, True
+            year, self._target, self._total_length_target, True
         )
         intervals_precursor = self._concatenate_periods(
-            year, self._list_precursor, self._total_length_precursor, False
+            year, self._precursor, self._total_length_precursor, False
         )
 
         self.n_targets = len(intervals_target)
@@ -511,7 +490,8 @@ class CustomCalendar(BaseCalendar):
         return self._label_targets(self.get_intervals())
 
 
-class Period:
+
+class Period(ABC):
     """Basic construction element of calendar for defining target period."""
 
     def __init__(self, length: int, gap: int = 0, target: bool = False) -> None:
@@ -522,11 +502,17 @@ class Period:
         # self.lead_time = lead_time
 
 
-def target_period(length, gap: int = 0):
+class TargetPeriod(Period):
     """Instantiate a build block as target period. """
-    return Period(length=length, gap=gap, target=True)
+    def __init__(self, length: int, gap: int = 0) -> None:
+        self.length = length
+        self.gap = gap
+        self.target = True
 
 
-def precursor_period(length, gap: int = 0):
+class PrecursorPeriod(Period):
     """Instantiate a build block as precursor period."""
-    return Period(length=length, gap=gap, target=False)
+    def __init__(self, length: int, gap: int = 0) -> None:
+        self.length = length
+        self.gap = gap
+        self.target = False
