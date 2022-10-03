@@ -1,10 +1,13 @@
 """Tests for s2spy.time's resample module.
 """
+import tempfile
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
 from s2spy.time import AdventCalendar
 from s2spy.time import resample
+
 
 class TestResample:
     """Test resample methods."""
@@ -153,3 +156,13 @@ class TestResample:
         series = pd.Series(test_data, index=time_index, name="data1")
         calendar.map_to_data(series)
         calendar.get_intervals()
+
+    def test_to_netcdf(self, dummy_calendar, dummy_dataset):
+        # Test to ensure that xarray data resampled using the calendar can be written
+        # to a netCDF file.
+        dataset, _ = dummy_dataset
+        cal = dummy_calendar.map_to_data(dataset)
+        resampled_data = resample(cal, dataset)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            path = Path(tmpdirname) / 'test.nc'
+            resampled_data.to_netcdf(path)

@@ -392,7 +392,7 @@ class RGDR:
         corr, p_val = self.get_correlation(precursor, timeseries)
         return masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
 
-    def plot_correlation(  # pylint: disable=too-many-arguments
+    def preview_correlation(  # pylint: disable=too-many-arguments
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,
@@ -444,7 +444,7 @@ class RGDR:
 
         return [plot1, plot2]
 
-    def plot_clusters(
+    def preview_clusters(
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,

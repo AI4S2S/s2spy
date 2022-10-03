@@ -82,17 +82,17 @@ def check_input_frequency(calendar, data):
     """
     if isinstance(data, PandasData):
         data_freq = pd.infer_freq(data.index)
-        if data_freq is None: # Manually infer the frequency
+        if data_freq is None:  # Manually infer the frequency
             data_freq = np.min(data.index.values[1:] - data.index.values[:-1])
     else:
         data_freq = xr.infer_freq(data.time)
-        if data_freq is None: # Manually infer the frequency
+        if data_freq is None:  # Manually infer the frequency
             data_freq = (data.time.values[1:] - data.time.values[:-1]).min()
 
     if isinstance(data_freq, str):
         data_freq.replace("-", "")
-        if not re.match(r'\d+\D', data_freq):
-            data_freq = '1' + data_freq
+        if not re.match(r"\d+\D", data_freq):
+            data_freq = "1" + data_freq
 
     if pd.Timedelta(calendar.freq) < pd.Timedelta(data_freq):
         warnings.warn(
@@ -100,3 +100,36 @@ def check_input_frequency(calendar, data):
             The resampled data will contain NaN values, as there is no data
             available within all intervals."""
         )
+
+
+def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
+    """Converts pandas intervals to bounds in a xarray Dataset.
+
+    pd.Interval objects cannot be written to netCDF. To allow writing the
+    calendar-resampled data to netCDF these intervals have to be converted to bounds.
+    This function adds a 'bounds' dimension, with 'left' and 'right' coordinates, and
+    converts the 'interval' coordinates to this system.
+
+    Args:
+        data: Input data with intervals as pd.Interval objects.
+
+    Returns:
+        Input data with the intervals converted to bounds.
+    """
+    stacked = data.stack(coord=["anchor_year", "i_interval"])
+    bounds = np.array([[val.left, val.right] for val in stacked.interval.values])
+    stacked["interval"] = (("coord", "bounds"), bounds)
+    return stacked.unstack("coord")
+
+
+def bokeh_available():
+    """Util that attempts to load the optional module bokeh"""
+    try:
+        import bokeh as _  # pylint: disable=import-outside-toplevel
+
+        return True
+    except ImportError as e:
+        raise ImportError(
+            "Could not import the `bokeh` module.\nPlease install this"
+            " before continuing, with either `pip` or `conda`."
+        ) from e

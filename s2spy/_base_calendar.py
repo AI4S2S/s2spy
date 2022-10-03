@@ -10,6 +10,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+from . import _plot
 from . import utils
 
 
@@ -72,8 +73,10 @@ class BaseCalendar(ABC):
                 leakage.
         """
         if (max_lag < 0) or (max_lag % 1 > 0):
-            raise ValueError("Max lag should be an integer with a value of 0 or greater"
-                             f", not {max_lag} of type {type(max_lag)}.")
+            raise ValueError(
+                "Max lag should be an integer with a value of 0 or greater"
+                f", not {max_lag} of type {type(max_lag)}."
+            )
 
         self._max_lag = max_lag
         self._allow_overlap = allow_overlap
@@ -113,7 +116,9 @@ class BaseCalendar(ABC):
         """
         periods_per_year = pd.Timedelta("365days") / pd.to_timedelta(self.freq)
         return (
-            (self._max_lag + self.n_targets) if self._max_lag > 0 else int(periods_per_year)
+            (self._max_lag + self.n_targets)
+            if self._max_lag > 0
+            else int(periods_per_year)
         )
 
     def _get_skip_nyears(self) -> int:
@@ -256,6 +261,50 @@ class BaseCalendar(ABC):
         )
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
+
+    def visualize(
+        self,
+        n_years: int = 3,
+        add_freq: bool = False,
+    ) -> None:
+        """Plots a visualization of the current calendar setup, to aid in user setup.
+
+        Args:
+            add_freq: Toggles if the frequency of the intervals should be displayed.
+                      Defaults to False (Matplotlib plotter only)
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
+        """
+        n_years = max(n_years, 1)
+        n_years = min(n_years, len(self.get_intervals().index))
+        _plot.matplotlib_visualization(self, n_years, add_freq)
+
+    def visualize_interactive(
+        self,
+        relative_dates: bool,
+        n_years: int = 3,
+    ) -> None:
+        """Plots a visualization of the current calendar setup using `bokeh`.
+
+        Note: Requires the `bokeh` package to be installed in the active enviroment.
+
+        Args:
+            relative_dates: If False, absolute dates will be used. If True, each anchor
+                            year is aligned by the anchor date, so that all anchor years
+                            line up vertically.
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
+
+        Returns:
+            None
+        """
+        if utils.bokeh_available():
+            # pylint: disable=import-outside-toplevel
+            from ._bokeh_plots import bokeh_visualization
+            return bokeh_visualization(self, n_years, relative_dates)
+        return None
 
     @property
     def flat(self) -> pd.DataFrame:
