@@ -52,7 +52,6 @@ import calendar as pycalendar
 import re
 from typing import Tuple
 from typing import Union
-import warnings
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -310,15 +309,23 @@ class CustomCalendar(BaseCalendar):
         This is a highly flexible calendar which allows the user to build their own
         calendar with the basic building blocks of target and precursor periods.
 
-        Note that two rules are applied to avoid information leakage and disorder:
-            - period block next to the anchor date should not have negative gap
-            - if a appended period block has negative gap, its absolute value must
-             be smaller than the length of the precedent period block
+        Users have the freedom to create calendar with customized intervals, gap
+        between intervals, and even overlapped intervals. They need to manage the
+        calendar themselves.
+
+        Args:
+            anchor: Tuple consisting two ints in the form (month, day). It will
+             countdown up to this date.
+
+
+        Attributes:
+            n_targets (int): Number of targets that inferred from the appended
+            `TargetPeriod` blocks.
         """
         self.month = anchor[0]
         self.day = anchor[1]
-        self._target = []
-        self._precursor = []
+        self._targets: list[TargetPeriod] = []
+        self._precursors: list[PrecursorPeriod] = []
         self._total_length_target = 0
         self._total_length_precursor = 0
         self.n_targets = 0
@@ -339,19 +346,19 @@ class CustomCalendar(BaseCalendar):
     def append(self, period_block):
         """Append target/precursor periods to the calendar."""
         if period_block.target:
-            self._target.append(period_block)
+            self._targets.append(period_block)
             # count length
             self._total_length_target += period_block.length + period_block.gap
 
         else:
-            self._precursor.append(period_block)
+            self._precursors.append(period_block)
             # count length
             self._total_length_precursor += period_block.length + period_block.gap
 
     def _map_year(self, year: int):
         """Replace old map_year function"""
-        intervals_target = self._concatenate_periods(year, self._target, True)
-        intervals_precursor = self._concatenate_periods(year, self._precursor, False)
+        intervals_target = self._concatenate_periods(year, self._targets, True)
+        intervals_precursor = self._concatenate_periods(year, self._precursors, False)
 
         self.n_targets = len(intervals_target)
         year_intervals = intervals_precursor[::-1] + intervals_target
