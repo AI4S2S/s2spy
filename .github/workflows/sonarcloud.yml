@@ -3,11 +3,11 @@ name: sonarcloud
 on:
   push:
     branches:
-    - main
+    - main, calendar_development
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-    - main
+    - main, calendar_development
 
 jobs:
 
