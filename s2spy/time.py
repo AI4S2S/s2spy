@@ -324,7 +324,7 @@ def _parse_anchor(anchor_str: str) -> Tuple[str, str]:
         fmt = "%m-%d"
     elif re.fullmatch("\\d{1,2}", anchor_str):
         fmt = "%m"
-    elif re.fullmatch("W\\d{1,2}-\\d{1}", anchor_str):
+    elif re.fullmatch("W\\d{1,2}-\\d", anchor_str):
         fmt = "W%W-%w"
     elif re.fullmatch("W\\d{1,2}", anchor_str):
         fmt = "W%W-%w"
