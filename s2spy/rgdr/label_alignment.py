@@ -99,10 +99,6 @@ def overlap_df(split_list: list, lag: int):
             split_labelmask = split.where(split == label,0)
             #convert where equal to label to 1
             split_labelmask = split_labelmask.where(split_labelmask != label, 1)
-            #count number of cells in selected precursor region
-            label_cell_count = array_label_count(split_labelmask)[1]
-            #add region count to df
-            df.at[(split_number,label), 'label_cell_count'] = label_cell_count
             
             #create other split list
             other_split_number_list = [other_split_number for other_split_number in 
@@ -126,8 +122,6 @@ def overlap_df(split_list: list, lag: int):
                     other_split_labelmask = other_split.where(other_split == other_label, 0)
                     #convert where equal to label to 1
                     other_split_labelmask = other_split.where(other_split_labelmask != other_label, 1)
-                    #count number of cells in other_split_labelmask
-                    other_label_cell_count = array_label_count(other_split_labelmask)[1]
 
                     #check where regions overlap
                     overlap_array = split_labelmask.where(split_labelmask == other_split_labelmask)
