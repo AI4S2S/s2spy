@@ -1,5 +1,6 @@
 import re
 import warnings
+from typing import Dict
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -133,3 +134,38 @@ def bokeh_available():
             "Could not import the `bokeh` module.\nPlease install this"
             " before continuing, with either `pip` or `conda`."
         ) from e
+
+
+def get_month_names() -> Dict:
+    """Generates a dictionary with English lowercase month names and abbreviations.
+
+    Returns:
+        Dictionary containing the English names of the months, including their
+            abbreviations, linked to the number of each month.
+            E.g. {'december': 12, 'jan': 1}
+    """
+    return {
+        "january": 1,
+        "february": 2,
+        "march": 3,
+        "april": 4,
+        "may": 5,
+        "june": 6,
+        "july": 7,
+        "august": 8,
+        "september": 9,
+        "october": 10,
+        "november": 11,
+        "december": 12,
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
+    }

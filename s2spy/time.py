@@ -50,7 +50,6 @@ Example:
 import calendar as pycalendar
 import re
 from abc import ABC
-from typing import Dict
 from typing import Tuple
 from typing import Union
 import numpy as np
@@ -312,28 +311,6 @@ class WeeklyCalendar(BaseCalendar):
         )
 
 
-def _get_month_names() -> Dict:
-    """Generates a dictionary with English lowercase month names and abbreviations.
-
-    Returns:
-        Dictionary containing the English names of the months, including their
-            abbreviations, linked to the number of each month.
-            E.g. {'december': 12, 'jan': 1}
-    """
-    with pycalendar.different_locale("en_US"):  # type: ignore
-        month_name = {
-            month.lower(): index
-            for index, month in enumerate(pycalendar.month_name)
-            if month
-        }
-        month_abbr = {
-            month.lower(): index
-            for index, month in enumerate(pycalendar.month_abbr)
-            if month
-        }
-    return {**month_name, **month_abbr}
-
-
 def _parse_anchor(anchor_str: str) -> Tuple[str, str]:
     """Parses the user-input anchor.
 
@@ -352,8 +329,8 @@ def _parse_anchor(anchor_str: str) -> Tuple[str, str]:
     elif re.fullmatch("W\\d{1,2}", anchor_str):
         fmt = "W%W-%w"
         anchor_str += "-1"
-    elif anchor_str.lower() in _get_month_names().keys():
-        anchor_str = str(_get_month_names()[anchor_str.lower()])
+    elif anchor_str.lower() in utils.get_month_names():
+        anchor_str = str(utils.get_month_names()[anchor_str.lower()])
         fmt = "%m"
     else:
         raise ValueError(f"Anchor input '{anchor_str}' does not match expected format")
