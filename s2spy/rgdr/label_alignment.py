@@ -1,19 +1,19 @@
 import numpy as np
 import pandas as pd
+import xarray as xr
 from fractions import Fraction
 
-def _get_split_region_dict(split_list: list, lag: int):
+def _get_split_label_dict(split_array: xr.DataArray):
     ''' Function to return a dict of splits numbers as keys 
-    and a list of region labels as values for one lag.'''
+    and a list of region labels as values for a given lag.'''
     
     split_labels_dict = {}
     #loop over splits
-    for split_number, split in enumerate(split_list):
+    for split_number, split in enumerate(split_array):
         #select lag
-        split_lag = split.sel({'i_interval':lag}).cluster_labels
-        unique_labels = np.unique(split_lag)
+        unique_labels = np.unique(split)
         unique_labels = unique_labels[unique_labels != 0] #0 are no precursor fields
-        split_labels_dict[split_number] = unique_labels
+        split_labels_dict[split_number] = list(unique_labels)
     
     return split_labels_dict
 
@@ -24,7 +24,7 @@ def array_label_count(array: np.array):
     
     return count_dict
 
-def _init_overlap_df(split_list: list, lag: int):
+def _init_overlap_df(split_array: xr.DataArray, lag: int):
     ''' Function to create a pandas dataframe with a multi index of split 
     numbers as the first index and precursor region labels from every split 
     as the second index. The same multi index is used for the columns. 
@@ -32,7 +32,7 @@ def _init_overlap_df(split_list: list, lag: int):
     The lag must be given since we can only compare found regions from 
     the same lag over splits.'''
 
-    split_label_dict = _get_split_region_dict(split_list, lag=lag)
+    split_label_dict = _get_split_label_dict(split_array.sel({'i_interval':lag}))
 
     #create a list of tuples:
     tuple_list = []
@@ -52,7 +52,7 @@ def _init_overlap_df(split_list: list, lag: int):
     #get label cell counts
     for split_number, label_list in split_label_dict.items():
         for label in label_list:
-            split = split_list[split_number].sel({'i_interval':lag}).cluster_labels
+            split = split_array.sel({'split':split_number,'i_interval':lag})
             split_labelmask = split.where(split == label,0)
             label_count = array_label_count(split_labelmask)
             df.at[(split_number, label), 'label_cell_count'] = label_count[label]
@@ -68,18 +68,19 @@ def mysign(x: int):
     else:
         return -1
 
-def overlap_df(split_list: list, lag: int):
+def overlap_labels(split_array: xr.DataArray, lag: int):
     '''
-    Function to create and show a dataframe that shows how many grid cells 
+    Function to create a dataframe that shows how many grid cells 
     of a found precursor region of a lag in a training split overlap with
     a region found in another split at the same lag.
     Args:
-        - split_list: a list of cluster field arrays
-        - lag: given lag for which alignment is needed
+        - split_array: an xr.DataArray containing the cluster labels with 
+        dimensions 'lag' and 'split'
+        - lag: given lag for overlap investigation
     '''
     
     #initialize empty dataframe
-    df = _init_overlap_df(split_list, lag = lag)
+    df = _init_overlap_df(split_array, lag = lag)
 
     #get list of split numbers
     split_number_list = list(np.unique(df.index.get_level_values(0)))
@@ -88,7 +89,7 @@ def overlap_df(split_list: list, lag: int):
     for split_number in split_number_list:
         
         #select a split, at a lag, get the cluster_labels
-        split = split_list[split_number].sel({'i_interval':lag}).cluster_labels
+        split = split_array.sel({'split':split_number,'i_interval':lag})
         #get labels from split for given lag
         labels = df.loc[split_number,:].index.get_level_values(0)
         
@@ -108,7 +109,7 @@ def overlap_df(split_list: list, lag: int):
             for other_split_number in other_split_number_list:
 
                 #select same lag in other split
-                other_split = split_list[other_split_number].sel({'i_interval':lag}).cluster_labels
+                other_split = split_array.sel({'split':other_split_number,'i_interval':lag})
                 #get list of labels in this split
                 other_split_labels = df.loc[other_split_number,:].index.get_level_values(0)
                 #create list with labels in other split with same sign as label
@@ -133,6 +134,50 @@ def overlap_df(split_list: list, lag: int):
                         overlap_count = overlap_count_dict[1]
 
                     #append to df
-                    df.at[(split_number,label), (other_split_number, other_label)] = overlap_count / df.loc[(split_number, label), 'label_cell_count']
+                    df.at[
+                        (split_number,label), 
+                        (other_split_number, other_label)
+                        ] = overlap_count / df.loc[(split_number, label), 'label_cell_count']
 
     return df
+
+def overlap_superlabels(split_list: list, lag: int):
+    '''
+    Function to create a list with intersection arrays of found 
+    precursor regions between splits over the same lag
+    Args:
+        - split_list: a list of cluster field arrays
+        - lag: given lag for which alignment is needed
+    '''
+
+    split_label_dict = _get_split_label_dict(split_list, lag=lag)
+    
+    #unique label list
+    unique_label_list = []
+    for counter, labels in enumerate(split_label_dict.values()):
+        #first one
+        if counter == 0:
+            unique_label_list.append(labels)
+        else:
+            new_unique_label = set(unique_label_list) - set(labels)
+            unique_label_list.append(new_unique_label)
+    
+    super_label_dict = {}
+
+    for label in unique_label_list:
+        for counter, split in enumerate(split_list):
+            #select lag in split and get cluster labels
+            cluster_labels = split.sel({'i_interval':lag}).cluster_labels
+            #mask label
+            cluster_labels_masked = cluster_labels.where(cluster_labels == label, 0)
+            #convert where equal to label to 1
+            cluster_labels_masked = cluster_labels_masked.where(cluster_labels_masked != label, 1)
+
+            if counter == 0:
+                superlabel_array = cluster_labels_masked
+            else:
+                superlabel_array = super_label_array * cluster_labels_masked
+        
+        super_label_dict[label] = superlabel_array
+
+    return super_label_dict
