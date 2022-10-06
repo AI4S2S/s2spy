@@ -480,13 +480,13 @@ class CustomCalendar(BaseCalendar):
         """
         # rename preursors
         intervals = intervals.rename(
-            columns={i: f"{self.n_targets - i - 1}" for i in range(self.n_targets,
+            columns={i: self.n_targets - i - 1 for i in range(self.n_targets,
              len(intervals.columns))}
         )
 
         # rename targets
         intervals = intervals.rename(
-            columns={i: f"{self.n_targets - i}" for i in range(self.n_targets)}
+            columns={i: self.n_targets - i for i in range(self.n_targets)}
         )
 
         return intervals

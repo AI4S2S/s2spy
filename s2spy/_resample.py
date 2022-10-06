@@ -33,7 +33,7 @@ def mark_target_period(
     if isinstance(input_data, PandasData):
         input_data["target"] = np.zeros(input_data.index.size, dtype=bool)
         input_data["target"] = input_data["target"].where(
-            input_data["i_interval"] >= calendar.n_targets, other=True
+            input_data["i_interval"] < 0, other=True
         )
 
     else:
@@ -90,7 +90,8 @@ def resample_pandas(
         pd.DataFrame: DataFrame containing the intervals and data resampled to
             these intervals.
     """
-    bins = resample_bins_constructor(calendar.get_intervals())
+    intervals = calendar.get_intervals()
+    bins = resample_bins_constructor(intervals)
 
     interval_index = pd.IntervalIndex(bins["interval"])
     interval_groups = interval_index.get_indexer(input_data.index)
@@ -105,6 +106,10 @@ def resample_pandas(
     else:
         name = "mean_data" if input_data.name is None else input_data.name
         bins[name] = interval_means.values
+
+    # update i_interval based on the calendar
+    i_intervals = calendar._rename_i_intervals(intervals).columns.values #pylint: disable=protected-access
+    bins.i_interval = np.tile(i_intervals[::-1], len(intervals.index))
 
     return bins
 
@@ -219,7 +224,7 @@ def resample(
         raise ValueError("Generate a calendar map before calling resample")
 
     utils.check_timeseries(input_data)
-    utils.check_input_frequency(mapped_calendar, input_data)
+    #utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
