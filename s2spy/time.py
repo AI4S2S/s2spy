@@ -351,9 +351,13 @@ class CustomCalendar(BaseCalendar):
         calendar themselves.
 
         Args:
-            anchor: Tuple consisting two ints in the form (month, day). It will
-             countdown up to this date.
-
+            anchor: String denoting the anchor date. The following inputs are valid:
+                    - "MM-DD" for a month and day. E.g. "12-31".
+                    - "MM" for only a month, e.g. "4" for March.
+                    - English names and abbreviations of months. E.g. "December" or "jan".
+                    - "Www" for a week number, e.g. "W05" for the fifth week of the year.
+                    - "Www-D" for a week number plus day of week. E.g. "W01-4" for the
+                        first thursday of the year.
 
         Attributes:
             n_targets (int): Number of targets that inferred from the appended
