@@ -107,10 +107,6 @@ def resample_pandas(
         name = "mean_data" if input_data.name is None else input_data.name
         bins[name] = interval_means.values
 
-    # update i_interval based on the calendar
-    i_intervals = calendar._rename_i_intervals(intervals).columns.values #pylint: disable=protected-access
-    bins.i_interval = np.tile(i_intervals[::-1], len(intervals.index))
-
     return bins
 
 
@@ -220,16 +216,27 @@ def resample(
         3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 
     """
-    if mapped_calendar.get_intervals() is None:
+    intervals = mapped_calendar.get_intervals()
+
+    if intervals is None:
         raise ValueError("Generate a calendar map before calling resample")
 
+    # get i_interval to update resampled data
+    i_interval = mapped_calendar._rename_i_intervals(intervals).columns.values #pylint: disable=protected-access
+
     utils.check_timeseries(input_data)
+    # This check is still valid for all calendars with `freq`, but not for CustomCalendar
+    # TO DO: add this check when all calendars are rebased on the CustomCalendar
     #utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
+        # update i_interval based on the calendar
+        resampled_data.i_interval = np.tile(i_interval[::-1], len(intervals.index))
     else:
         resampled_data = resample_xarray(mapped_calendar, input_data)
+        # update i_interval based on the calendar
+        resampled_data = resampled_data.assign_coords(i_interval = i_interval[::-1])
 
     utils.check_empty_intervals(resampled_data)
 
