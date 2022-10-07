@@ -47,17 +47,17 @@ Example:
     dtype: interval
 
 """
-from abc import ABC
 import calendar as pycalendar
 import re
+from abc import ABC
 from typing import Tuple
 from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+from . import utils
 from ._base_calendar import BaseCalendar
 from ._resample import resample  # pylint: disable=unused-import
-from . import utils
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -73,7 +73,10 @@ class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
 
     def __init__(
-        self, anchor: Tuple[int, int] = (11, 30), freq: str = "7d", n_targets: int = 1,
+        self,
+        anchor: Tuple[int, int] = (11, 30),
+        freq: str = "7d",
+        n_targets: int = 1,
     ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -123,7 +126,10 @@ class MonthlyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
 
     def __init__(
-        self, anchor: str = "Dec", freq: str = "1M", n_targets: int = 1,
+        self,
+        anchor: str = "Dec",
+        freq: str = "1M",
+        n_targets: int = 1,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -226,7 +232,12 @@ class MonthlyCalendar(BaseCalendar):
 class WeeklyCalendar(BaseCalendar):
     """Countdown time to anticipated anchor week number, in steps of calendar weeks."""
 
-    def __init__(self, anchor: int, freq: str = "1W", n_targets: int = 1,) -> None:
+    def __init__(
+        self,
+        anchor: int,
+        freq: str = "1W",
+        n_targets: int = 1,
+    ) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
         Set up the calendar with given freq ending exactly on the anchor week.
@@ -300,10 +311,36 @@ class WeeklyCalendar(BaseCalendar):
         )
 
 
+def _parse_anchor(anchor_str: str) -> Tuple[str, str]:
+    """Parses the user-input anchor.
+
+    Args:
+        anchor_str: Anchor string in the right formatting.
+
+    Returns:
+        Datetime formatter to parse the anchor into a date.
+    """
+    if re.fullmatch("\\d{1,2}-\\d{1,2}", anchor_str):
+        fmt = "%m-%d"
+    elif re.fullmatch("\\d{1,2}", anchor_str):
+        fmt = "%m"
+    elif re.fullmatch("W\\d{1,2}-\\d", anchor_str):
+        fmt = "W%W-%w"
+    elif re.fullmatch("W\\d{1,2}", anchor_str):
+        fmt = "W%W-%w"
+        anchor_str += "-1"
+    elif anchor_str.lower() in utils.get_month_names():
+        anchor_str = str(utils.get_month_names()[anchor_str.lower()])
+        fmt = "%m"
+    else:
+        raise ValueError(f"Anchor input '{anchor_str}' does not match expected format")
+    return anchor_str, fmt
+
+
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    def __init__(self, anchor: Tuple[int, int]):
+    def __init__(self, anchor: str):
         """Instantiate a basic container for building calendar using basic blocks.
 
         This is a highly flexible calendar which allows the user to build their own
@@ -314,16 +351,19 @@ class CustomCalendar(BaseCalendar):
         calendar themselves.
 
         Args:
-            anchor: Tuple consisting two ints in the form (month, day). It will
-             countdown up to this date.
-
+            anchor: String denoting the anchor date. The following inputs are valid:
+                    - "MM-DD" for a month and day. E.g. "12-31".
+                    - "MM" for only a month, e.g. "4" for March.
+                    - English names and abbreviations of months. E.g. "December" or "jan".
+                    - "Www" for a week number, e.g. "W05" for the fifth week of the year.
+                    - "Www-D" for a week number plus day of week. E.g. "W01-4" for the
+                        first thursday of the year.
 
         Attributes:
             n_targets (int): Number of targets that inferred from the appended
             `TargetPeriod` blocks.
         """
-        self.month = anchor[0]
-        self.day = anchor[1]
+        self._anchor, self._anchor_fmt = _parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
         self._total_length_target = 0
@@ -341,7 +381,9 @@ class CustomCalendar(BaseCalendar):
         Returns:
             pd.Timestamp: Timestamp at the end of the anchor_years interval 0.
         """
-        return pd.Timestamp(year, self.month, self.day)
+        return pd.to_datetime(
+            f"{year}-" + self._anchor, format="%Y-" + self._anchor_fmt
+        )
 
     def append(self, period_block):
         """Append target/precursor periods to the calendar."""
@@ -537,7 +579,8 @@ class Period(ABC):
 
 
 class TargetPeriod(Period):
-    """Instantiate a build block as target period. """
+    """Instantiate a build block as target period."""
+
     def __init__(self, length: int, gap: int = 0) -> None:
         self.length = length
         self.gap = gap
@@ -546,6 +589,7 @@ class TargetPeriod(Period):
 
 class PrecursorPeriod(Period):
     """Instantiate a build block as precursor period."""
+
     def __init__(self, length: int, gap: int = 0) -> None:
         self.length = length
         self.gap = gap
