@@ -10,7 +10,7 @@ XArrayData = (xr.DataArray, xr.Dataset)
 
 
 def mark_target_period(
-    calendar, input_data: Union[pd.DataFrame, xr.Dataset]
+    input_data: Union[pd.DataFrame, xr.Dataset]
 ) -> Union[pd.DataFrame, xr.Dataset]:
     """Mark interval periods that fall within the given number of target periods.
 
