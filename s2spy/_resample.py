@@ -241,4 +241,4 @@ def resample(
     utils.check_empty_intervals(resampled_data)
 
     # mark target periods before returning the resampled data
-    return mark_target_period(mapped_calendar, resampled_data)
+    return mark_target_period(resampled_data)
