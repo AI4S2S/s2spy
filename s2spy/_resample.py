@@ -10,7 +10,7 @@ XArrayData = (xr.DataArray, xr.Dataset)
 
 
 def mark_target_period(
-    calendar, input_data: Union[pd.DataFrame, xr.Dataset]
+    input_data: Union[pd.DataFrame, xr.Dataset]
 ) -> Union[pd.DataFrame, xr.Dataset]:
     """Mark interval periods that fall within the given number of target periods.
 
@@ -31,14 +31,14 @@ def mark_target_period(
             given inputs.
     """
     if isinstance(input_data, PandasData):
-        input_data["target"] = np.zeros(input_data.index.size, dtype=bool)
+        input_data["target"] = np.ones(input_data.index.size, dtype=bool)
         input_data["target"] = input_data["target"].where(
-            input_data["i_interval"] >= calendar.n_targets, other=True
+            input_data["i_interval"] > 0, other=False
         )
 
     else:
         # input data is xr.Dataset
-        target = input_data["i_interval"] < calendar.n_targets
+        target = input_data["i_interval"] > 0
         input_data = input_data.assign_coords(coords={"target": target})
 
     return input_data
@@ -90,7 +90,8 @@ def resample_pandas(
         pd.DataFrame: DataFrame containing the intervals and data resampled to
             these intervals.
     """
-    bins = resample_bins_constructor(calendar.get_intervals())
+    intervals = calendar.get_intervals()
+    bins = resample_bins_constructor(intervals)
 
     interval_index = pd.IntervalIndex(bins["interval"])
     interval_groups = interval_index.get_indexer(input_data.index)
@@ -215,18 +216,29 @@ def resample(
         3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
 
     """
-    if mapped_calendar.get_intervals() is None:
+    intervals = mapped_calendar.get_intervals()
+
+    if intervals is None:
         raise ValueError("Generate a calendar map before calling resample")
 
+    # get i_interval to update resampled data
+    i_interval = mapped_calendar._rename_i_intervals(intervals).columns.values #pylint: disable=protected-access
+
     utils.check_timeseries(input_data)
-    utils.check_input_frequency(mapped_calendar, input_data)
+    # This check is still valid for all calendars with `freq`, but not for CustomCalendar
+    # TO DO: add this check when all calendars are rebased on the CustomCalendar
+    #utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
+        # update i_interval based on the calendar
+        resampled_data.i_interval = np.tile(i_interval[::-1], len(intervals.index))
     else:
         resampled_data = resample_xarray(mapped_calendar, input_data)
+        # update i_interval based on the calendar
+        resampled_data = resampled_data.assign_coords(i_interval = i_interval[::-1])
 
     utils.check_empty_intervals(resampled_data)
 
     # mark target periods before returning the resampled data
-    return mark_target_period(mapped_calendar, resampled_data)
+    return mark_target_period(resampled_data)

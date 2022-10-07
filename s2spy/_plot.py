@@ -23,12 +23,12 @@ def plot_interval(
         color: (Matplotlib compatible) color that the rectangle should have.
         add_freq: Toggles if the frequency will be displayed on the rectangle
     """
-    right = (anchor_date - interval.right).days
+    left = (interval.left - anchor_date).days
     hwidth = (interval.right - interval.left).days
 
     ax.add_patch(
         Rectangle(
-            (right, anchor_date.year - 0.4),
+            (left, anchor_date.year - 0.4),
             hwidth,
             0.8,
             facecolor=color,
@@ -40,7 +40,7 @@ def plot_interval(
 
     if add_freq:
         ax.text(
-            x=right + hwidth / 2,
+            x=left + hwidth / 2,
             y=anchor_date.year,
             s=hwidth,
             c="k",
@@ -56,32 +56,33 @@ def matplotlib_visualization(calendar, n_years, add_freq):
     _, ax = plt.subplots()
 
     for year_intervals in intervals.values:
-        anchor_date = year_intervals[0].right
+        anchor_date = year_intervals[-calendar.n_targets].left
 
-        # Plot the anchor intervals
-        for interval in year_intervals[0 : calendar.n_targets : 2]:
+        # Plot the target intervals
+        for interval in year_intervals[-calendar.n_targets :: 2]:
             plot_interval(
                 anchor_date, interval, ax=ax, color="#ff7700", add_freq=add_freq
             )
-        for interval in year_intervals[1 : calendar.n_targets : 2]:
+        for interval in year_intervals[-calendar.n_targets + 1 :: 2]:
             plot_interval(
                 anchor_date, interval, ax=ax, color="#ffa100", add_freq=add_freq
             )
 
         # Plot the precursor intervals
-        for interval in year_intervals[calendar.n_targets :: 2]:
+        for interval in year_intervals[: -calendar.n_targets : 2]:
             plot_interval(
                 anchor_date, interval, ax=ax, color="#1f9ce9", add_freq=add_freq
             )
-        for interval in year_intervals[calendar.n_targets + 1 :: 2]:
+        for interval in year_intervals[1: -calendar.n_targets : 2]:
             plot_interval(
                 anchor_date, interval, ax=ax, color="#137fc1", add_freq=add_freq
             )
 
-    left_bound = (anchor_date - intervals.values[-1][-1].left).days
-    ax.set_xlim([left_bound + 5, -5])
+    left_bound = (anchor_date - intervals.values[-1][0].left).days
+    right_bound = (intervals.values[-1][-1].right - anchor_date).days
+    ax.set_xlim([-left_bound - 5, right_bound + 5])
     ax.set_xlabel(
-        f"Days before anchor date ({anchor_date.day}"
+        f"Days with respect to anchor date ({anchor_date.day}"
         f" {month_abbr[anchor_date.month]})"
     )
 
