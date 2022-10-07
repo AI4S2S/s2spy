@@ -31,14 +31,14 @@ def mark_target_period(
             given inputs.
     """
     if isinstance(input_data, PandasData):
-        input_data["target"] = np.zeros(input_data.index.size, dtype=bool)
+        input_data["target"] = np.ones(input_data.index.size, dtype=bool)
         input_data["target"] = input_data["target"].where(
-            input_data["i_interval"] < 0, other=True
+            input_data["i_interval"] > 0, other=False
         )
 
     else:
         # input data is xr.Dataset
-        target = input_data["i_interval"] < calendar.n_targets
+        target = input_data["i_interval"] > 0
         input_data = input_data.assign_coords(coords={"target": target})
 
     return input_data
