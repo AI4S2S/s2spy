@@ -80,6 +80,39 @@ class TestCustomCalendar:
         )
         assert np.array_equal(dummy_calendar.flat, expected)
 
+    def test_append(self, dummy_calendar):
+        target_2 = TargetPeriod(30)
+        dummy_calendar.append(target_2)
+        dummy_calendar = dummy_calendar.map_years(2021, 2021)
+        expected = np.array(
+            [interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left"),
+             interval("2022-01-20", "2022-02-19", closed="left"),]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_gap_intervals(self, dummy_calendar):
+        target_2 = TargetPeriod(20, 10)
+        dummy_calendar.append(target_2)
+        dummy_calendar = dummy_calendar.map_years(2021, 2021)
+        expected = np.array(
+            [interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left"),
+             interval("2022-01-30", "2022-02-19", closed="left"),]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_overlap_intervals(self, dummy_calendar):
+        precursor_2 = PrecursorPeriod(10, -5)
+        dummy_calendar.append(precursor_2)
+        dummy_calendar = dummy_calendar.map_years(2021, 2021)
+        expected = np.array(
+            [interval("2021-12-16", "2021-12-26", closed="left"),
+             interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left"),]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)        
+
     # The following tests only check if the plotter completely fails,
     # visuals are not checked.
     def test_visualize(self, dummy_calendar):
