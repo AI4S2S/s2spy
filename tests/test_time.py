@@ -5,13 +5,88 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
+from s2spy.time import CustomCalendar
 from s2spy.time import MonthlyCalendar
+from s2spy.time import Period
+from s2spy.time import PrecursorPeriod
+from s2spy.time import TargetPeriod
 from s2spy.time import WeeklyCalendar
 
 
-def interval(start, end):
+def interval(start, end, closed="right"):
     """Shorthand for more readable tests."""
-    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end))
+    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed = closed)
+
+
+class TestPeriod:
+    """Test Period objects."""
+
+    def test_period(self):
+        period = Period(length=10, gap=10)
+        assert isinstance(period, Period)
+
+    def test_target_period(self):
+        target = TargetPeriod(20, 10)
+        assert isinstance(target, TargetPeriod)
+
+    def test_precursor_period(self):
+        precursor = PrecursorPeriod(10, -5)
+        assert isinstance(precursor, PrecursorPeriod)
+
+
+class TestCustomCalendar:
+    """Test CustomCalendar methods."""
+
+    @pytest.fixture(autouse=True)
+    def dummy_calendar(self):
+        cal = CustomCalendar(anchor="12-31")
+        # create target periods
+        target_1 = TargetPeriod(20)
+        # create precursor periods
+        precursor_1 = PrecursorPeriod(10)
+        # append building blocks
+        cal.append(target_1)
+        cal.append(precursor_1)
+        # map years
+        cal = cal.map_years(2021, 2021)
+
+        return cal
+
+    def test_init(self):
+        cal = CustomCalendar(anchor="12-31")
+        assert isinstance(cal, CustomCalendar)
+
+    def test_repr(self):
+        cal = CustomCalendar(anchor="12-31")
+        assert repr(cal) == ("CustomCalendar(n_targets=0)")
+
+    def test_show(self, dummy_calendar):
+        expected_calendar_repr = (
+            "i_interval -1 1\n anchor_year \n 2021"
+            + "[2021-12-21, 2021-12-31) [2021-12-31, 2022-01-20)"
+        )
+        expected_calendar_repr = expected_calendar_repr.replace(" ", "")
+        assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
+
+    def test_no_intervals(self):
+        cal = CustomCalendar(anchor="12-31")
+        with pytest.raises(ValueError):
+            cal.get_intervals()
+
+    def test_flat(self, dummy_calendar):
+        expected = np.array(
+            [interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left")]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    # The following tests only check if the plotter completely fails,
+    # visuals are not checked.
+    def test_visualize(self, dummy_calendar):
+        dummy_calendar.visualize()
+
+    def test_visualize_with_text(self, dummy_calendar):
+        dummy_calendar.visualize(add_freq=True)
 
 
 class TestAdventCalendar:
@@ -19,6 +94,7 @@ class TestAdventCalendar:
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
+        """Test AdventCalendar methods."""
         cal = AdventCalendar(anchor=(12, 31), freq="240d")
         cal.map_years(2021, 2021)
         return cal
@@ -29,9 +105,7 @@ class TestAdventCalendar:
 
     def test_repr(self):
         cal = AdventCalendar()
-        assert repr(cal) == (
-            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1)"
-        )
+        assert repr(cal) == ("AdventCalendar(month=11, day=30, freq=7d, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -53,7 +127,7 @@ class TestAdventCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            AdventCalendar(freq='2W')
+            AdventCalendar(freq="2W")
 
     def test_set_max_lag(self):
         cal = AdventCalendar()
@@ -64,8 +138,6 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
-    # The following tests only check if the plotter completely fails,
-    # visuals are not checked.
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
 
@@ -78,19 +150,17 @@ class TestMonthlyCalendar:
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="8M")
+        cal = MonthlyCalendar(anchor="Dec", freq="8M")
         cal.map_years(2021, 2021)
         return cal
 
     def test_init(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="2M")
+        cal = MonthlyCalendar(anchor="Dec", freq="2M")
         assert isinstance(cal, MonthlyCalendar)
 
     def test_repr(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="2M")
-        assert repr(cal) == (
-            "MonthlyCalendar(month=12, freq=2M, n_targets=1)"
-        )
+        cal = MonthlyCalendar(anchor="Dec", freq="2M")
+        assert repr(cal) == ("MonthlyCalendar(month=12, freq=2M, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -110,7 +180,7 @@ class TestMonthlyCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            MonthlyCalendar(freq='2d')
+            MonthlyCalendar(freq="2d")
 
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
@@ -134,9 +204,7 @@ class TestWeeklyCalendar:
 
     def test_repr(self):
         cal = WeeklyCalendar(anchor=48, freq="30W")
-        assert repr(cal) == (
-            "WeeklyCalendar(week=48, freq=30W, n_targets=1)"
-        )
+        assert repr(cal) == ("WeeklyCalendar(week=48, freq=30W, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -156,7 +224,7 @@ class TestWeeklyCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            WeeklyCalendar(anchor=40, freq='2d')
+            WeeklyCalendar(anchor=40, freq="2d")
 
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
