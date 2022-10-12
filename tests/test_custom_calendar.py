@@ -112,7 +112,22 @@ class TestCustomCalendar:
              interval("2021-12-21", "2021-12-31", closed="left"),
              interval("2021-12-31", "2022-01-20", closed="left"),]
         )
-        assert np.array_equal(dummy_calendar.flat, expected)        
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_map_to_data(self, dummy_calendar):
+        # create dummy data for testing
+        time_index = pd.date_range('20201110', '20211211', freq='10d')
+        var = np.random.random(len(time_index))
+        # generate input data
+        test_data = pd.Series(var, index=time_index)
+        # map year to data
+        calendar = dummy_calendar.map_to_data(test_data)
+        # expected intervals
+        expected = np.array(
+            [interval("2020-12-21", "2020-12-31", closed="left"),
+             interval("2020-12-31", "2021-01-20", closed="left"),]
+        )
+        assert np.array_equal(calendar.flat, expected)
 
     # The following tests only check if the plotter completely fails,
     # visuals are not checked.
