@@ -77,40 +77,7 @@ def resample_bins_constructor(
     return bins
 
 
-def resample_pandas(
-    calendar, input_data: Union[pd.Series, pd.DataFrame]
-) -> pd.DataFrame:
-    """Internal function to handle resampling of Pandas data.
-
-    Args:
-        input_data (pd.Series or pd.DataFrame): Data provided by the user to the
-            `resample` function
-
-    Returns:
-        pd.DataFrame: DataFrame containing the intervals and data resampled to
-            these intervals.
-    """
-    intervals = calendar.get_intervals()
-    bins = resample_bins_constructor(intervals)
-
-    interval_index = pd.IntervalIndex(bins["interval"])
-    interval_groups = interval_index.get_indexer(input_data.index)
-    interval_means = input_data.groupby(interval_groups).mean()
-
-    # Reindex the intervals. Empty intervals will contain NaN values.
-    interval_means = interval_means.reindex(np.arange(len(interval_index)))
-
-    if isinstance(input_data, pd.DataFrame):
-        for name in input_data.keys():
-            bins[name] = interval_means[name].values
-    else:
-        name = "mean_data" if input_data.name is None else input_data.name
-        bins[name] = interval_means.values
-
-    return bins
-
-
-def _contains(interval_index: pd.IntervalIndex, timestamps) -> np.ndarray:
+def contains(interval_index: pd.IntervalIndex, timestamps) -> np.ndarray:
     """Checks elementwise if the intervals contain the timestamps.
     Will return a boolean array of the shape (n_timestamps, n_intervals).
 
@@ -132,6 +99,48 @@ def _contains(interval_index: pd.IntervalIndex, timestamps) -> np.ndarray:
     return a & b
 
 
+def create_means_matrix(intervals, timestamps):
+    """Creates a matrix to be used to compute the mean data value of each interval.
+
+    E.g.: `means = np.dot(matrix, data)`.
+
+    Args:
+        intervals: A 1-D array-like containing the pd.Interval objects.
+        timestamps: A 1-D array containing the timestamps of the input data.
+
+    Returns:
+        np.ndarray: 2-D array that can will compute the mean.
+    """
+    matrix = contains(pd.IntervalIndex(intervals), timestamps).astype(float)
+    return matrix / matrix.sum(axis=1, keepdims=True)
+
+
+def resample_pandas(
+    calendar, input_data: Union[pd.Series, pd.DataFrame]
+) -> pd.DataFrame:
+    """Internal function to handle resampling of Pandas data.
+
+    Args:
+        input_data (pd.Series or pd.DataFrame): Data provided by the user to the
+            `resample` function
+
+    Returns:
+        pd.DataFrame: DataFrame containing the intervals and data resampled to
+            these intervals.
+    """
+    if isinstance(input_data, pd.Series):
+        name = "data" if input_data.name is None else input_data.name
+        input_data = pd.DataFrame(input_data.rename(name))
+
+    data = resample_bins_constructor(calendar.get_intervals())
+    means_matrix = create_means_matrix(data.interval.values, input_data.index.values)
+
+    for colname in input_data.columns:
+        data[colname] = np.dot(means_matrix, input_data[colname])
+
+    return data
+
+
 def resample_xarray(
     calendar, input_data: Union[xr.DataArray, xr.Dataset]
 ) -> xr.Dataset:
@@ -150,27 +159,26 @@ def resample_xarray(
     data = data.to_dataset()
     data = data.stack(anch_int=("anchor_year", "i_interval"))
 
-    mask = _contains(pd.IntervalIndex(data["interval"].values),
-                    input_data['time'].values)
-    mask = mask.astype(float)
-    mask = mask / mask.sum(axis=1, keepdims=True)
+    means_matrix = xr.DataArray.from_dict(
+        {
+            "coords": {
+                "time": {"dims": "time", "data": input_data["time"].values},
+            },
+            "dims": ("anch_int", "time"),
+            "data": create_means_matrix(
+                data["interval"].values, input_data["time"].values
+            ),
+        }
+    )
 
-    mask = xr.DataArray.from_dict({
-        "coords": {"time": {
-                    "dims": "time",
-                    "data": input_data["time"].values
-                    },
-        },
-        "dims": ("anch_int", "time"),
-        "data": mask
-    })  # type: ignore
-
-    resampled_vars = [xr.DataArray]*len(input_data.data_vars)
+    resampled_vars = [xr.DataArray] * len(input_data.data_vars)
     for i, var in enumerate(input_data.data_vars):
-        resampled_vars[i] = xr.dot(input_data[var], mask, dims=['time']).rename(var)
+        resampled_vars[i] = xr.dot(input_data[var], means_matrix, dims=["time"]).rename(
+            var
+        )
 
     data = xr.merge([data] + resampled_vars)
-    data.unstack().set_coords(["interval"])
+    data = data.unstack().set_coords(["interval"])
     return utils.convert_interval_to_bounds(data)
 
 
@@ -233,21 +241,27 @@ def resample(
         raise ValueError("Generate a calendar map before calling resample")
 
     # get i_interval to update resampled data
-    i_interval = mapped_calendar._rename_i_intervals(intervals).columns.values #pylint: disable=protected-access
+    i_interval = mapped_calendar._rename_i_intervals(
+        intervals
+    ).columns.values  # pylint: disable=protected-access
 
     utils.check_timeseries(input_data)
     # This check is still valid for all calendars with `freq`, but not for CustomCalendar
     # TO DO: add this check when all calendars are rebased on the CustomCalendar
-    #utils.check_input_frequency(mapped_calendar, input_data)
+    # utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
         # update i_interval based on the calendar
         resampled_data.i_interval = np.tile(i_interval[::-1], len(intervals.index))
     else:
+        if isinstance(input_data, xr.DataArray):
+            input_data.name = "data" if input_data.name is None else input_data.name
+            input_data = input_data.to_dataset()
+
         resampled_data = resample_xarray(mapped_calendar, input_data)
         # update i_interval based on the calendar
-        resampled_data = resampled_data.assign_coords(i_interval = i_interval[::-1])
+        resampled_data = resampled_data.assign_coords(i_interval=i_interval[::-1])
 
     utils.check_empty_intervals(resampled_data)
 
