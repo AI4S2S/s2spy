@@ -241,9 +241,10 @@ def resample(
         raise ValueError("Generate a calendar map before calling resample")
 
     # get i_interval to update resampled data
+    # pylint: disable=protected-access
     i_interval = mapped_calendar._rename_i_intervals(
         intervals
-    ).columns.values  # pylint: disable=protected-access
+    ).columns.values
 
     utils.check_timeseries(input_data)
     # This check is still valid for all calendars with `freq`, but not for CustomCalendar
