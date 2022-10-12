@@ -406,7 +406,7 @@ class CustomCalendar(BaseCalendar):
         year_intervals = intervals_precursor[::-1] + intervals_target
 
         # turn the list of intervals into pandas series
-        year_intervals = pd.Series(year_intervals[::-1], name=str(year))
+        year_intervals = pd.Series(year_intervals[::-1], name=year)
         year_intervals.index.name = "i_interval"
         return year_intervals
 

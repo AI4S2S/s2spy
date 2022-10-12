@@ -110,6 +110,28 @@ def resample_pandas(
     return bins
 
 
+def _contains(interval_index: pd.IntervalIndex, timestamps) -> np.ndarray:
+    """Checks elementwise if the intervals contain the timestamps.
+    Will return a boolean array of the shape (n_timestamps, n_intervals).
+
+    Args:
+        interval_index: An IntervalIndex containing all intervals that should be checked.
+        timestamps: A 1-D array containing
+
+    Returns:
+        np.ndarray: 2-D mask array
+    """
+    if interval_index.closed_left:
+        a = np.greater_equal(timestamps, interval_index.left.values[np.newaxis].T)
+    else:
+        a = np.greater(timestamps, interval_index.left.values[np.newaxis].T)
+    if interval_index.closed_right:
+        b = np.less_equal(timestamps, interval_index.right.values[np.newaxis].T)
+    else:
+        b = np.less(timestamps, interval_index.right.values[np.newaxis].T)
+    return a & b
+
+
 def resample_xarray(
     calendar, input_data: Union[xr.DataArray, xr.Dataset]
 ) -> xr.Dataset:
@@ -123,44 +145,33 @@ def resample_xarray(
         xr.Dataset: Dataset containing the intervals and data resampled to
             these intervals.
     """
-    bins = resample_bins_constructor(calendar.get_intervals())
 
-    # Create the indexer to connect the input data with the intervals
-    interval_index = pd.IntervalIndex(bins["interval"])
-    interval_groups = interval_index.get_indexer(input_data["time"])
-    interval_means = input_data.groupby(
-        xr.IndexVariable("time", interval_groups)
-    ).mean()
-    interval_means = interval_means.rename({"time": "index"})
+    data = calendar.flat.to_xarray().rename("interval")
+    data = data.to_dataset()
+    data = data.stack(anch_int=("anchor_year", "i_interval"))
 
-    # drop the indices below 0, as it represents data outside of all intervals
-    interval_means = interval_means.sel(index=slice(0, None))
+    mask = _contains(pd.IntervalIndex(data["interval"].values),
+                    input_data['time'].values)
+    mask = mask.astype(float)
+    mask = mask / mask.sum(axis=1, keepdims=True)
 
-    # Turn the bins dataframe into an xarray object and merge the data means into it
-    bins = bins.to_xarray()
-    if isinstance(interval_means, xr.DataArray) and interval_means.name is None:
-        interval_means = interval_means.rename("mean_values")
-    bins = xr.merge([bins, interval_means])
+    mask = xr.DataArray.from_dict({
+        "coords": {"time": {
+                    "dims": "time",
+                    "data": input_data["time"].values
+                    },
+        },
+        "dims": ("anch_int", "time"),
+        "data": mask
+    })  # type: ignore
 
-    bins["anchor_year"] = bins["anchor_year"].astype(int)
+    resampled_vars = [xr.DataArray]*len(input_data.data_vars)
+    for i, var in enumerate(input_data.data_vars):
+        resampled_vars[i] = xr.dot(input_data[var], mask, dims=['time']).rename(var)
 
-    # Turn the anchor year and interval count into coordinates
-    bins = bins.assign_coords(
-        {"anchor_year": bins["anchor_year"], "i_interval": bins["i_interval"]}
-    )
-    # Also make the intervals themselves a coordinate so they are not lost when
-    #   grabbing a variable from the resampled dataset.
-    bins = bins.set_coords("interval")
-
-    # Reshaping the dataset to have the anchor_year and i_interval as dimensions.
-    #   set anchor_year or i_interval as the main dimension
-    #   (otherwise index is kept as dimension)
-    bins = bins.swap_dims({"index": "anchor_year"})
-    bins = bins.set_index(ai=("anchor_year", "i_interval"))
-    bins = bins.unstack()
-    bins = bins.transpose("anchor_year", "i_interval", ...)
-
-    return utils.convert_interval_to_bounds(bins)
+    data = xr.merge([data] + resampled_vars)
+    data.unstack().set_coords(["interval"])
+    return utils.convert_interval_to_bounds(data)
 
 
 def resample(
