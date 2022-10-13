@@ -9,9 +9,9 @@ from s2spy.time import MonthlyCalendar
 from s2spy.time import WeeklyCalendar
 
 
-def interval(start, end):
+def interval(start, end, closed="right"):
     """Shorthand for more readable tests."""
-    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end))
+    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed = closed)
 
 
 class TestAdventCalendar:
@@ -19,6 +19,7 @@ class TestAdventCalendar:
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
+        """Test AdventCalendar methods."""
         cal = AdventCalendar(anchor=(12, 31), freq="240d")
         cal.map_years(2021, 2021)
         return cal
@@ -29,9 +30,7 @@ class TestAdventCalendar:
 
     def test_repr(self):
         cal = AdventCalendar()
-        assert repr(cal) == (
-            "AdventCalendar(month=11, day=30, freq=7d, n_targets=1)"
-        )
+        assert repr(cal) == ("AdventCalendar(month=11, day=30, freq=7d, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -53,7 +52,7 @@ class TestAdventCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            AdventCalendar(freq='2W')
+            AdventCalendar(freq="2W")
 
     def test_set_max_lag(self):
         cal = AdventCalendar()
@@ -64,8 +63,6 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
-    # The following tests only check if the plotter completely fails,
-    # visuals are not checked.
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
 
@@ -78,19 +75,17 @@ class TestMonthlyCalendar:
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="8M")
+        cal = MonthlyCalendar(anchor="Dec", freq="8M")
         cal.map_years(2021, 2021)
         return cal
 
     def test_init(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="2M")
+        cal = MonthlyCalendar(anchor="Dec", freq="2M")
         assert isinstance(cal, MonthlyCalendar)
 
     def test_repr(self):
-        cal = MonthlyCalendar(anchor='Dec', freq="2M")
-        assert repr(cal) == (
-            "MonthlyCalendar(month=12, freq=2M, n_targets=1)"
-        )
+        cal = MonthlyCalendar(anchor="Dec", freq="2M")
+        assert repr(cal) == ("MonthlyCalendar(month=12, freq=2M, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -110,7 +105,7 @@ class TestMonthlyCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            MonthlyCalendar(freq='2d')
+            MonthlyCalendar(freq="2d")
 
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
@@ -134,9 +129,7 @@ class TestWeeklyCalendar:
 
     def test_repr(self):
         cal = WeeklyCalendar(anchor=48, freq="30W")
-        assert repr(cal) == (
-            "WeeklyCalendar(week=48, freq=30W, n_targets=1)"
-        )
+        assert repr(cal) == ("WeeklyCalendar(week=48, freq=30W, n_targets=1)")
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -156,7 +149,7 @@ class TestWeeklyCalendar:
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            WeeklyCalendar(anchor=40, freq='2d')
+            WeeklyCalendar(anchor=40, freq="2d")
 
     def test_visualize(self, dummy_calendar):
         dummy_calendar.visualize()
