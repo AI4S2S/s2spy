@@ -141,9 +141,7 @@ def resample_pandas(
     return data
 
 
-def resample_xarray(
-    calendar, input_data: Union[xr.DataArray, xr.Dataset]
-) -> xr.Dataset:
+def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     """Internal function to handle resampling of xarray data.
 
     Args:
@@ -240,12 +238,6 @@ def resample(
     if intervals is None:
         raise ValueError("Generate a calendar map before calling resample")
 
-    # get i_interval to update resampled data
-    # pylint: disable=protected-access
-    i_interval = mapped_calendar._rename_i_intervals(
-        intervals
-    ).columns.values
-
     utils.check_timeseries(input_data)
     # This check is still valid for all calendars with `freq`, but not for CustomCalendar
     # TO DO: add this check when all calendars are rebased on the CustomCalendar
@@ -253,16 +245,11 @@ def resample(
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
-        # update i_interval based on the calendar
-        resampled_data.i_interval = np.tile(i_interval[::-1], len(intervals.index))
     else:
         if isinstance(input_data, xr.DataArray):
             input_data.name = "data" if input_data.name is None else input_data.name
             input_data = input_data.to_dataset()
-
-        resampled_data = resample_xarray(mapped_calendar, input_data)
-        # update i_interval based on the calendar
-        resampled_data = resampled_data.assign_coords(i_interval=i_interval[::-1])
+        resampled_data = resample_dataset(mapped_calendar, input_data)
 
     utils.check_empty_intervals(resampled_data)
 
