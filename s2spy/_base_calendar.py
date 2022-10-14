@@ -309,4 +309,4 @@ class BaseCalendar(ABC):
     @property
     def flat(self) -> pd.DataFrame:
         """Returns the flattened intervals."""
-        return self.get_intervals().stack()
+        return self.get_intervals().stack()  # type: ignore

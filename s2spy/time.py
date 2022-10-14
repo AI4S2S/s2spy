@@ -337,6 +337,32 @@ def _parse_anchor(anchor_str: str) -> Tuple[str, str]:
     return anchor_str, fmt
 
 
+def _rename_intervals(calendar, intervals: pd.DataFrame) -> pd.DataFrame:
+    """Adds target labels to the header row of the intervals.
+
+    Args:
+        intervals (pd.Dataframe): Dataframe with intervals.
+
+    Returns:
+        pd.Dataframe: Dataframe with target periods labelled, sorted by i_interval value.
+    """
+
+    # rename precursors
+    intervals = intervals.rename(
+        columns={
+            i: calendar.n_targets - i - 1
+            for i in range(calendar.n_targets, len(intervals.columns))
+        }
+    )
+
+    # rename targets
+    intervals = intervals.rename(
+        columns={i: calendar.n_targets - i for i in range(calendar.n_targets)}
+    )
+
+    return intervals.sort_index(axis=1)
+
+
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
@@ -406,7 +432,7 @@ class CustomCalendar(BaseCalendar):
         year_intervals = intervals_precursor[::-1] + intervals_target
 
         # turn the list of intervals into pandas series
-        year_intervals = pd.Series(year_intervals[::-1], name=str(year))
+        year_intervals = pd.Series(year_intervals[::-1], name=year)
         year_intervals.index.name = "i_interval"
         return year_intervals
 
@@ -511,28 +537,6 @@ class CustomCalendar(BaseCalendar):
 
         return self
 
-    def _rename_i_intervals(self, intervals: pd.DataFrame) -> pd.DataFrame:
-        """Adds target labels to the header row of the intervals.
-
-        Args:
-            intervals (pd.Dataframe): Dataframe with intervals.
-
-        Returns:
-            pd.Dataframe: Dataframe with target periods labelled.
-        """
-        # rename preursors
-        intervals = intervals.rename(
-            columns={i: self.n_targets - i - 1 for i in range(self.n_targets,
-             len(intervals.columns))}
-        )
-
-        # rename targets
-        intervals = intervals.rename(
-            columns={i: self.n_targets - i for i in range(self.n_targets)}
-        )
-
-        return intervals
-
     def get_intervals(self) -> pd.DataFrame:
         """Method to retrieve updated intervals from the Calendar object."""
         if self._mapping is None:
@@ -549,8 +553,10 @@ class CustomCalendar(BaseCalendar):
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
 
+        intervals = _rename_intervals(self, intervals)
+
         intervals.index.name = "anchor_year"
-        return intervals.sort_index(ascending=False, axis=1)
+        return intervals.sort_index(axis=0, ascending=False)
 
     def _get_skip_nyears(self) -> int:
         """Determine how many years need to be skipped to avoid overlapping data.
@@ -573,7 +579,7 @@ class CustomCalendar(BaseCalendar):
             pd.Dataframe: Dataframe containing the calendar intervals, with the target
                 periods labelled.
         """
-        return self._rename_i_intervals(self.get_intervals())
+        return self.get_intervals()
 
 
 class Period(ABC):
