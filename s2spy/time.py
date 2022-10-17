@@ -381,8 +381,8 @@ class CustomCalendar(BaseCalendar):
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = 0
-        self._total_length_precursor = 0
+        self._total_length_target = pd.Timedelta("0d")
+        self._total_length_precursor = pd.Timedelta("0d")
         self.n_targets = 0
 
         self._allow_overlap: bool = False
@@ -390,7 +390,7 @@ class CustomCalendar(BaseCalendar):
     def append(self, period_block):
         """Append target/precursor periods to the calendar.
         
-        Wrapper function of append method.
+        Handler of _append method.
         """
         self._append(period_block)
 

@@ -34,8 +34,8 @@ class BaseCalendar(ABC):
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = 0
-        self._total_length_precursor = 0
+        self._total_length_target = pd.Timedelta("0d")
+        self._total_length_precursor = pd.Timedelta("0d")
         self.n_targets = 0
 
         self._allow_overlap: bool = False
@@ -131,8 +131,8 @@ class BaseCalendar(ABC):
             left_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                left_date += pd.Timedelta(block.gap, unit="D")
-                right_date = left_date + pd.Timedelta(block.length, unit="D")
+                left_date += block.gap
+                right_date = left_date + block.length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update left date
                 left_date = right_date
@@ -141,8 +141,8 @@ class BaseCalendar(ABC):
             right_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                right_date -= pd.Timedelta(block.gap, unit="D")
-                left_date = right_date - pd.Timedelta(block.length, unit="D")
+                right_date -= block.gap
+                left_date = right_date - block.length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update right date
                 right_date = left_date
@@ -157,7 +157,7 @@ class BaseCalendar(ABC):
         Returns:
             int: Number of years that need to be skipped.
         """
-        years = pd.to_timedelta(
+        years = (
             self._total_length_target + self._total_length_precursor
         ) / pd.Timedelta("365days")
 
@@ -354,9 +354,9 @@ class BaseCalendar(ABC):
 class Period(ABC):
     """Basic construction element of calendar for defining target period."""
 
-    def __init__(self, length: int, gap: int = 0, target: bool = False) -> None:
-        self.length = length
-        self.gap = gap
+    def __init__(self, length: str, gap: str = "0d", target: bool = False) -> None:
+        self.length = pd.Timedelta(length)
+        self.gap = pd.Timedelta(gap)
         self.target = target
         # TO DO: support lead_time
         # self.lead_time = lead_time
@@ -365,16 +365,16 @@ class Period(ABC):
 class TargetPeriod(Period):
     """Instantiate a build block as target period."""
 
-    def __init__(self, length: int, gap: int = 0) -> None:
-        self.length = length
-        self.gap = gap
+    def __init__(self, length: str, gap: str = "0d") -> None:
+        self.length = pd.Timedelta(length)
+        self.gap = pd.Timedelta(gap)
         self.target = True
 
 
 class PrecursorPeriod(Period):
     """Instantiate a build block as precursor period."""
 
-    def __init__(self, length: int, gap: int = 0) -> None:
-        self.length = length
-        self.gap = gap
+    def __init__(self, length: str, gap: str = "0d") -> None:
+        self.length = pd.Timedelta(length)
+        self.gap = pd.Timedelta(gap)
         self.target = False
