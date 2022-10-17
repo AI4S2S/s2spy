@@ -36,10 +36,10 @@ class BaseCalendar(ABC):
         self._precursors: list[PrecursorPeriod] = []
         self._total_length_target = pd.Timedelta("0d")
         self._total_length_precursor = pd.Timedelta("0d")
+
         self.n_targets = 0
-
+        self._max_lag: int = 0
         self._allow_overlap: bool = False
-
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
@@ -81,7 +81,7 @@ class BaseCalendar(ABC):
             fmt = "%m"
         else:
             raise ValueError(f"Anchor input '{anchor_str}' does not match expected format")
-        return anchor_str, fmt    
+        return anchor_str, fmt
 
     def _append(self, period_block):
         """Append target/precursor periods to the calendar."""
@@ -162,6 +162,33 @@ class BaseCalendar(ABC):
         ) / pd.Timedelta("365days")
 
         return 0 if self._allow_overlap else int(np.ceil(years).astype(int) - 1)
+
+    def set_max_lag(self, max_lag: int, allow_overlap: bool = False) -> None:
+        """Set the maximum lag of a calendar.
+        Sets the maximum number of lag periods after the target period. If `0`,
+        the maximum lag will be determined by how many fit in each anchor year.
+        If a maximum lag is provided, the intervals can either only cover part
+        of the year, or extend over multiple years. In case of a large max_lag
+        number where the intervals extend over multiple years, anchor years will
+        be skipped to avoid overlapping intervals. To allow overlapping
+        intervals, use the `allow_overlap` kwarg.
+
+        Note that this method 
+        Args:
+            max_lag: Maximum number of lag periods after the target period.
+            allow_overlap: Allows intervals to overlap between anchor years, if the
+                max_lag is set to a high enough number that intervals extend over
+                multiple years. `False` by default, to avoid train/test information
+                leakage.
+        """
+        if (max_lag < 0) or (max_lag % 1 > 0):
+            raise ValueError(
+                "Max lag should be an integer with a value of 0 or greater"
+                f", not {max_lag} of type {type(max_lag)}."
+            )
+
+        self._max_lag = max_lag
+        self._allow_overlap = allow_overlap
 
     def map_years(self, start: int, end: int):
         """Adds a start and end year mapping to the calendar.
