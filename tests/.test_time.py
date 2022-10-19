@@ -20,7 +20,7 @@ class TestAdventCalendar:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
         """Test AdventCalendar methods."""
-        cal = AdventCalendar(anchor=(12, 31), freq="240d")
+        cal = AdventCalendar(anchor="12-31", freq="240d")
         cal.map_years(2021, 2021)
         return cal
 

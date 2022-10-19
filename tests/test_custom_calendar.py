@@ -2,9 +2,9 @@
 """
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import DateOffset
 import pytest
 from s2spy.time import CustomCalendar
-from s2spy.time import Period
 from s2spy.time import PrecursorPeriod
 from s2spy.time import TargetPeriod
 
@@ -17,23 +17,17 @@ def interval(start, end, closed="right"):
 class TestPeriod:
     """Test Period objects."""
 
-    def test_period(self):
-        period = Period(length=10, gap=10)
-        assert isinstance(period, Period)
-        assert period.length == 10
-        assert period.gap == 10
-
     def test_target_period(self):
-        target = TargetPeriod(20, 10)
+        target = TargetPeriod("20d", "10d")
         assert isinstance(target, TargetPeriod)
-        assert target.length == 20
-        assert target.gap == 10        
+        assert target.length == DateOffset(days=20)
+        assert target.gap == DateOffset(days=10)
 
     def test_precursor_period(self):
-        precursor = PrecursorPeriod(10, -5)
+        precursor = PrecursorPeriod("10d", "-5d")
         assert isinstance(precursor, PrecursorPeriod)
-        assert precursor.length == 10
-        assert precursor.gap == -5
+        assert precursor.length == DateOffset(days=10)
+        assert precursor.gap == DateOffset(days=-5)
 
 class TestCustomCalendar:
     """Test CustomCalendar methods."""
@@ -42,9 +36,9 @@ class TestCustomCalendar:
     def dummy_calendar(self):
         cal = CustomCalendar(anchor="12-31")
         # create target periods
-        target_1 = TargetPeriod(20)
+        target_1 = TargetPeriod("20d")
         # create precursor periods
-        precursor_1 = PrecursorPeriod(10)
+        precursor_1 = PrecursorPeriod("10d")
         # append building blocks
         cal.append(target_1)
         cal.append(precursor_1)
@@ -82,7 +76,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_append(self, dummy_calendar):
-        target_2 = TargetPeriod(30)
+        target_2 = TargetPeriod("30d")
         dummy_calendar.append(target_2)
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
@@ -93,7 +87,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_gap_intervals(self, dummy_calendar):
-        target_2 = TargetPeriod(20, 10)
+        target_2 = TargetPeriod("20d", "10d")
         dummy_calendar.append(target_2)
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
@@ -104,7 +98,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_overlap_intervals(self, dummy_calendar):
-        precursor_2 = PrecursorPeriod(10, -5)
+        precursor_2 = PrecursorPeriod("10d", "-5d")
         dummy_calendar.append(precursor_2)
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
