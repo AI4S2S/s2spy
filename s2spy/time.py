@@ -70,7 +70,6 @@ month_mapping_dict = {
 class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
 
-    # pylint: disable=super-init-not-called
     def __init__(self, anchor: str, freq: str = "7d", n_targets: int = 1,) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -157,7 +156,6 @@ class AdventCalendar(BaseCalendar):
 class MonthlyCalendar(AdventCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
 
-    # pylint: disable=super-init-not-called
     def __init__(
         self, anchor: str = "Dec", freq: str = "1M", n_targets: int = 1,
     ) -> None:
@@ -313,7 +311,6 @@ class WeeklyCalendar(AdventCalendar):
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    # pylint: disable=super-init-not-called
     def __init__(self, anchor: str):
         """Instantiate a basic container for building calendar using basic blocks.
 

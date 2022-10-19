@@ -393,13 +393,15 @@ class Period(ABC):
             Dictionary as keyword argument for Pandas DateOffset.
         """
         if re.fullmatch(r"[+-]?\d*d", time_str):
-            return {"days": int(time_str[:-1])}
+            time_dict = {"days": int(time_str[:-1])}
         elif re.fullmatch(r"[+-]?\d*M", time_str):
-            return {"months": int(time_str[:-1])}
+            time_dict = {"months": int(time_str[:-1])}
         elif re.fullmatch(r"[+-]?\d*W", time_str):
-            return {"weeks": int(time_str[:-1])}
+            time_dict = {"weeks": int(time_str[:-1])}
         else:
             raise ValueError("Please input a time string in the correct format.")
+
+        return time_dict
 
 
 class TargetPeriod(Period):
