@@ -4,15 +4,15 @@ The BaseCalendar includes most methods required for all calendar operations, exc
 a set of abstract methods (e.g., __init__, _get_anchor, ...). These will have to be
 customized for each specific calendar.
 """
+import re
 from abc import ABC
 from abc import abstractmethod
-import re
 from typing import Tuple
 from typing import Union
 import numpy as np
 import pandas as pd
-from pandas.tseries.offsets import DateOffset
 import xarray as xr
+from pandas.tseries.offsets import DateOffset
 from . import _plot
 from . import utils
 
