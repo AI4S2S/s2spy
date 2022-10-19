@@ -11,6 +11,7 @@ from typing import Tuple
 from typing import Union
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import DateOffset
 import xarray as xr
 from . import _plot
 from . import utils
@@ -27,15 +28,14 @@ class BaseCalendar(ABC):
 
     @abstractmethod
     def __init__(
-        self,
-        anchor,
+        self, anchor,
     ):
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = pd.Timedelta("0d")
-        self._total_length_precursor = pd.Timedelta("0d")
+        self._total_length_target = 0
+        self._total_length_precursor = 0
 
         self.n_targets = 0
         self._max_lag: int = 0
@@ -80,7 +80,9 @@ class BaseCalendar(ABC):
             anchor_str = str(utils.get_month_names()[anchor_str.lower()])
             fmt = "%m"
         else:
-            raise ValueError(f"Anchor input '{anchor_str}' does not match expected format")
+            raise ValueError(
+                f"Anchor input '{anchor_str}' does not match expected format"
+            )
         return anchor_str, fmt
 
     def _append(self, period_block):
@@ -88,12 +90,16 @@ class BaseCalendar(ABC):
         if period_block.target:
             self._targets.append(period_block)
             # count length
-            self._total_length_target += period_block.length + period_block.gap
+            self._total_length_target += (
+                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
+            )
 
         else:
             self._precursors.append(period_block)
             # count length
-            self._total_length_precursor += period_block.length + period_block.gap
+            self._total_length_precursor += (
+                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
+            )
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -157,9 +163,7 @@ class BaseCalendar(ABC):
         Returns:
             int: Number of years that need to be skipped.
         """
-        years = (
-            self._total_length_target + self._total_length_precursor
-        ) / pd.Timedelta("365days")
+        years = (self._total_length_target + self._total_length_precursor) / 365
 
         return 0 if self._allow_overlap else int(np.ceil(years).astype(int) - 1)
 
@@ -173,7 +177,6 @@ class BaseCalendar(ABC):
         be skipped to avoid overlapping intervals. To allow overlapping
         intervals, use the `allow_overlap` kwarg.
 
-        Note that this method 
         Args:
             max_lag: Maximum number of lag periods after the target period.
             allow_overlap: Allows intervals to overlap between anchor years, if the
@@ -212,8 +215,7 @@ class BaseCalendar(ABC):
         return self
 
     def map_to_data(
-        self,
-        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
     ):
         """Map the calendar to input data period.
 
@@ -328,11 +330,7 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
-    def visualize(
-        self,
-        n_years: int = 3,
-        add_freq: bool = False,
-    ) -> None:
+    def visualize(self, n_years: int = 3, add_freq: bool = False,) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
         Args:
@@ -346,11 +344,7 @@ class BaseCalendar(ABC):
         n_years = min(n_years, len(self.get_intervals().index))
         _plot.matplotlib_visualization(self, n_years, add_freq)
 
-    def visualize_interactive(
-        self,
-        relative_dates: bool,
-        n_years: int = 3,
-    ) -> None:
+    def visualize_interactive(self, relative_dates: bool, n_years: int = 3,) -> None:
         """Plots a visualization of the current calendar setup using `bokeh`.
 
         Note: Requires the `bokeh` package to be installed in the active enviroment.
@@ -369,6 +363,7 @@ class BaseCalendar(ABC):
         if utils.bokeh_available():
             # pylint: disable=import-outside-toplevel
             from ._bokeh_plots import bokeh_visualization
+
             return bokeh_visualization(self, n_years, relative_dates)
         return None
 
@@ -382,19 +377,37 @@ class Period(ABC):
     """Basic construction element of calendar for defining target period."""
 
     def __init__(self, length: str, gap: str = "0d", target: bool = False) -> None:
-        self.length = pd.Timedelta(length)
-        self.gap = pd.Timedelta(gap)
+        self.length = DateOffset(**self._parse_time(length))
+        self.gap = DateOffset(**self._parse_time(gap))
         self.target = target
         # TO DO: support lead_time
         # self.lead_time = lead_time
+
+    def _parse_time(self, time_str):
+        """Parses the user-input time strings.
+
+        Args:
+            time_str: Time length string in the right formatting.
+
+        Returns:
+            Dictionary as keyword argument for Pandas DateOffset.
+        """
+        if re.fullmatch(r"[+-]?\d*d", time_str):
+            return {"days": int(time_str[:-1])}
+        elif re.fullmatch(r"[+-]?\d*M", time_str):
+            return {"months": int(time_str[:-1])}
+        elif re.fullmatch(r"[+-]?\d*W", time_str):
+            return {"weeks": int(time_str[:-1])}
+        else:
+            raise ValueError("Please input a time string in the correct format.")
 
 
 class TargetPeriod(Period):
     """Instantiate a build block as target period."""
 
     def __init__(self, length: str, gap: str = "0d") -> None:
-        self.length = pd.Timedelta(length)
-        self.gap = pd.Timedelta(gap)
+        self.length = DateOffset(**self._parse_time(length))
+        self.gap = DateOffset(**self._parse_time(gap))
         self.target = True
 
 
@@ -402,6 +415,6 @@ class PrecursorPeriod(Period):
     """Instantiate a build block as precursor period."""
 
     def __init__(self, length: str, gap: str = "0d") -> None:
-        self.length = pd.Timedelta(length)
-        self.gap = pd.Timedelta(gap)
+        self.length = DateOffset(**self._parse_time(length))
+        self.gap = DateOffset(**self._parse_time(gap))
         self.target = False
