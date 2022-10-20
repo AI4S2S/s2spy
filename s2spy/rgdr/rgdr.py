@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
+from xml.dom import NoModificationAllowedErr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -450,7 +451,7 @@ class RGDR:
         timeseries: xr.DataArray,
         lag: Optional[int] = None,
         ax: Optional[plt.Axes] = None,
-        cmap: Optional[str] = "viridis",
+        cmap: Optional[str] = 'viridis',
         vmin: Optional[float] = None,
         vmax: Optional[float] = None
     ) -> Type[mpl.collections.QuadMesh]:
@@ -465,6 +466,9 @@ class RGDR:
                 has the dimension "i_interval".
             ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
+            cmap: colormap for plotting
+            vmin: minimum value for plotting (used for discrete colorbar)
+            vmax: maximum value for plotting (used for discrete colorbar)
 
         Returns:
             matplotlib.collections.QuadMesh: Matplotlib artist.
@@ -484,7 +488,16 @@ class RGDR:
 
         clusters = utils.cluster_labels_to_ints(clusters)
 
-        return clusters["cluster_labels"].plot(cmap=cmap, ax=ax, vmin=vmin, vmax=vmax)
+        #discrete colorbar for cluster plotting
+        N = vmax - vmin + 1
+        cmap = plt.cm.get_cmap(cmap, N)
+        cbar_kwargs = {'ticks': np.linspace(vmin,vmax,N)}
+
+        return clusters["cluster_labels"].plot(
+            cmap=cmap, ax=ax, 
+            vmin=vmin-0.5, vmax=vmax+0.5, 
+            cbar_kwargs=cbar_kwargs
+            )
 
     def fit(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data.
