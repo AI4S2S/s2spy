@@ -21,6 +21,7 @@ PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
 
+# pylint: disable=protected-access
 class BaseCalendar(ABC):
     """Base calendar class which serves as a template for specific implementations."""
 
