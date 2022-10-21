@@ -67,6 +67,10 @@ class BaseCalendar(ABC):
         Returns:
             Datetime formatter to parse the anchor into a date.
         """
+        # non string check
+        if not isinstance(anchor_str, str):
+            raise ValueError("Anchor input must be a string with expected format.")
+        # format match
         if re.fullmatch("\\d{1,2}-\\d{1,2}", anchor_str):
             fmt = "%m-%d"
         elif re.fullmatch("\\d{1,2}", anchor_str):
@@ -81,24 +85,24 @@ class BaseCalendar(ABC):
             fmt = "%m"
         else:
             raise ValueError(
-                f"Anchor input '{anchor_str}' does not match expected format"
+                f"Anchor input '{anchor_str}' does not match expected format."
             )
         return anchor_str, fmt
 
     def _append(self, period_block):
         """Append target/precursor periods to the calendar."""
-        if period_block.target:
+        if period_block._target:
             self._targets.append(period_block)
             # count length
             self._total_length_target += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
+                period_block._length.kwds["days"] + period_block._gap.kwds["days"]
             )
 
         else:
             self._precursors.append(period_block)
             # count length
             self._total_length_precursor += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
+                period_block._length.kwds["days"] + period_block._gap.kwds["days"]
             )
 
     def _map_year(self, year: int) -> pd.Series:
@@ -137,8 +141,8 @@ class BaseCalendar(ABC):
             left_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                left_date += block.gap
-                right_date = left_date + block.length
+                left_date += block._gap
+                right_date = left_date + block._length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update left date
                 left_date = right_date
@@ -147,8 +151,8 @@ class BaseCalendar(ABC):
             right_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                right_date -= block.gap
-                left_date = right_date - block.length
+                right_date -= block._gap
+                left_date = right_date - block._length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update right date
                 right_date = left_date
@@ -376,12 +380,23 @@ class BaseCalendar(ABC):
 class Period(ABC):
     """Basic construction element of calendar for defining target period."""
 
-    def __init__(self, length: str, gap: str = "0d", target: bool = False) -> None:
-        self.length = DateOffset(**self._parse_time(length))
-        self.gap = DateOffset(**self._parse_time(gap))
-        self.target = target
+    def __init__(self, length: str, gap: str = "0d") -> None:
+        
+        self._length = DateOffset(**self._parse_time(length))
+        self._gap = DateOffset(**self._parse_time(gap))
+        self._target = False
         # TO DO: support lead_time
         # self.lead_time = lead_time
+
+    @property
+    def length(self):
+        """Return the length of period."""
+        return self._length
+
+    @property
+    def gap(self):
+        """Return the gap of period."""
+        return self._gap
 
     def _parse_time(self, time_str):
         """Parses the user-input time strings.
@@ -408,15 +423,15 @@ class TargetPeriod(Period):
     """Instantiate a build block as target period."""
 
     def __init__(self, length: str, gap: str = "0d") -> None:
-        self.length = DateOffset(**self._parse_time(length))
-        self.gap = DateOffset(**self._parse_time(gap))
-        self.target = True
+        self._length = DateOffset(**self._parse_time(length))
+        self._gap = DateOffset(**self._parse_time(gap))
+        self._target = True
 
 
 class PrecursorPeriod(Period):
     """Instantiate a build block as precursor period."""
 
     def __init__(self, length: str, gap: str = "0d") -> None:
-        self.length = DateOffset(**self._parse_time(length))
-        self.gap = DateOffset(**self._parse_time(gap))
-        self.target = False
+        self._length = DateOffset(**self._parse_time(length))
+        self._gap = DateOffset(**self._parse_time(gap))
+        self._target = False

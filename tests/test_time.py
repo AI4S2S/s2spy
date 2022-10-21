@@ -89,7 +89,7 @@ class TestMonthlyCalendar:
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
-            "i_interval 1\n anchor_year \n 2021 (2021 Dec, 2022 Aug]"
+            "i_interval 1\n anchor_year \n 2021 [2021 Dec, 2022 Aug)"
         )
         expected_calendar_repr = expected_calendar_repr.replace(" ", "")
         assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
@@ -133,7 +133,7 @@ class TestWeeklyCalendar:
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
-            "i_interval 1\n anchor_year \n 2021 (2021-W48, 2022-W26]"
+            "i_interval 1\n anchor_year \n 2021 [2021-W48, 2022-W26)"
         )
         expected_calendar_repr = expected_calendar_repr.replace(" ", "")
         assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr

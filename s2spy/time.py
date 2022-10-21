@@ -29,7 +29,7 @@ Example:
     >>> calendar = calendar.map_years(2020, 2022)
     >>> # note the leap year:
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
-    i_interval                 (target) 0                         1
+    i_interval                         -1                         1
     anchor_year
     2022         [2022-07-04, 2022-12-31)  [2020-12-31, 2023-06-29)
     2021         [2021-07-04, 2021-12-31)  [2021-12-31, 2022-06-29)
@@ -39,7 +39,7 @@ Example:
     >>> calendar.map_years(2020, 2022).flat
     anchor_year  i_interval
     2022         -1            [2022-07-04, 2022-12-31)
-                  1            [2020-12-31, 2023-06-29)
+                  1            [2022-12-31, 2023-06-29)
     2021         -1            [2021-07-04, 2021-12-31)
                   1            [2021-12-31, 2022-06-29)
     2020         -1            [2020-07-04, 2020-12-31)

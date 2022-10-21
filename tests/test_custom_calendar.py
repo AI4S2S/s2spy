@@ -29,6 +29,17 @@ class TestPeriod:
         assert precursor.length == DateOffset(days=10)
         assert precursor.gap == DateOffset(days=-5)
 
+    def test_period_months(self):
+        target = TargetPeriod("2M", "1M")
+        assert target.length == DateOffset(months=2)
+        assert target.gap == DateOffset(months=1)
+
+    def test_period_weeks(self):
+        target = TargetPeriod("3W", "2W")
+        assert target.length == DateOffset(weeks=3)
+        assert target.gap == DateOffset(weeks=2)
+
+
 class TestCustomCalendar:
     """Test CustomCalendar methods."""
 
