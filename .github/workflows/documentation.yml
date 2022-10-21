@@ -4,9 +4,11 @@ on:
   push:
     branches:
     - main
+    - calendar_development
   pull_request:
     branches:
     - main
+    - calendar_development
 
 jobs:
   build-documentation:

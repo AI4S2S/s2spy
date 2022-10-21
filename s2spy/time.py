@@ -12,38 +12,38 @@ Example:
     >>> import s2spy.time
     >>>
     >>> # Countdown the weeks until New Year's Eve
-    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
+    >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="7d")
     >>> calendar
-    AdventCalendar(month=12, day=31, freq=7d, n_targets=1)
+    AdventCalendar(freq=7d, n_targets=1)
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
-    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="180d")
     >>> calendar = calendar.map_years(2020, 2020)
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
-    i_interval                 (target) 0                         1
+    i_interval                         -1                         1
     anchor_year
-    2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
+    2020         [2020-07-04, 2020-12-31)  [2020-12-31, 2021-06-29)
 
     >>> # Get the 180-day periods leading up to New Year's eve for 2020 - 2022 inclusive.
-    >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq='180d')
+    >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="180d")
     >>> calendar = calendar.map_years(2020, 2022)
     >>> # note the leap year:
     >>> calendar.show() # doctest: +NORMALIZE_WHITESPACE
     i_interval                 (target) 0                         1
     anchor_year
-    2022         (2022-07-04, 2022-12-31]  (2022-01-05, 2022-07-04]
-    2021         (2021-07-04, 2021-12-31]  (2021-01-05, 2021-07-04]
-    2020         (2020-07-04, 2020-12-31]  (2020-01-06, 2020-07-04]
+    2022         [2022-07-04, 2022-12-31)  [2020-12-31, 2023-06-29)
+    2021         [2021-07-04, 2021-12-31)  [2021-12-31, 2022-06-29)
+    2020         [2020-07-04, 2020-12-31)  [2020-12-31, 2021-06-29)
 
     >>> # To get a stacked representation:
     >>> calendar.map_years(2020, 2022).flat
     anchor_year  i_interval
-    2022         0             (2022-07-04, 2022-12-31]
-                 1             (2022-01-05, 2022-07-04]
-    2021         0             (2021-07-04, 2021-12-31]
-                 1             (2021-01-05, 2021-07-04]
-    2020         0             (2020-07-04, 2020-12-31]
-                 1             (2020-01-06, 2020-07-04]
+    2022         -1            [2022-07-04, 2022-12-31)
+                  1            [2020-12-31, 2023-06-29)
+    2021         -1            [2021-07-04, 2021-12-31)
+                  1            [2021-12-31, 2022-06-29)
+    2020         -1            [2020-07-04, 2020-12-31)
+                  1            [2020-12-31, 2021-06-29)
     dtype: interval
 
 """
@@ -88,9 +88,9 @@ class AdventCalendar(BaseCalendar):
             eve.
 
             >>> import s2spy.time
-            >>> calendar = s2spy.time.AdventCalendar(anchor=(12, 31), freq="7d")
+            >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="7d")
             >>> calendar
-            AdventCalendar(month=12, day=31, freq=7d, n_targets=1)
+            AdventCalendar(freq=7d, n_targets=1)
 
         """
         if not re.fullmatch(r"\d*d", freq):
@@ -172,13 +172,13 @@ class MonthlyCalendar(AdventCalendar):
             n_targets: integer specifying the number of target intervals in a period.
 
         Example:
-            Instantiate a calendar counting down the quarters (3 month periods) until
+            Instantiate a calendar counting down the quarters (3 month periods) from
             december.
 
             >>> import s2spy.time
             >>> calendar = s2spy.time.MonthlyCalendar(anchor='Dec', freq="3M")
             >>> calendar
-            MonthlyCalendar(month=12, freq=3M, n_targets=1)
+            MonthlyCalendar(freq=3M, n_targets=1)
 
         """
         if not re.fullmatch(r"\d*M", freq):
@@ -228,11 +228,11 @@ class MonthlyCalendar(AdventCalendar):
             interval (pd.Interval): Pandas interval.
 
         Returns:
-            str: String in the form of '(2020 Jan, 2020 Feb]'
+            str: String in the form of '[2020 Jan, 2020 Feb)'
         """
         left = interval.left.strftime("%Y %b")
         right = interval.right.strftime("%Y %b")
-        return f"({left}, {right}]"
+        return f"[{left}, {right})"
 
     def show(self) -> pd.DataFrame:
         """Displays the intervals the Calendar will generate for the current setup.
@@ -264,13 +264,12 @@ class WeeklyCalendar(AdventCalendar):
             n_targets: integer specifying the number of target intervals in a period.
 
         Example:
-            Instantiate a calendar counting down the weeks until week number 40.
+            Instantiate a calendar counting down the weeks from week number 40.
 
             >>> import s2spy.time
-            >>> calendar = s2spy.time.WeeklyCalendar(anchor=40, freq="1W")
+            >>> calendar = s2spy.time.WeeklyCalendar(anchor="W40", freq="1W")
             >>> calendar
-            WeeklyCalendar(week=40, freq=1W, n_targets=1)
-
+            WeeklyCalendar(freq=1W, n_targets=1)
         """
         if not re.fullmatch(r"\d*W", freq):
             raise ValueError("Please input a frequency in the form of '4W'")
@@ -292,11 +291,11 @@ class WeeklyCalendar(AdventCalendar):
             interval (pd.Interval): Pandas interval.
 
         Returns:
-            str: String in the form of '(2020-50, 2020-51]'
+            str: String in the form of '[2020-50, 2020-51)'
         """
         left = interval.left.strftime("%Y-W%W")
         right = interval.right.strftime("%Y-W%W")
-        return f"({left}, {right}]"
+        return f"[{left}, {right})"
 
     def show(self) -> pd.DataFrame:
         """Displays the intervals the Calendar will generate for the current setup.
@@ -333,6 +332,14 @@ class CustomCalendar(BaseCalendar):
         Attributes:
             n_targets (int): Number of targets that inferred from the appended
             `TargetPeriod` blocks.
+
+        Example:
+            Instantiate a custom calendar and appending target/precursor periods.
+
+            >>> import s2spy.time
+            >>> calendar = s2spy.time.CustomCalendar(anchor="12-31")
+            >>> calendar
+            CustomCalendar(n_targets=0)
         """
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
