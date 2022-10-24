@@ -219,19 +219,18 @@ def resample(
         >>> import s2spy.time
         >>> import pandas as pd
         >>> import numpy as np
-        >>> cal = s2spy.time.AdventCalendar(freq='180d')
-        >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
+        >>> cal = s2spy.time.AdventCalendar(anchor="12-31", freq="180d")
+        >>> time_index = pd.date_range("20191201", "20211231", freq="1d")
         >>> var = np.arange(len(time_index))
         >>> input_data = pd.Series(var, index=time_index)
         >>> cal = cal.map_to_data(input_data)
         >>> bins = s2spy.time.resample(cal, input_data)
         >>> bins # doctest: +NORMALIZE_WHITESPACE
-            anchor_year  i_interval                  interval  mean_data  target
-        0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
-        1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
-        2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
-        3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
-
+            anchor_year  i_interval                  interval   data  target
+        0          2019          -1  [2019-07-04, 2019-12-31)   14.5   False
+        1          2019           1  [2019-12-31, 2020-06-28)  119.5    True
+        2          2020          -1  [2020-07-04, 2020-12-31)  305.5   False
+        3          2020           1  [2020-12-31, 2021-06-29)  485.5    True
     """
     intervals = mapped_calendar.get_intervals()
 
