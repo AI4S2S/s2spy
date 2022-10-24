@@ -331,3 +331,46 @@ class TestMap:
             calendar.get_intervals().index.values, expected_index
         )
         assert calendar.get_intervals().iloc[0].size == expected_size
+
+
+class TestAnchorKwarg:
+    correct_inputs = [  # format: (anchor, anchor_fmt, anchor_str)
+        ("5-5", "%m-%d", "5-5"),
+        ("05-5", "%m-%d", "05-5"),
+        ("05-05", "%m-%d", "05-05"),
+        ("5-05", "%m-%d", "5-05"),
+        ("12-31", "%m-%d", "12-31"),
+        ("W01", "W%W-%w", "W01-1"),
+        ("W9", "W%W-%w", "W9-1"),
+        ("December", "%m", "12"),
+        ("dec", "%m", "12"),
+        ("jan", "%m", "1"),
+        ("Jan", "%m", "1"),
+    ]
+
+    incorrect_inputs = (
+        10,  # non-str inputs
+        (1, 2),
+        "0",  # month number less than 1
+        "13",  # month number greater than 12
+        "12-0",  # day number less than 1
+        "12-32",  # day number greater than 31
+        "31-12",  # incorrect month/day order
+        "W60",  # Week number greater than 52 (only some years have 53 weeks)
+        "W53",
+        "W01-0",  # Weekday smaller than 1 (Monday)
+        "W01-8",  # Weekday greater than 7 (Sunday)
+        "w12",  # Small letter `w`.
+        "juli",  # Non-English month name
+    )
+
+    @pytest.mark.parametrize("test_input, expected_fmt, expected_str", correct_inputs)
+    def test_correct_anchor_input(self, test_input, expected_fmt, expected_str):
+        cal = AdventCalendar(anchor=test_input)
+        assert cal._anchor_fmt == expected_fmt  # pylint: disable=protected-access
+        assert cal._anchor == expected_str  # pylint: disable=protected-access
+
+    @pytest.mark.parametrize("test_input", incorrect_inputs)
+    def test_incorrect_anchor_input(self, test_input):
+        with pytest.raises(ValueError):
+            _ = AdventCalendar(anchor=test_input)

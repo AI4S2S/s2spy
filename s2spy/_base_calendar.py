@@ -72,12 +72,16 @@ class BaseCalendar(ABC):
             raise ValueError("Anchor input must be a string with expected format.")
         # format match
         if re.fullmatch("\\d{1,2}-\\d{1,2}", anchor_str):
+            utils.check_month_day(*[int(x) for x in anchor_str.split("-")])
             fmt = "%m-%d"
         elif re.fullmatch("\\d{1,2}", anchor_str):
+            utils.check_month_day(int(anchor_str))
             fmt = "%m"
         elif re.fullmatch("W\\d{1,2}-\\d", anchor_str):
+            utils.check_week_day(*[int(x) for x in anchor_str[1:].split("-")])
             fmt = "W%W-%w"
         elif re.fullmatch("W\\d{1,2}", anchor_str):
+            utils.check_week_day(int(anchor_str[1:]))
             fmt = "W%W-%w"
             anchor_str += "-1"
         elif anchor_str.lower() in utils.get_month_names():
@@ -382,7 +386,7 @@ class Period(ABC):
     """Basic construction element of calendar for defining target period."""
 
     def __init__(self, length: str, gap: str = "0d") -> None:
-        
+
         self._length = DateOffset(**self._parse_time(length))
         self._gap = DateOffset(**self._parse_time(gap))
         self._target = False
