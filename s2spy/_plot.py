@@ -1,4 +1,3 @@
-from calendar import month_abbr
 from typing import Dict
 import numpy as np
 import matplotlib.pyplot as plt
@@ -189,8 +188,8 @@ def matplotlib_visualization(
         ax.xaxis.set_major_formatter(formatter)
         ax.set_xlim(
             (
-                calendar.flat[-1] - pd.Timedelta(days=14),
-                calendar.flat[0] + pd.Timedelta(days=14),
+                calendar.flat.values[-1] - pd.Timedelta(days=14),
+                calendar.flat.values[0] + pd.Timedelta(days=14),
             )
         )
 

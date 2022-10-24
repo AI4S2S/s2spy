@@ -54,14 +54,12 @@ def _bokeh_visualization(
     intervals = calendar.get_intervals()[:n_years]
 
     for _, year_intervals in intervals.iterrows():
-        source = plotting.ColumnDataSource(
-            data=generate_plot_data(
+        data=generate_plot_data(
                 relative_dates=relative_dates,
                 year_intervals=year_intervals,
                 n_targets=calendar.n_targets,
             )
-        )
-        _generate_rectangle(figure, source)
+        _generate_rectangle(figure,  plotting.ColumnDataSource(data))
 
     figure.xaxis.axis_label = (
         "Days relative to anchor date" if relative_dates else "Date"
@@ -70,13 +68,13 @@ def _bokeh_visualization(
 
     if relative_dates:
         figure.x_range.start = (
-            np.min(source.data["x"])
-            - source.data["width"][np.argmin(source.data["x"])] / 2
+            np.min(data["x"])
+            - data["width"][np.argmin(data["x"])] / 2
             - 14
-        )
+        )  # pylint
         figure.x_range.end = (
-            np.max(source.data["x"])
-            + source.data["width"][np.argmax(source.data["x"])] / 2
+            np.max(data["x"])
+            + data["width"][np.argmax(data["x"])] / 2
             + 14
         )
 
