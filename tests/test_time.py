@@ -336,12 +336,14 @@ class TestMap:
 class TestAnchorKwarg:
     correct_inputs = [  # format: (anchor, anchor_fmt, anchor_str)
         ("5-5", "%m-%d", "5-5"),
-        ("05-5", "%m-%d", "05-5"),
-        ("05-05", "%m-%d", "05-05"),
+        ("02-5", "%m-%d", "02-5"),
+        ("06-05", "%m-%d", "06-05"),
         ("5-05", "%m-%d", "5-05"),
         ("12-31", "%m-%d", "12-31"),
         ("W01", "W%W-%w", "W01-1"),
         ("W9", "W%W-%w", "W9-1"),
+        ("W01-4", "W%W-%w", "W01-4"),
+        ("W9-1", "W%W-%w", "W9-1"),
         ("December", "%m", "12"),
         ("dec", "%m", "12"),
         ("jan", "%m", "1"),
@@ -356,6 +358,8 @@ class TestAnchorKwarg:
         "12-0",  # day number less than 1
         "12-32",  # day number greater than 31
         "31-12",  # incorrect month/day order
+        "4-31",  # 31 April (nonexistant date)
+        "2-29",  # 29 February (doesn't exist in every year)
         "W60",  # Week number greater than 52 (only some years have 53 weeks)
         "W53",
         "W01-0",  # Weekday smaller than 1 (Monday)
