@@ -366,6 +366,10 @@ class TestAnchorKwarg:
         "W01-8",  # Weekday greater than 7 (Sunday)
         "w12",  # Small letter `w`.
         "juli",  # Non-English month name
+        "July 5",  # Month name + day
+        "July-5",
+        "jan 20",
+        "jan-20",
     )
 
     @pytest.mark.parametrize("test_input, expected_fmt, expected_str", correct_inputs)
