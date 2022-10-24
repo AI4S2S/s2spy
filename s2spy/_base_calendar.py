@@ -21,7 +21,6 @@ PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
 
 
-# pylint: disable=protected-access
 class BaseCalendar(ABC):
     """Base calendar class which serves as a template for specific implementations."""
 
@@ -92,18 +91,19 @@ class BaseCalendar(ABC):
 
     def _append(self, period_block):
         """Append target/precursor periods to the calendar."""
+        # pylint: disable=protected-access
         if period_block._target:
             self._targets.append(period_block)
             # count length
             self._total_length_target += (
-                period_block._length.kwds["days"] + period_block._gap.kwds["days"]
+                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
             )
 
         else:
             self._precursors.append(period_block)
             # count length
             self._total_length_precursor += (
-                period_block._length.kwds["days"] + period_block._gap.kwds["days"]
+                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
             )
 
     def _map_year(self, year: int) -> pd.Series:
@@ -142,8 +142,8 @@ class BaseCalendar(ABC):
             left_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                left_date += block._gap
-                right_date = left_date + block._length
+                left_date += block.gap
+                right_date = left_date + block.length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update left date
                 left_date = right_date
@@ -152,8 +152,8 @@ class BaseCalendar(ABC):
             right_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                right_date -= block._gap
-                left_date = right_date - block._length
+                right_date -= block.gap
+                left_date = right_date - block.length
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update right date
                 right_date = left_date
