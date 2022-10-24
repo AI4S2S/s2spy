@@ -169,3 +169,54 @@ def get_month_names() -> Dict:
         "nov": 11,
         "dec": 12,
     }
+
+
+def check_month_day(month: int, day: int = 1):
+    """Checks if the input day/month combination is valid.
+
+    Months must be between 1 and 12, and days must be within 1 and 28/30/31 (depending
+    on the month).
+
+    Args:
+        month: Month number
+        day: Day number. Defaults to 1.
+    """
+
+    if month in {1, 3, 5, 7, 8, 10, 12}:
+        if (day < 1) or (day > 31):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    elif month in {4, 6, 9}:
+        if (day < 1) or (day > 30):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    elif month == 2:
+        if (day < 1) or (day > 28):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    else:
+        raise ValueError(
+            "Incorrect anchor input. Month number must be between 1 and 12."
+        )
+
+
+def check_week_day(week: int, day: int = 1):
+    if week == 53:
+        raise ValueError(
+            "Incorrect anchor input. "
+            "Week 53 is not a valid input, as not every year contains a 53rd week."
+        )
+    if (week < 1) or (week > 52):
+        raise ValueError(
+            "Incorrect anchor input. Week numbers must be between 1 and 52."
+        )
+    if (day < 1) or (day > 7):
+        raise ValueError(
+            "Incorrect anchor input. Weekday numbers must be between 1 and 7."
+        )
