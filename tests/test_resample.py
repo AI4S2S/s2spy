@@ -7,6 +7,9 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
+from s2spy.time import CustomCalendar
+from s2spy.time import PrecursorPeriod
+from s2spy.time import TargetPeriod
 from s2spy.time import resample
 
 
@@ -189,3 +192,21 @@ class TestResample:
         with tempfile.TemporaryDirectory() as tmpdirname:
             path = Path(tmpdirname) / 'test.nc'
             resampled_data.to_netcdf(path)
+
+    def test_overlapping(self):
+        # Test to ensure overlapping intervals are accepted and correctly resampled
+        time_index = pd.date_range("20161020", "20200101", freq="60d")
+        test_data = np.random.random(len(time_index))
+        series = pd.Series(test_data, index=time_index, name="data1")
+
+        calendar = CustomCalendar(anchor="10-05")
+        calendar.append(TargetPeriod("60d"))
+        calendar.append(PrecursorPeriod("60d"))
+        calendar.append(PrecursorPeriod("60d", gap="-60d"))
+
+        calendar.map_to_data(series)
+        resampled_data = resample(calendar, series)
+
+        expected = np.array([series.values[-3], series.values[-3], series.values[-2]])
+
+        np.testing.assert_array_equal(resampled_data["data1"].values[-3:], expected)
