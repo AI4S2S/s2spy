@@ -137,7 +137,10 @@ class TestCustomCalendar:
     # The following tests only check if the plotter completely fails,
     # visuals are not checked.
     def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize()
+        dummy_calendar.visualize(relative_dates=False)
+
+    def test_visualize_relative_dates(self, dummy_calendar):
+        dummy_calendar.visualize(relative_dates=True)
 
     def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_freq=True)
+        dummy_calendar.visualize(add_length=True)

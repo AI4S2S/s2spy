@@ -64,10 +64,13 @@ class TestAdventCalendar:
             cal.set_max_lag(-1)
 
     def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize()
+        dummy_calendar.visualize(relative_dates=False)
+
+    def test_visualize_relative_dates(self, dummy_calendar):
+        dummy_calendar.visualize(relative_dates=True)
 
     def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_freq=True)
+        dummy_calendar.visualize(add_length=True)
 
 
 class TestMonthlyCalendar:
@@ -108,10 +111,13 @@ class TestMonthlyCalendar:
             MonthlyCalendar(freq="2d")
 
     def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize()
+        dummy_calendar.visualize(relative_dates=False)
+
+    def test_visualize_relative_dates(self, dummy_calendar):
+        dummy_calendar.visualize(relative_dates=True)
 
     def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_freq=True)
+        dummy_calendar.visualize(add_length=True)
 
 
 class TestWeeklyCalendar:
@@ -152,10 +158,13 @@ class TestWeeklyCalendar:
             WeeklyCalendar(anchor="W40", freq="2d")
 
     def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize()
+        dummy_calendar.visualize(relative_dates=False)
+
+    def test_visualize_relative_dates(self, dummy_calendar):
+        dummy_calendar.visualize(relative_dates=True)
 
     def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_freq=True)
+        dummy_calendar.visualize(add_length=True)
 
 
 class TestMap:
