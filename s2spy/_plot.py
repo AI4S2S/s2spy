@@ -1,10 +1,10 @@
 from typing import Dict
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from matplotlib import dates as mdates
 from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
-from matplotlib import dates as mdates
 
 
 def make_color_array(n_targets: int, n_intervals: int) -> np.ndarray:
