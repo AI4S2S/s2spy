@@ -123,7 +123,7 @@ def plot_rectangles(ax: plt.Axes, data: Dict, add_length: bool):
         data: Data dictionary containing x, y, width, height, color and width_days.
         add_length: If the length of each interval should be displayed as text.
     """
-    for _, row in pd.DataFrame(data).iterrows():
+    for _, row in pd.DataFrame(data).iterrows():  # type: ignore
         ax.add_patch(
             Rectangle(
                 xy=(row["x"] - row["width"] / 2, row["y"] - row["height"] / 2),
@@ -179,8 +179,8 @@ def matplotlib_visualization(
     if relative_dates:
         ax.set_xlim(
             (
-                np.min(data["x"]) - data["width"][np.argmin(data["x"])] / 2 - 10,
-                np.max(data["x"]) + data["width"][np.argmax(data["x"])] / 2 + 10,
+                np.min(data["x"]) - data["width"][np.argmin(data["x"])] / 2 - 10,  # type: ignore
+                np.max(data["x"]) + data["width"][np.argmax(data["x"])] / 2 + 10,  # type: ignore
             )
         )
     else:
