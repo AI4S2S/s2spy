@@ -11,7 +11,7 @@ class TestBokehPlots:
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        cal = AdventCalendar(anchor=(12, 31), freq="60d")
+        cal = AdventCalendar(anchor="12-31", freq="60d")
         cal.map_years(2018, 2021)
         return cal
 

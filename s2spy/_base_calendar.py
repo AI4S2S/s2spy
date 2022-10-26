@@ -28,7 +28,8 @@ class BaseCalendar(ABC):
 
     @abstractmethod
     def __init__(
-        self, anchor,
+        self,
+        anchor,
     ):
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
@@ -224,7 +225,8 @@ class BaseCalendar(ABC):
         return self
 
     def map_to_data(
-        self, input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
+        self,
+        input_data: Union[pd.Series, pd.DataFrame, xr.Dataset, xr.DataArray],
     ):
         """Map the calendar to input data period.
 
@@ -339,11 +341,16 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
-    def visualize(self, n_years: int = 3, add_freq: bool = False,) -> None:
+    def visualize(
+        self,
+        n_years: int = 3,
+        relative_dates: bool = False,
+        add_length: bool = False,
+    ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
         Args:
-            add_freq: Toggles if the frequency of the intervals should be displayed.
+            add_length: Toggles if the frequency of the intervals should be displayed.
                       Defaults to False (Matplotlib plotter only)
             n_years: Sets the maximum number of anchor years that should be shown. By
                      default only the most recent 3 are visualized, to ensure that they
@@ -351,9 +358,13 @@ class BaseCalendar(ABC):
         """
         n_years = max(n_years, 1)
         n_years = min(n_years, len(self.get_intervals().index))
-        _plot.matplotlib_visualization(self, n_years, add_freq)
+        _plot.matplotlib_visualization(self, n_years, relative_dates, add_length)
 
-    def visualize_interactive(self, relative_dates: bool, n_years: int = 3,) -> None:
+    def visualize_interactive(
+        self,
+        relative_dates: bool,
+        n_years: int = 3,
+    ) -> None:
         """Plots a visualization of the current calendar setup using `bokeh`.
 
         Note: Requires the `bokeh` package to be installed in the active enviroment.

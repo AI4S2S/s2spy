@@ -33,7 +33,7 @@ def check_time_dim_xarray(data) -> None:
         raise ValueError(
             "The input DataArray/Dataset does not contain a `time` dimension"
         )
-    if not xr.core.common.is_np_datetime_like(data["time"].dtype):
+    if not xr.core.common.is_np_datetime_like(data["time"].dtype):  # type: ignore
         raise ValueError("The `time` dimension is not of a datetime format")
 
 
@@ -82,7 +82,7 @@ def check_input_frequency(calendar, data):
     builtin one fails.
     """
     if isinstance(data, PandasData):
-        data_freq = pd.infer_freq(data.index)
+        data_freq = pd.infer_freq(data.index)  # type: ignore
         if data_freq is None:  # Manually infer the frequency
             data_freq = np.min(data.index.values[1:] - data.index.values[:-1])
     else:
@@ -188,7 +188,7 @@ def check_month_day(month: int, day: int = 1):
                 "Incorrect anchor input. "
                 f"Day number {day} is not a valid day for month {month}"
             )
-    elif month in {4, 6, 9}:
+    elif month in {4, 6, 9, 11}:
         if (day < 1) or (day > 30):
             raise ValueError(
                 "Incorrect anchor input. "
