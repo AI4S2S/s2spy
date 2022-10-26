@@ -70,7 +70,7 @@ def _bokeh_visualization(
             np.min(data["x"])
             - data["width"][np.argmin(data["x"])] / 2
             - 14
-        )  # pylint
+        )
         figure.x_range.end = (
             np.max(data["x"])
             + data["width"][np.argmax(data["x"])] / 2
