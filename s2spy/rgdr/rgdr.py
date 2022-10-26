@@ -109,7 +109,7 @@ def assert_clusters_present(data: xr.DataArray) -> None:
     if "i_interval" in data.dims:
         n_clusters = np.zeros(data["i_interval"].size)
         for i, _ in enumerate(n_clusters):
-            n_clusters[i] = np.unique(data.isel(i_interval=i).cluster_labels).size
+            n_clusters[i] = np.unique(data.sel(i_interval=data["i_interval"][i]).cluster_labels).size
 
         if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
             empty_lags = data["i_interval"].values[n_clusters == 1]
@@ -200,7 +200,7 @@ def _find_clusters(
 
     for i, lag in enumerate(lags):
         labels[i] = _get_dbscan_clusters(
-            data.isel(i_interval=i), coords, lag, dbscan_params
+            data.sel(i_interval=lag), coords, lag, dbscan_params
         )
 
     precursor = precursor.stack(coord=["latitude", "longitude"])
