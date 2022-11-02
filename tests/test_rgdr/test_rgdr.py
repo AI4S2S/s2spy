@@ -216,7 +216,7 @@ class TestRGDR:
         rgdr = RGDR(min_area_km2=1000**2)
         clustered_data = rgdr.fit_transform(example_field, example_target)
         cluster_labels = np.array(
-            ["lag:-1_cluster:-1", "lag:-1_cluster:-2", "lag:-1_cluster:1"]
+            ["i_interval:-1_cluster:-1", "i_interval:-1_cluster:-2", "i_interval:-1_cluster:1"]
         )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
 
@@ -227,12 +227,12 @@ class TestRGDR:
         clustered_data = rgdr.fit_transform(example_field_multiple_lags, example_target)
         cluster_labels = np.array(
             [
-                "lag:-1_cluster:-2",
-                "lag:-1_cluster:1",
-                "lag:-2_cluster:-1",
-                "lag:-2_cluster:1",
-                "lag:-3_cluster:-1",
-                "lag:-4_cluster:-2",
+                "i_interval:-1_cluster:-2",
+                "i_interval:-1_cluster:1",
+                "i_interval:-2_cluster:-1",
+                "i_interval:-2_cluster:1",
+                "i_interval:-3_cluster:-1",
+                "i_interval:-4_cluster:-2",
             ]
         )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
@@ -243,7 +243,7 @@ class TestRGDR:
     def test_corr_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target, lag=-1)
+        dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target, i_interval=-1)
 
     def test_corr_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
@@ -261,7 +261,7 @@ class TestRGDR:
     def test_cluster_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target, lag=-1)
+        dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target, i_interval=-1)
 
     def test_cluster_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
