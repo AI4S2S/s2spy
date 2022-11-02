@@ -450,7 +450,7 @@ class RGDR:
         timeseries: xr.DataArray,
         i_interval: Optional[int] = None,
         ax: Optional[plt.Axes] = None,
-    ):# -> Type[mpl.collections.QuadMesh]:
+    ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
 
