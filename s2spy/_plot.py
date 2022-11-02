@@ -188,8 +188,8 @@ def matplotlib_visualization(
         ax.xaxis.set_major_formatter(formatter)
         ax.set_xlim(
             (
-                calendar.flat.values.min().left - pd.Timedelta(days=14),
-                calendar.flat.values.max().right + pd.Timedelta(days=14),
+                intervals.stack().values.min().left - pd.Timedelta(days=14),
+                intervals.stack().values.max().right + pd.Timedelta(days=14),
             )
         )
 

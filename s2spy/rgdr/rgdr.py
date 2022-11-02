@@ -109,12 +109,12 @@ def assert_clusters_present(data: xr.DataArray) -> None:
     if "i_interval" in data.dims:
         n_clusters = np.zeros(data["i_interval"].size)
         for i, _ in enumerate(n_clusters):
-            n_clusters[i] = np.unique(data.isel(i_interval=i).cluster_labels).size
+            n_clusters[i] = np.unique(data.sel(i_interval=data["i_interval"][i]).cluster_labels).size
 
         if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
             empty_lags = data["i_interval"].values[n_clusters == 1]
             warnings.warn(
-                f"No significant clusters found in lag(s): i_interval={empty_lags}."
+                f"No significant clusters found in i_interval(s): i_interval={empty_lags}."
             )
 
     elif np.unique(data.cluster_labels).size == 1:
@@ -122,7 +122,7 @@ def assert_clusters_present(data: xr.DataArray) -> None:
 
 
 def _get_dbscan_clusters(
-    data: xr.Dataset, coords: np.ndarray, lag: int, dbscan_params: dict
+    data: xr.Dataset, coords: np.ndarray, i_interval: int, dbscan_params: dict
 ) -> np.ndarray:
     """Generates the DBSCAN cluster labels based on the correlation and p-value.
 
@@ -132,7 +132,7 @@ def _get_dbscan_clusters(
              into a "coords" dimension.
         coords (np.ndarray): 2-D array containing the coordinates of each (lat, lon) grid
             point, in radians.
-        lag (int): The i_interval value of the input data.
+        i_interval (int): The i_interval value of the input data.
         dbscan_params (dict): Dictionary containing the elements 'alpha', 'eps',
             'min_area_km2'. See the documentation of RGDR for more information.
 
@@ -140,7 +140,7 @@ def _get_dbscan_clusters(
         np.ndarray: 1-D array of the same length as `coords`, containing cluster labels
             for every coordinate."""
 
-    labels = np.zeros(len(coords), dtype="<U20")
+    labels = np.zeros(len(coords), dtype="<U32")
     labels[:] = "0"
 
     for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
@@ -155,7 +155,7 @@ def _get_dbscan_clusters(
             ).fit(coords[mask])
 
             cluster_labels = sign * (db.labels_ + 1)
-            labels[mask] = [f"lag:{lag}_cluster:{int(lbl)}" for lbl in cluster_labels]
+            labels[mask] = [f"i_interval:{i_interval}_cluster:{int(lbl)}" for lbl in cluster_labels]
 
     return labels
 
@@ -189,18 +189,18 @@ def _find_clusters(
 
     if "i_interval" not in data.dims:
         data = data.expand_dims("i_interval")
-    lags = data["i_interval"].values
+    i_intervals = data["i_interval"].values
 
     data = data.stack(coord=["latitude", "longitude"])
     coords = np.asarray(data["coord"].values.tolist())
     coords = np.radians(coords)
 
     # Prepare labels, default value is 0 (not in cluster)
-    labels = np.zeros((len(lags), len(coords)), dtype="<U20")
+    labels = np.zeros((len(i_intervals), len(coords)), dtype="<U32")
 
-    for i, lag in enumerate(lags):
+    for i, i_interval in enumerate(i_intervals):
         labels[i] = _get_dbscan_clusters(
-            data.isel(i_interval=i), coords, lag, dbscan_params
+            data.sel(i_interval=i_interval), coords, i_interval, dbscan_params
         )
 
     precursor = precursor.stack(coord=["latitude", "longitude"])
@@ -246,7 +246,7 @@ def masked_spherical_dbscan(
     if dbscan_params["min_area"]:
         precursor = remove_small_area_clusters(precursor, dbscan_params["min_area"])
 
-    # Make sure a cluster is present in each lag
+    # Make sure a cluster is present in each i_interval
     assert_clusters_present(precursor)
 
     return precursor
@@ -346,7 +346,7 @@ class RGDR:
         Attributes:
             corr_map (float): correlation coefficient map of given precursor field and target series
             pval_map (float): p-values map of correlation
-            cluster_map (U20): cluster labels for precursor field masked by p-values
+            cluster_map (U32): cluster labels for precursor field masked by p-values
         """
         self.corr_map: xr.DataArray
         self.pval_map: xr.DataArray
@@ -396,7 +396,7 @@ class RGDR:
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,
-        lag: Optional[int] = None,
+        i_interval: Optional[int] = None,
         ax1: Optional[plt.Axes] = None,
         ax2: Optional[plt.Axes] = None,
     ) -> List[Type[mpl.collections.QuadMesh]]:
@@ -407,7 +407,7 @@ class RGDR:
             precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
             timeseries: Timeseries data with only the dimension 'anchor_year'
-            lag: The i_interval which should be plotted. Required if the precursor
+            i_interval: The i_interval which should be plotted. Required if the precursor
                 has the dimension "i_interval".
             ax1: a matplotlib axis handle to plot
                 the correlation values into. If None, an axis handle will be created
@@ -420,12 +420,12 @@ class RGDR:
         """
 
         if "i_interval" in precursor.dims:
-            if lag is None:
+            if i_interval is None:
                 raise ValueError(
                     "Precursor contains multiple intervals, please provide"
-                    " the lag which should be plotted."
+                    " the i_interval which should be plotted."
                 )
-            precursor = precursor.sel(i_interval=lag)
+            precursor = precursor.sel(i_interval=i_interval)
 
         corr, p_val = self.get_correlation(precursor, timeseries)
 
@@ -448,7 +448,7 @@ class RGDR:
         self,
         precursor: xr.DataArray,
         timeseries: xr.DataArray,
-        lag: Optional[int] = None,
+        i_interval: Optional[int] = None,
         ax: Optional[plt.Axes] = None,
     ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
@@ -458,7 +458,7 @@ class RGDR:
             precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
             timeseries: Timeseries data with only the dimension 'anchor_year'
-            lag: The i_interval which should be plotted. Required if the precursor
+            i_interval: The i_interval which should be plotted. Required if the precursor
                 has the dimension "i_interval".
             ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
@@ -472,12 +472,12 @@ class RGDR:
         clusters = self.get_clusters(precursor, timeseries)
 
         if "i_interval" in precursor.dims:
-            if lag is None:
+            if i_interval is None:
                 raise ValueError(
                     "Precursor contains multiple intervals, please provide"
-                    " the lag which should be plotted."
+                    " the i_interval which should be plotted."
                 )
-            clusters = clusters.sel(i_interval=lag)
+            clusters = clusters.sel(i_interval=i_interval)
 
         clusters = utils.cluster_labels_to_ints(clusters)
 
