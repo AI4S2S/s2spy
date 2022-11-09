@@ -66,7 +66,7 @@ def mysign(x: int):
     else:
         return -1
 
-def overlap_labels(split_array: xr.DataArray, lag: Optional[int] = None):
+def overlap_labels(split_array: xr.DataArray):
     '''
     Function to create a dataframe that shows how many grid cells
     of a found precursor region of a lag in a training split overlap with
@@ -79,7 +79,7 @@ def overlap_labels(split_array: xr.DataArray, lag: Optional[int] = None):
     '''
 
     #initialize empty dataframe
-    df = _init_overlap_df(split_array.sel({'i_interval':lag}))
+    df = _init_overlap_df(split_array)
 
     #get list of split numbers
     split_number_list = list(split_array.split.values)
@@ -87,12 +87,12 @@ def overlap_labels(split_array: xr.DataArray, lag: Optional[int] = None):
     #loop over splits
     for split_number in split_number_list:
 
-        #select a split at the given lag
-        split = split_array.sel({'split':split_number, 'i_interval': lag})
-        #get labels from split for given lag
+        #select a split
+        split = split_array.sel({'split': split_number})
+        #get labels
         labels = df.loc[split_number,:].index.get_level_values(0)
 
-        #loop over every label in the split lag
+        #loop over every label in the splits
         for label in labels:
 
             #mask the array for label
@@ -108,7 +108,7 @@ def overlap_labels(split_array: xr.DataArray, lag: Optional[int] = None):
             for other_split_number in other_split_number_list:
 
                 #select other split
-                other_split = split_array.sel({'split':other_split_number, 'i_interval': lag})
+                other_split = split_array.sel({'split':other_split_number})
                 #get list of labels in this split
                 other_split_labels = df.loc[other_split_number,:].index.get_level_values(0)
                 #create list with labels in other split with same sign as label
