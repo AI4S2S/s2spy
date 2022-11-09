@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from bokeh import plotting
 from ._plot import generate_plot_data
@@ -64,9 +65,9 @@ def _bokeh_visualization(
 
     for _, year_intervals in intervals.iterrows():
         data = generate_plot_data(
+            calendar=calendar,
             relative_dates=relative_dates,
             year_intervals=year_intervals,
-            n_targets=calendar.n_targets,
         )
         _generate_rectangle(figure, plotting.ColumnDataSource(data))
 
@@ -93,4 +94,7 @@ def _bokeh_visualization(
 
 def bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels):
     figure = _bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels)
-    plotting.show(figure)
+    if "pytest" in sys.modules:  # Do not open browser if we are testing.
+        plotting.save(figure)
+    else:
+        plotting.show(figure)
