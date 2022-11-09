@@ -4,6 +4,7 @@ The BaseCalendar includes most methods required for all calendar operations, exc
 a set of abstract methods (e.g., __init__, _get_anchor, ...). These will have to be
 customized for each specific calendar.
 """
+import copy
 import re
 from abc import ABC
 from abc import abstractmethod
@@ -344,47 +345,50 @@ class BaseCalendar(ABC):
     def visualize(
         self,
         n_years: int = 3,
+        interactive: bool = False,
         relative_dates: bool = False,
         add_length: bool = False,
     ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
+        Note: The interactive visualization requires the `bokeh` package to be installed
+        in the active Python environment.
+
         Args:
+            n_years: Sets the maximum number of anchor years that should be shown. By
+                     default only the most recent 3 are visualized, to ensure that they
+                     fit within the plot.
+            interactive: If False, matplotlib will be used for the visualization. If
+                         True, bokeh will be used.
+            relative_dates: Toggles if the intervals should be displayed relative to the
+                            anchor date, or as absolute dates.
             add_length: Toggles if the frequency of the intervals should be displayed.
                       Defaults to False (Matplotlib plotter only)
-            n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
         """
+        calendar = copy.deepcopy(self)
+        mapped = calendar._mapping is not None  # pylint: disable=protected-access
+        if not mapped:
+            calendar.map_years(2000, 2000)
+            if not relative_dates:
+                print("Setting relative dates to True, as the calendar is not mapped yet.")
+                relative_dates = True
+
         n_years = max(n_years, 1)
-        n_years = min(n_years, len(self.get_intervals().index))
-        _plot.matplotlib_visualization(self, n_years, relative_dates, add_length)
+        n_years = min(n_years, len(calendar.get_intervals().index))
 
-    def visualize_interactive(
-        self,
-        relative_dates: bool,
-        n_years: int = 3,
-    ) -> None:
-        """Plots a visualization of the current calendar setup using `bokeh`.
+        if interactive:
+            if utils.bokeh_available():
+                # pylint: disable=import-outside-toplevel
+                from ._bokeh_plots import bokeh_visualization
 
-        Note: Requires the `bokeh` package to be installed in the active enviroment.
+                return bokeh_visualization(
+                    calendar, n_years, relative_dates, add_yticklabels=mapped
+                    )
+        else:
+            _plot.matplotlib_visualization(
+                calendar, n_years, relative_dates, add_length, add_yticklabels=mapped
+            )
 
-        Args:
-            relative_dates: If False, absolute dates will be used. If True, each anchor
-                            year is aligned by the anchor date, so that all anchor years
-                            line up vertically.
-            n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
-
-        Returns:
-            None
-        """
-        if utils.bokeh_available():
-            # pylint: disable=import-outside-toplevel
-            from ._bokeh_plots import bokeh_visualization
-
-            return bokeh_visualization(self, n_years, relative_dates)
         return None
 
     @property

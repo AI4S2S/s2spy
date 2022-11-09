@@ -27,7 +27,7 @@ def _generate_rectangle(figure: plotting.Figure, source: plotting.ColumnDataSour
 
 
 def _bokeh_visualization(
-    calendar, n_years: int, relative_dates: bool
+    calendar, n_years: int, relative_dates: bool, add_yticklabels: bool = True
 ) -> plotting.Figure:
     """Visualization routine for generating a calendar visualization with Bokeh.
 
@@ -37,12 +37,22 @@ def _bokeh_visualization(
         relative_dates: If False, absolute dates will be used. If True, each anchor year
                         is aligned by the anchor date, so that all anchor years line up
                         vertically.
+        add_yticklabels: If the years should be displayed on the y-axis ticks.
 
     Returns:
         plotting.Figure
     """
 
-    tooltips = [("Interval", "@desc"), ("Size", "@width_days days"), ("Type", "@type")]
+    if add_yticklabels:
+        tooltips = [
+            ("Interval", "@desc"),
+            ("Size", "@width_days days"),
+            ("Type", "@type"),
+        ]
+    else:
+        # Do not show the actual intervals, as the calendar is not mapped.
+        tooltips = [("Size", "@width_days days"), ("Type", "@type")]
+
     figure = plotting.figure(
         width=500,
         height=300,
@@ -53,12 +63,12 @@ def _bokeh_visualization(
     intervals = calendar.get_intervals()[:n_years]
 
     for _, year_intervals in intervals.iterrows():
-        data=generate_plot_data(
-                relative_dates=relative_dates,
-                year_intervals=year_intervals,
-                n_targets=calendar.n_targets,
-            )
-        _generate_rectangle(figure,  plotting.ColumnDataSource(data))
+        data = generate_plot_data(
+            relative_dates=relative_dates,
+            year_intervals=year_intervals,
+            n_targets=calendar.n_targets,
+        )
+        _generate_rectangle(figure, plotting.ColumnDataSource(data))
 
     figure.xaxis.axis_label = (
         "Days relative to anchor date" if relative_dates else "Date"
@@ -67,21 +77,20 @@ def _bokeh_visualization(
 
     if relative_dates:
         figure.x_range.start = (
-            np.min(data["x"])
-            - data["width"][np.argmin(data["x"])] / 2
-            - 14
+            np.min(data["x"]) - data["width"][np.argmin(data["x"])] / 2 - 14  # type: ignore
         )
         figure.x_range.end = (
-            np.max(data["x"])
-            + data["width"][np.argmax(data["x"])] / 2
-            + 14
+            np.max(data["x"]) + data["width"][np.argmax(data["x"])] / 2 + 14  # type: ignore
         )
 
-    figure.yaxis.ticker = [int(x) for x in intervals.index.to_list()]
+    if add_yticklabels:
+        figure.yaxis.ticker = [int(x) for x in intervals.index.to_list()]
+    else:
+        figure.yaxis.ticker = []
 
     return figure
 
 
-def bokeh_visualization(calendar, n_years, relative_dates):
-    figure = _bokeh_visualization(calendar, n_years, relative_dates)
+def bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels):
+    figure = _bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels)
     plotting.show(figure)

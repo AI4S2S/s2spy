@@ -149,7 +149,11 @@ def plot_rectangles(ax: plt.Axes, data: Dict, add_length: bool):
 
 
 def matplotlib_visualization(
-    calendar, n_years: int, relative_dates: bool, add_length: bool = False
+    calendar,
+    n_years: int,
+    relative_dates: bool,
+    add_length: bool = False,
+    add_yticklabels: bool = True,
 ):
     """Visualization routine for generating a calendar visualization with Bokeh.
 
@@ -160,8 +164,9 @@ def matplotlib_visualization(
                         is aligned by the anchor date, so that all anchor years line up
                         vertically.
         add_length: If the length of every periods should be displayed. Defaults False.
+        add_yticklabels: If the years should be displayed on the y-axis ticks.
     """
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
 
     intervals = calendar.get_intervals()[:n_years]
 
@@ -196,6 +201,9 @@ def matplotlib_visualization(
     ax.set_ylim([intervals.index.min() - 0.5, intervals.index.max() + 0.5])  # type: ignore
     ax.set_yticks([int(x) for x in intervals.index.to_list()])
 
+    if not add_yticklabels:
+        ax.set_yticklabels([])
+
     # Add a custom legend to explain to users what the colors mean
     legend_elements = [
         Patch(
@@ -210,3 +218,4 @@ def matplotlib_visualization(
         ),
     ]
     ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
+    fig.tight_layout()
