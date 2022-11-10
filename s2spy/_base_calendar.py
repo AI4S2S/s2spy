@@ -377,19 +377,16 @@ class BaseCalendar(ABC):
         n_years = min(n_years, len(calendar.get_intervals().index))
 
         if interactive:
-            if utils.bokeh_available():
-                # pylint: disable=import-outside-toplevel
-                from ._bokeh_plots import bokeh_visualization
+            utils.assert_bokeh_available()
+            from ._bokeh_plots import bokeh_visualization  # pylint: disable=import-outside-toplevel
 
-                return bokeh_visualization(
-                    calendar, n_years, relative_dates, add_yticklabels=mapped
-                    )
+            bokeh_visualization(
+                calendar, n_years, relative_dates, add_yticklabels=mapped
+                )
         else:
             _plot.matplotlib_visualization(
                 calendar, n_years, relative_dates, add_length, add_yticklabels=mapped
             )
-
-        return None
 
     @property
     def flat(self) -> pd.DataFrame:
