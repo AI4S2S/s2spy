@@ -330,7 +330,7 @@ class RGDR:
         self,
         eps_km: float,
         alpha: float,
-        min_area_km2: float | None = None,
+        min_area_km2: Optional[float] = None,
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
