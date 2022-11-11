@@ -38,7 +38,7 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
 
     lat = np.radians(latitude)
     h = np.sin(lat + dlat / 2) - np.sin(lat - dlat / 2)
-    spherical_area = h * dlon / np.pi / 4
+    spherical_area = h * dlon / (np.pi * 4)
 
     return spherical_area * SURFACE_AREA_EARTH_KM2
 
@@ -343,8 +343,8 @@ class RGDR:
                 be considered as in the neighborhood of the other. This is not a maximum
                 bound on the distances of points within a cluster. This is the most
                 important DBSCAN parameter to choose appropriately.
-            min_area_km2 (float): The minimum area of a cluster. Clusters smaller than
-                this minimum area will be discarded.
+            min_area_km2 (float): The minimum area of a cluster (in square km). Clusters
+                smaller than this minimum area will be discarded.
 
         Attributes:
             corr_map (float): correlation coefficient map of given precursor field and target series
