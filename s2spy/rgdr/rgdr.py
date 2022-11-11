@@ -19,7 +19,7 @@ SURFACE_AREA_EARTH_KM2 = 5.10072e8
 XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 
 
-def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
+def spherical_area(latitude: float, dlat: float, dlon: Optional[float] = None) -> float:
     """Approximate the area of a square grid cell on a spherical (!) earth.
     Returns the area in square kilometers of earth surface.
 
