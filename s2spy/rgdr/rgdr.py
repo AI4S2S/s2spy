@@ -15,7 +15,7 @@ from . import utils
 
 
 RADIUS_EARTH_KM = 6371
-SURFACE_AREA_EARTH_KM2 = 5.1e8
+SURFACE_AREA_EARTH_KM2 = 5.10072e8
 XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 
 
@@ -38,7 +38,7 @@ def spherical_area(latitude: float, dlat: float, dlon: float = None) -> float:
 
     lat = np.radians(latitude)
     h = np.sin(lat + dlat / 2) - np.sin(lat - dlat / 2)
-    spherical_area = h * dlon / np.pi * 4
+    spherical_area = h * dlon / np.pi / 4
 
     return spherical_area * SURFACE_AREA_EARTH_KM2
 
@@ -243,7 +243,7 @@ def masked_spherical_dbscan(
 
     precursor = _find_clusters(precursor, corr, p_val, dbscan_params)
 
-    if dbscan_params["min_area"]:
+    if dbscan_params["min_area"] is not None:
         precursor = remove_small_area_clusters(precursor, dbscan_params["min_area"])
 
     # Make sure a cluster is present in each lag
@@ -327,7 +327,10 @@ class RGDR:
     """Response Guided Dimensionality Reduction."""
 
     def __init__(
-        self, eps_km: float = 600, alpha: float = 0.05, min_area_km2: float = 3000**2
+        self,
+        eps_km: float,
+        alpha: float,
+        min_area_km2: float | None = None,
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
