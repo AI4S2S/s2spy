@@ -75,6 +75,22 @@ def expected_labels():
     )
 
 
+class TestUtils:
+    """Validates the various utility functions used in RGDR"""
+
+    testdata = [ # lat, dlat, dlon, area
+        (-1, 2, 2, 49500),
+        (45, 5, 5, 218500),
+        (45, 5, 2.5, 109250)
+    ]
+
+    @pytest.mark.parametrize("lat,dlat,dlon,expected", testdata)
+    def test_spherical_area(self, lat, dlat, dlon, expected):
+        np.testing.assert_allclose(
+            rgdr.spherical_area(lat, dlat, dlon), expected, rtol=0.05
+            )
+
+
 class TestCorrelation:
     """Validates that the correlation ufunc works, as well as the input checks."""
 
@@ -149,7 +165,7 @@ class TestDBSCAN:
 
     @pytest.fixture(autouse=True)
     def dummy_dbscan_params(self):
-        return {"alpha": 0.05, "eps": 600, "min_area": 1000**2}
+        return {"alpha": 0.05, "eps": 600, "min_area": None}
 
     def test_dbscan(
         self, example_corr, example_field, dummy_dbscan_params, expected_labels
@@ -168,7 +184,7 @@ class TestDBSCAN:
     ):
         corr, p_val = example_corr
         dbscan_params = dummy_dbscan_params
-        dbscan_params["min_area"] = 3000**2
+        dbscan_params["min_area"] = 1000**2
         clusters = rgdr.masked_spherical_dbscan(
             example_field, corr, p_val, dbscan_params
         )
@@ -184,10 +200,10 @@ class TestRGDR:
 
     @pytest.fixture(autouse=True)
     def dummy_rgdr(self):
-        return RGDR(min_area_km2=1000**2)
+        return RGDR(eps_km=600, alpha=0.05, min_area_km2=1000**2)
 
     def test_init(self):
-        rgdr = RGDR(min_area_km2=1000**2)
+        rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=1000**2)
         assert isinstance(rgdr, RGDR)
 
     def test_transform_before_fit(self, dummy_rgdr, example_field):
@@ -203,38 +219,36 @@ class TestRGDR:
         dummy_rgdr.fit(example_field, example_target)
         clustered_data = dummy_rgdr.transform(example_field)
         clustered_data = utils.cluster_labels_to_ints(clustered_data)
-        cluster_labels = np.array([-1, -2, 1])
-        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+        expected_labels = np.array([-2,  1])
+        np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
     def test_fit_transform_fits(self, example_field, example_target):
         # Ensures that after fit_transform, the rgdr object is fit.
-        rgdr = RGDR()
+        rgdr = RGDR(eps_km=600, alpha=0.05)
         _ = rgdr.fit_transform(example_field, example_target)
         assert rgdr._area is not None
 
     def test_fit_transform(self, example_field, example_target):
-        rgdr = RGDR(min_area_km2=1000**2)
+        rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=1000**2)
         clustered_data = rgdr.fit_transform(example_field, example_target)
-        cluster_labels = np.array(
-            ["lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1"]
+        expected_labels = np.array(
+            ["lag:1_cluster:-2", "lag:1_cluster:1"]
         )
-        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+        np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
     def test_fit_transform_multiple_lags(
         self, example_field_multiple_lags, example_target
     ):
-        rgdr = RGDR()
+        rgdr = RGDR(eps_km=600, alpha=0.05)
         clustered_data = rgdr.fit_transform(example_field_multiple_lags, example_target)
-        cluster_labels = np.array(
+        expected_labels = np.array(
             [
-                "lag:1_cluster:-2",
-                "lag:1_cluster:1",
-                "lag:2_cluster:-1",
-                "lag:2_cluster:1",
-                "lag:3_cluster:-1",
+               "lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1",
+               "lag:2_cluster:-1", "lag:2_cluster:1",
+               "lag:3_cluster:-1", "lag:3_cluster:1"
             ]
         )
-        np.testing.assert_array_equal(clustered_data["cluster_labels"], cluster_labels)
+        np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
     def test_corr_preview(self, dummy_rgdr, example_field, example_target):
         dummy_rgdr.preview_correlation(example_field, example_target)
