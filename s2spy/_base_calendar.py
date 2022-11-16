@@ -6,6 +6,7 @@ customized for each specific calendar.
 """
 import copy
 import re
+import warnings
 from abc import ABC
 from abc import abstractmethod
 from typing import Tuple
@@ -342,12 +343,16 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
+    #  pylint: disable=too-many-arguments
     def visualize(
         self,
         n_years: int = 3,
         interactive: bool = False,
         relative_dates: bool = False,
         add_length: bool = False,
+        add_legend: bool = True,
+        ax=None,
+        **bokeh_kwargs,
     ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
@@ -356,21 +361,28 @@ class BaseCalendar(ABC):
 
         Args:
             n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
+                default only the most recent 3 are visualized, to ensure that they
+                fit within the plot.
             interactive: If False, matplotlib will be used for the visualization. If
-                         True, bokeh will be used.
+                True, bokeh will be used.
             relative_dates: Toggles if the intervals should be displayed relative to the
-                            anchor date, or as absolute dates.
+                anchor date, or as absolute dates.
             add_length: Toggles if the frequency of the intervals should be displayed.
-                      Defaults to False (Matplotlib plotter only)
+                Defaults to False (Matplotlib plotter only).
+            add_legend: Toggles if a legend should be added to the plot (Matplotlib only)
+            ax: Matplotlib axis object to plot the visualization into.
+            **bokeh_kwargs: Keyword arguments to pass to Bokeh's plotting.Figure. See
+                https://docs.bokeh.org/en/2.4.2/docs/reference/plotting/figure.html
+                for a list of possible keyword arguments.
         """
         calendar = copy.deepcopy(self)
-        mapped = calendar._mapping is not None  # pylint: disable=protected-access
-        if not mapped:
+        ismapped = calendar._mapping is not None  # pylint: disable=protected-access
+        if not ismapped:
             calendar.map_years(2000, 2000)
             if not relative_dates:
-                print("Setting relative dates to True, as the calendar is not mapped yet.")
+                print(
+                    "Setting relative dates to True, as the calendar is not mapped yet."
+                )
                 relative_dates = True
 
         n_years = max(n_years, 1)
@@ -380,12 +392,36 @@ class BaseCalendar(ABC):
             utils.assert_bokeh_available()
             from ._bokeh_plots import bokeh_visualization  # pylint: disable=import-outside-toplevel
 
-            bokeh_visualization(
-                calendar, n_years, relative_dates, add_yticklabels=mapped
+            if ax is not None:
+                warnings.warn(
+                    "ax is only a valid keyword argument for the non-interactive "
+                    "matplotlib backend. Use Bokeh's plotting.figure instead",
+                    UserWarning
                 )
+            bokeh_visualization(
+                calendar,
+                n_years,
+                relative_dates,
+                add_yticklabels=ismapped,
+                **bokeh_kwargs
+            )
         else:
+            if bokeh_kwargs:
+                warnings.warn(
+                    "kwargs for bokeh have been passed to visualize(), but the "
+                    "matplotlib backend does not support these. Use the 'ax' kwarg "
+                    "instead to control the generated figure.",
+                    UserWarning
+                )
+
             _plot.matplotlib_visualization(
-                calendar, n_years, relative_dates, add_length, add_yticklabels=mapped
+                calendar,
+                n_years,
+                relative_dates,
+                add_length,
+                add_legend,
+                add_yticklabels=ismapped,
+                ax=ax,
             )
 
     @property

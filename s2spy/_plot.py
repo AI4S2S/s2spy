@@ -152,12 +152,15 @@ def plot_rectangles(ax: plt.Axes, data: Dict, add_length: bool):
             )
 
 
+# pylint: disable=too-many-arguments
 def matplotlib_visualization(
     calendar,
     n_years: int,
     relative_dates: bool,
     add_length: bool = False,
+    add_legend: bool = True,
     add_yticklabels: bool = True,
+    ax = None,
 ):
     """Visualization routine for generating a calendar visualization with Bokeh.
 
@@ -170,7 +173,8 @@ def matplotlib_visualization(
         add_length: If the length of every periods should be displayed. Defaults False.
         add_yticklabels: If the years should be displayed on the y-axis ticks.
     """
-    fig, ax = plt.subplots(figsize=(8,5))
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7,4))
 
     intervals = calendar.get_intervals()[:n_years]
 
@@ -188,8 +192,8 @@ def matplotlib_visualization(
     if relative_dates:
         ax.set_xlim(
             (
-                np.min(data["x"]) - data["width"][np.argmin(data["x"])] / 2 - 10,  # type: ignore
-                np.max(data["x"]) + data["width"][np.argmax(data["x"])] / 2 + 10,  # type: ignore
+                np.min(data["x"]) - data["width"][np.argmin(data["x"])] / 2 - 5,  # type: ignore
+                np.max(data["x"]) + data["width"][np.argmax(data["x"])] / 2 + 5,  # type: ignore
             )
         )
     else:
@@ -197,8 +201,8 @@ def matplotlib_visualization(
         ax.xaxis.set_major_formatter(formatter)
         ax.set_xlim(
             (
-                intervals.stack().values.min().left - pd.Timedelta(days=14),
-                intervals.stack().values.max().right + pd.Timedelta(days=14),
+                intervals.stack().values.min().left - pd.Timedelta(days=5),
+                intervals.stack().values.max().right + pd.Timedelta(days=5),
             )
         )
 
@@ -209,7 +213,8 @@ def matplotlib_visualization(
         ax.set_yticklabels([])
 
     # Add a custom legend to explain to users what the colors mean
-    legend_elements = [
+    if add_legend:
+        legend_elements = [
         Patch(
             facecolor="#ff8c00",
             label="Target interval",
@@ -220,6 +225,5 @@ def matplotlib_visualization(
             label="Precursor interval",
             linewidth=1.5,
         ),
-    ]
-    ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
-    fig.tight_layout()
+        ]
+        ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))

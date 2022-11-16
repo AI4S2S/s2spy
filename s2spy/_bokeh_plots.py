@@ -28,7 +28,11 @@ def _generate_rectangle(figure: plotting.Figure, source: plotting.ColumnDataSour
 
 
 def _bokeh_visualization(
-    calendar, n_years: int, relative_dates: bool, add_yticklabels: bool = True
+    calendar,
+    n_years: int,
+    relative_dates: bool,
+    add_yticklabels: bool = True,
+    **kwargs,
 ) -> plotting.Figure:
     """Visualization routine for generating a calendar visualization with Bokeh.
 
@@ -54,12 +58,18 @@ def _bokeh_visualization(
         # Do not show the actual intervals, as the calendar is not mapped.
         tooltips = [("Size", "@width_days days"), ("Type", "@type")]
 
+    if "width" not in kwargs:
+        kwargs["width"] = 500
+    if "height" not in kwargs:
+        kwargs["height"] = 300
+    if "tooltips" not in kwargs:
+        kwargs["tooltips"] = tooltips
+    if "x_axis_type" not in kwargs:
+        kwargs["x_axis_type"] = "linear" if relative_dates else "datetime"
+
     figure = plotting.figure(
-        width=500,
-        height=300,
-        tooltips=tooltips,
-        x_axis_type="linear" if relative_dates else "datetime",
-    )
+        **kwargs,
+        )
 
     intervals = calendar.get_intervals()[:n_years]
 
@@ -92,9 +102,17 @@ def _bokeh_visualization(
     return figure
 
 
-def bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels):
-    figure = _bokeh_visualization(calendar, n_years, relative_dates, add_yticklabels)
+def bokeh_visualization(
+    calendar,
+    n_years: int,
+    relative_dates: bool,
+    add_yticklabels: bool = True,
+    **kwargs,
+) -> None:
+    bokeh_fig = _bokeh_visualization(
+        calendar, n_years, relative_dates, add_yticklabels, **kwargs
+    )
     if "pytest" in sys.modules:  # Do not open browser if we are testing.
-        plotting.save(figure)
+        plotting.save(bokeh_fig)
     else:
-        plotting.show(figure)
+        plotting.show(bokeh_fig)
