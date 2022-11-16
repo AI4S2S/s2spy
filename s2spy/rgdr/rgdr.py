@@ -334,20 +334,29 @@ class RGDR:
     ) -> None:
         """Response Guided Dimensionality Reduction (RGDR).
 
-        Dimensionality reduction based on the correlation between precursor field and target timeseries.
+        Dimensionality reduction based on the correlation between precursor field and
+        target timeseries.
 
         Args:
             alpha (float): p-value below which the correlation is considered significant
                 enough for a location to be included in a cluster.
-            eps_km (float): The maximum distance (in km) between two samples for one to
-                be considered as in the neighborhood of the other. This is not a maximum
-                bound on the distances of points within a cluster. This is the most
-                important DBSCAN parameter to choose appropriately.
+            eps_km (float): The maximum distance (in km) between two grid cells for them
+                to be considered to be in the same cluster. This is not a maximum bound
+                on the distances between grid cells within a cluster.
+
+                The minimum appropriate value is equal to the maximum width/height of a
+                grid cell (i.e. the width of the grid cell closest to the equator).
+                The upper bound depends on when cells or clusters would still be
+                considered to be part of the same climate signal (i.e., precursor region).
+
+                Higher values can lead to fewer clusters, but also clusters in which the
+                cells of the same cluster are separated by large geographical distances.
             min_area_km2 (float): The minimum area of a cluster (in square km). Clusters
                 smaller than this minimum area will be discarded.
 
         Attributes:
-            corr_map (float): correlation coefficient map of given precursor field and target series
+            corr_map (float): correlation coefficient map of given precursor field and
+                target series.
             pval_map (float): p-values map of correlation
             cluster_map (U20): cluster labels for precursor field masked by p-values
         """
