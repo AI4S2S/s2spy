@@ -44,11 +44,11 @@ class TestPlots:
         plt.close('all')
 
     def test_visualize_without_text(self, dummy_calendars, isinteractive):
-        dummy_calendars.visualize(interactive=isinteractive, add_length=False)
+        dummy_calendars.visualize(interactive=isinteractive, show_length=False)
         plt.close('all')
 
     def test_visualize_with_text(self, dummy_calendars, isinteractive):
-        dummy_calendars.visualize(interactive=isinteractive, add_length=True)
+        dummy_calendars.visualize(interactive=isinteractive, show_length=True)
         plt.close('all')
 
     def test_visualize_unmapped(self, isinteractive):
