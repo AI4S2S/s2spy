@@ -395,7 +395,8 @@ class BaseCalendar(ABC):
             if ax is not None:
                 warnings.warn(
                     "ax is only a valid keyword argument for the non-interactive "
-                    "matplotlib backend. Use Bokeh's plotting.figure instead",
+                    "matplotlib backend. Bokeh's figure can be controlled by passing "
+                    "Bokeh Figure keyword arguments (e.g. width=800).",
                     UserWarning
                 )
             bokeh_visualization(
