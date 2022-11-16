@@ -82,7 +82,6 @@ class TestPlotsSingle:
             dummy_calendar.visualize(interactive=False, width=800)
             plt.close('all')
 
-
     def test_mpl_no_legend(self, dummy_calendar):
         dummy_calendar.visualize(interactive=False, add_legend=False)
         plt.close('all')

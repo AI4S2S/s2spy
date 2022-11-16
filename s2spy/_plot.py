@@ -119,13 +119,13 @@ def generate_plot_data(
     }
 
 
-def plot_rectangles(ax: plt.Axes, data: Dict, add_length: bool):
+def plot_rectangles(ax: plt.Axes, data: Dict, show_length: bool):
     """Generates rectangles from the input data.
 
     Args:
         ax: Axis in which the rectangles should be shown.
         data: Data dictionary containing x, y, width, height, color and width_days.
-        add_length: If the length of each interval should be displayed as text.
+        show_length: If the length of each interval should be displayed as text.
     """
     for _, row in pd.DataFrame(data).iterrows():  # type: ignore
         ax.add_patch(
@@ -140,7 +140,7 @@ def plot_rectangles(ax: plt.Axes, data: Dict, add_length: bool):
             )
         )
 
-        if add_length:
+        if show_length:
             ax.text(
                 x=row["x"],
                 y=row["y"],
@@ -157,7 +157,7 @@ def matplotlib_visualization(
     calendar,
     n_years: int,
     relative_dates: bool,
-    add_length: bool = False,
+    show_length: bool = False,
     add_legend: bool = True,
     add_yticklabels: bool = True,
     ax = None,
@@ -170,7 +170,7 @@ def matplotlib_visualization(
         relative_dates: If False, absolute dates will be used. If True, each anchor year
                         is aligned by the anchor date, so that all anchor years line up
                         vertically.
-        add_length: If the length of every periods should be displayed. Defaults False.
+        show_length: If the length of every periods should be displayed. Defaults False.
         add_yticklabels: If the years should be displayed on the y-axis ticks.
     """
     if ax is None:
@@ -184,7 +184,7 @@ def matplotlib_visualization(
             relative_dates=relative_dates,
             year_intervals=year_intervals,
         )
-        plot_rectangles(ax, data, add_length)
+        plot_rectangles(ax, data, show_length)
 
     ax.set_xlabel("Days before anchor date" if relative_dates else "Date")
     ax.set_ylabel("Anchor year")

@@ -349,7 +349,7 @@ class BaseCalendar(ABC):
         n_years: int = 3,
         interactive: bool = False,
         relative_dates: bool = False,
-        add_length: bool = False,
+        show_length: bool = False,
         add_legend: bool = True,
         ax=None,
         **bokeh_kwargs,
@@ -367,7 +367,7 @@ class BaseCalendar(ABC):
                 True, bokeh will be used.
             relative_dates: Toggles if the intervals should be displayed relative to the
                 anchor date, or as absolute dates.
-            add_length: Toggles if the frequency of the intervals should be displayed.
+            show_length: Toggles if the frequency of the intervals should be displayed.
                 Defaults to False (Matplotlib plotter only).
             add_legend: Toggles if a legend should be added to the plot (Matplotlib only)
             ax: Matplotlib axis object to plot the visualization into.
@@ -376,14 +376,17 @@ class BaseCalendar(ABC):
                 for a list of possible keyword arguments.
         """
         calendar = copy.deepcopy(self)
-        ismapped = calendar._mapping is not None  # pylint: disable=protected-access
-        if not ismapped:
+        if calendar._mapping is None:  # pylint: disable=protected-access
             calendar.map_years(2000, 2000)
             if not relative_dates:
                 print(
-                    "Setting relative dates to True, as the calendar is not mapped yet."
+                    "Setting relative_dates=True. To see absolute dates, first call "
+                    "calendar.map_years or calendar.map_data"
                 )
                 relative_dates = True
+            add_yticklabels=False
+        else:
+            add_yticklabels=True
 
         n_years = max(n_years, 1)
         n_years = min(n_years, len(calendar.get_intervals().index))
@@ -403,7 +406,7 @@ class BaseCalendar(ABC):
                 calendar,
                 n_years,
                 relative_dates,
-                add_yticklabels=ismapped,
+                add_yticklabels,
                 **bokeh_kwargs
             )
         else:
@@ -419,9 +422,9 @@ class BaseCalendar(ABC):
                 calendar,
                 n_years,
                 relative_dates,
-                add_length,
+                show_length,
                 add_legend,
-                add_yticklabels=ismapped,
+                add_yticklabels,
                 ax=ax,
             )
 
