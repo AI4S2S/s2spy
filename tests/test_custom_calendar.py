@@ -126,7 +126,7 @@ class TestCustomCalendar:
         )
         assert np.array_equal(calendar.flat, expected)
 
-    def test_non_day_interval_length(self, dummy_calendar):
+    def test_non_day_interval_length(self):
         cal = CustomCalendar(anchor="December")
         cal.add_interval("target", "1M")
         cal.add_interval("precursor", "10M")
