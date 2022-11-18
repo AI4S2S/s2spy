@@ -46,16 +46,11 @@ class TestCustomCalendar:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
         cal = CustomCalendar(anchor="12-31")
-        # create target periods
-        target_1 = TargetPeriod("20d")
-        # create precursor periods
-        precursor_1 = PrecursorPeriod("10d")
         # append building blocks
-        cal.append(target_1)
-        cal.append(precursor_1)
+        cal.add_interval("target", "20d")
+        cal.add_interval("precursor", "10d")
         # map years
         cal = cal.map_years(2021, 2021)
-
         return cal
 
     def test_init(self):
@@ -87,8 +82,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_append(self, dummy_calendar):
-        target_2 = TargetPeriod("30d")
-        dummy_calendar.append(target_2)
+        dummy_calendar.add_interval("target", "30d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-21", "2021-12-31", closed="left"),
@@ -98,8 +92,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_gap_intervals(self, dummy_calendar):
-        target_2 = TargetPeriod("20d", "10d")
-        dummy_calendar.append(target_2)
+        dummy_calendar.add_interval("target", "20d", gap="10d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-21", "2021-12-31", closed="left"),
@@ -109,8 +102,7 @@ class TestCustomCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_overlap_intervals(self, dummy_calendar):
-        precursor_2 = PrecursorPeriod("10d", "-5d")
-        dummy_calendar.append(precursor_2)
+        dummy_calendar.add_interval("precursor", "10d", gap="-5d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-16", "2021-12-26", closed="left"),
@@ -133,6 +125,17 @@ class TestCustomCalendar:
              interval("2020-12-31", "2021-01-20", closed="left"),]
         )
         assert np.array_equal(calendar.flat, expected)
+
+    def test_non_day_interval_length(self, dummy_calendar):
+        cal = CustomCalendar(anchor="December")
+        cal.add_interval("target", "1M")
+        cal.add_interval("precursor", "10M")
+        cal.map_years(2020, 2020)
+        expected = np.array(
+            [interval("2020-02-01", "2020-12-01", closed="left"),
+             interval("2020-12-01", "2021-01-01", closed="left")]
+        )
+        assert np.array_equal(cal.flat, expected)
 
     # The following tests only check if the plotter completely fails,
     # visuals are not checked.

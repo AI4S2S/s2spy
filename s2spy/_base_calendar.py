@@ -9,7 +9,6 @@ from abc import ABC
 from abc import abstractmethod
 from typing import Tuple
 from typing import Union
-import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas.tseries.offsets import DateOffset
@@ -29,14 +28,12 @@ class BaseCalendar(ABC):
     @abstractmethod
     def __init__(
         self,
-        anchor,
-    ):
+        anchor: str,
+    ) -> None:
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = 0
-        self._total_length_precursor = 0
 
         self.n_targets = 0
         self._max_lag: int = 0
@@ -164,6 +161,9 @@ class BaseCalendar(ABC):
         Returns:
             int: Number of years that need to be skipped.
         """
+        if self._allow_overlap:
+            return 0
+
         proto_year = 2000
         skip_years = 0
 
