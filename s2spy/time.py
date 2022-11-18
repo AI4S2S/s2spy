@@ -324,7 +324,7 @@ class WeeklyCalendar(AdventCalendar):
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    def __init__(self, anchor: str):
+    def __init__(self, anchor: str, allow_overlap: bool = False):
         """Instantiate a basic container for building calendar using basic blocks.
 
         This is a highly flexible calendar which allows the user to build their own
@@ -342,6 +342,9 @@ class CustomCalendar(BaseCalendar):
                     - "Www" for a week number, e.g. "W05" for the fifth week of the year.
                     - "Www-D" for a week number plus day of week. E.g. "W01-4" for the
                         first thursday of the year.
+            allow_overlap: If overlapping intervals between years is allowed or not.
+                Default behaviour is False, which means that anchor years will be
+                skipped to avoid data being shared between anchor years.
 
         Attributes:
             n_targets (int): Number of targets that inferred from the appended
@@ -356,13 +359,12 @@ class CustomCalendar(BaseCalendar):
             CustomCalendar(n_targets=0)
         """
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
+        self._allow_overlap = allow_overlap
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
         self._total_length_target = 0
         self._total_length_precursor = 0
         self.n_targets = 0
-
-        self._allow_overlap: bool = False
 
     def add_interval(
         self,

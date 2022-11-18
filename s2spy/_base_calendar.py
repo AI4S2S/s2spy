@@ -99,17 +99,8 @@ class BaseCalendar(ABC):
         # pylint: disable=protected-access
         if period_block._target:
             self._targets.append(period_block)
-            # count length
-            self._total_length_target += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
-            )
-
         else:
             self._precursors.append(period_block)
-            # count length
-            self._total_length_precursor += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
-            )
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -173,9 +164,25 @@ class BaseCalendar(ABC):
         Returns:
             int: Number of years that need to be skipped.
         """
-        years = (self._total_length_target + self._total_length_precursor) / 365
+        proto_year = 2000
+        skip_years = 0
 
-        return 0 if self._allow_overlap else int(np.ceil(years).astype(int) - 1)
+        start_calendar = self._get_anchor(proto_year)
+        for prec in self._precursors:
+            start_calendar -= prec.gap
+            start_calendar -= prec.length
+
+        while True:
+            prev_end_calendar = self._get_anchor(proto_year - 1 - skip_years)
+            for target in self._targets:
+                prev_end_calendar += target.gap
+                prev_end_calendar += target.length
+            if prev_end_calendar > start_calendar:
+                skip_years += 1
+            else:
+                break
+
+        return skip_years
 
     def set_max_lag(self, max_lag: int, allow_overlap: bool = False) -> None:
         """Set the maximum lag of a calendar.
