@@ -450,6 +450,7 @@ class RGDR:
         timeseries: xr.DataArray,
         i_interval: Optional[int] = None,
         ax: Optional[plt.Axes] = None,
+        **kwargs
     ) -> Type[mpl.collections.QuadMesh]:
         """Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
@@ -481,7 +482,7 @@ class RGDR:
 
         clusters = utils.cluster_labels_to_ints(clusters)
 
-        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax)
+        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax, **kwargs)
 
     def fit(self, precursor: xr.DataArray, timeseries: xr.DataArray):
         """Fits RGDR clusters to precursor data.
