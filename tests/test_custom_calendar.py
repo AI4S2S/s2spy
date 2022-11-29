@@ -137,6 +137,19 @@ class TestCustomCalendar:
         )
         assert np.array_equal(cal.flat, expected)
 
+    @pytest.mark.parametrize("allow_overlap, expected_anchors",
+                             ((True, [2022, 2021, 2020]),
+                              (False, [2022, 2020])))
+    def test_allow_overlap(self, allow_overlap, expected_anchors):
+        cal = CustomCalendar(anchor="12-31", allow_overlap=allow_overlap)
+        cal.add_interval("target", length="30d")
+        cal.add_interval("precursor", length="365d")
+        cal.map_years(2020, 2022)
+        assert np.array_equal(
+            expected_anchors,
+            cal.get_intervals().index.values
+        )
+
     # The following tests only check if the plotter completely fails,
     # visuals are not checked.
     def test_visualize(self, dummy_calendar):
