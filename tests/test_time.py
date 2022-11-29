@@ -1,5 +1,6 @@
 """Tests for the s2spy.time module.
 """
+from typing import Literal
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,9 +10,9 @@ from s2spy.time import MonthlyCalendar
 from s2spy.time import WeeklyCalendar
 
 
-def interval(start, end, closed="left"):
+def interval(start, end, closed: Literal["left", "right", "both", "neither"] = "left"):
     """Shorthand for more readable tests."""
-    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed = closed)
+    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed=closed)
 
 
 class TestAdventCalendar:
@@ -63,15 +64,6 @@ class TestAdventCalendar:
         with pytest.raises(ValueError):
             cal.set_max_lag(-1)
 
-    def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=False)
-
-    def test_visualize_relative_dates(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=True)
-
-    def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_length=True)
-
 
 class TestMonthlyCalendar:
     """Test MonthlyCalendar methods."""
@@ -110,15 +102,6 @@ class TestMonthlyCalendar:
         with pytest.raises(ValueError):
             MonthlyCalendar(freq="2d")
 
-    def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=False)
-
-    def test_visualize_relative_dates(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=True)
-
-    def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_length=True)
-
 
 class TestWeeklyCalendar:
     """Test WeeklyCalendar methods."""
@@ -156,15 +139,6 @@ class TestWeeklyCalendar:
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
             WeeklyCalendar(anchor="W40", freq="2d")
-
-    def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=False)
-
-    def test_visualize_relative_dates(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=True)
-
-    def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_length=True)
 
 
 class TestMap:
