@@ -1,5 +1,6 @@
 """Tests for the s2spy.time.CustomCalendar module.
 """
+from typing import Literal
 import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import DateOffset
@@ -9,10 +10,9 @@ from s2spy.time import PrecursorPeriod
 from s2spy.time import TargetPeriod
 
 
-def interval(start, end, closed="right"):
+def interval(start, end, closed: Literal["left", "right", "both", "neither"] = "left"):
     """Shorthand for more readable tests."""
-    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed = closed)
-
+    return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed=closed)
 
 class TestPeriod:
     """Test Period objects."""
@@ -149,14 +149,3 @@ class TestCustomCalendar:
             expected_anchors,
             cal.get_intervals().index.values
         )
-
-    # The following tests only check if the plotter completely fails,
-    # visuals are not checked.
-    def test_visualize(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=False)
-
-    def test_visualize_relative_dates(self, dummy_calendar):
-        dummy_calendar.visualize(relative_dates=True)
-
-    def test_visualize_with_text(self, dummy_calendar):
-        dummy_calendar.visualize(add_length=True)

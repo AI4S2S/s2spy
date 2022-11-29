@@ -4,7 +4,9 @@ The BaseCalendar includes most methods required for all calendar operations, exc
 a set of abstract methods (e.g., __init__, _get_anchor, ...). These will have to be
 customized for each specific calendar.
 """
+import copy
 import re
+import warnings
 from abc import ABC
 from abc import abstractmethod
 from typing import Tuple
@@ -348,51 +350,90 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
+    #  pylint: disable=too-many-arguments
     def visualize(
         self,
         n_years: int = 3,
+        interactive: bool = False,
         relative_dates: bool = False,
-        add_length: bool = False,
+        show_length: bool = False,
+        add_legend: bool = True,
+        ax=None,
+        **bokeh_kwargs,
     ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
+        Note: The interactive visualization requires the `bokeh` package to be installed
+        in the active Python environment.
+
         Args:
-            add_length: Toggles if the frequency of the intervals should be displayed.
-                      Defaults to False (Matplotlib plotter only)
             n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
+                default only the most recent 3 are visualized, to ensure that they
+                fit within the plot.
+            interactive: If False, matplotlib will be used for the visualization. If
+                True, bokeh will be used.
+            relative_dates: Toggles if the intervals should be displayed relative to the
+                anchor date, or as absolute dates.
+            show_length: Toggles if the frequency of the intervals should be displayed.
+                Defaults to False (Matplotlib plotter only).
+            add_legend: Toggles if a legend should be added to the plot (Matplotlib only)
+            ax: Matplotlib axis object to plot the visualization into.
+            **bokeh_kwargs: Keyword arguments to pass to Bokeh's plotting.Figure. See
+                https://docs.bokeh.org/en/2.4.2/docs/reference/plotting/figure.html
+                for a list of possible keyword arguments.
         """
+        calendar = copy.deepcopy(self)
+        if calendar._mapping is None:  # pylint: disable=protected-access
+            calendar.map_years(2000, 2000)
+            if not relative_dates:
+                print(
+                    "Setting relative_dates=True. To see absolute dates, first call "
+                    "calendar.map_years or calendar.map_data"
+                )
+                relative_dates = True
+            add_yticklabels=False
+        else:
+            add_yticklabels=True
+
         n_years = max(n_years, 1)
-        n_years = min(n_years, len(self.get_intervals().index))
-        _plot.matplotlib_visualization(self, n_years, relative_dates, add_length)
+        n_years = min(n_years, len(calendar.get_intervals().index))
 
-    def visualize_interactive(
-        self,
-        relative_dates: bool,
-        n_years: int = 3,
-    ) -> None:
-        """Plots a visualization of the current calendar setup using `bokeh`.
+        if interactive:
+            utils.assert_bokeh_available()
+            from ._bokeh_plots import bokeh_visualization  # pylint: disable=import-outside-toplevel
 
-        Note: Requires the `bokeh` package to be installed in the active enviroment.
+            if ax is not None:
+                warnings.warn(
+                    "ax is only a valid keyword argument for the non-interactive "
+                    "matplotlib backend. Bokeh's figure can be controlled by passing "
+                    "Bokeh Figure keyword arguments (e.g. width=800).",
+                    UserWarning
+                )
+            bokeh_visualization(
+                calendar,
+                n_years,
+                relative_dates,
+                add_yticklabels,
+                **bokeh_kwargs
+            )
+        else:
+            if bokeh_kwargs:
+                warnings.warn(
+                    "kwargs for bokeh have been passed to visualize(), but the "
+                    "matplotlib backend does not support these. Use the 'ax' kwarg "
+                    "instead to control the generated figure.",
+                    UserWarning
+                )
 
-        Args:
-            relative_dates: If False, absolute dates will be used. If True, each anchor
-                            year is aligned by the anchor date, so that all anchor years
-                            line up vertically.
-            n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
-
-        Returns:
-            None
-        """
-        if utils.bokeh_available():
-            # pylint: disable=import-outside-toplevel
-            from ._bokeh_plots import bokeh_visualization
-
-            return bokeh_visualization(self, n_years, relative_dates)
-        return None
+            _plot.matplotlib_visualization(
+                calendar,
+                n_years,
+                relative_dates,
+                show_length,
+                add_legend,
+                add_yticklabels,
+                ax=ax,
+            )
 
     @property
     def flat(self) -> pd.DataFrame:

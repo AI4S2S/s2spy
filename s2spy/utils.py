@@ -123,12 +123,11 @@ def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
     return stacked.unstack("coord")
 
 
-def bokeh_available():
-    """Util that attempts to load the optional module bokeh"""
+def assert_bokeh_available():
+    """Util that attempts to load the optional module bokeh."""
     try:
         import bokeh as _  # pylint: disable=import-outside-toplevel
 
-        return True
     except ImportError as e:
         raise ImportError(
             "Could not import the `bokeh` module.\nPlease install this"
