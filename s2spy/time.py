@@ -49,6 +49,7 @@ Example:
 """
 import calendar as pycalendar
 import re
+from typing import Literal
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -70,7 +71,12 @@ month_mapping_dict = {
 class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
 
-    def __init__(self, anchor: str, freq: str = "7d", n_targets: int = 1,) -> None:
+    def __init__(
+        self,
+        anchor: str,
+        freq: str = "7d",
+        n_targets: int = 1,
+    ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
         Set up the calendar with given freq ending exactly on the anchor date.
@@ -157,7 +163,10 @@ class MonthlyCalendar(AdventCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
 
     def __init__(
-        self, anchor: str = "Dec", freq: str = "1M", n_targets: int = 1,
+        self,
+        anchor: str = "Dec",
+        freq: str = "1M",
+        n_targets: int = 1,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -248,7 +257,12 @@ class WeeklyCalendar(AdventCalendar):
     """Countdown time to anticipated anchor week number, in steps of calendar weeks."""
 
     # pylint: disable=super-init-not-called
-    def __init__(self, anchor: str, freq: str = "1W", n_targets: int = 1,) -> None:
+    def __init__(
+        self,
+        anchor: str,
+        freq: str = "1W",
+        n_targets: int = 1,
+    ) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
         Set up the calendar with given freq ending exactly on the anchor week.
@@ -310,7 +324,7 @@ class WeeklyCalendar(AdventCalendar):
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    def __init__(self, anchor: str):
+    def __init__(self, anchor: str, allow_overlap: bool = False):
         """Instantiate a basic container for building calendar using basic blocks.
 
         This is a highly flexible calendar which allows the user to build their own
@@ -328,6 +342,9 @@ class CustomCalendar(BaseCalendar):
                     - "Www" for a week number, e.g. "W05" for the fifth week of the year.
                     - "Www-D" for a week number plus day of week. E.g. "W01-4" for the
                         first thursday of the year.
+            allow_overlap: If overlapping intervals between years is allowed or not.
+                Default behaviour is False, which means that anchor years will be
+                skipped to avoid data being shared between anchor years.
 
         Attributes:
             n_targets (int): Number of targets that inferred from the appended
@@ -342,20 +359,37 @@ class CustomCalendar(BaseCalendar):
             CustomCalendar(n_targets=0)
         """
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
+        self._allow_overlap = allow_overlap
         self._targets: list[TargetPeriod] = []
         self._precursors: list[PrecursorPeriod] = []
         self._total_length_target = 0
         self._total_length_precursor = 0
         self.n_targets = 0
 
-        self._allow_overlap: bool = False
+    def add_interval(
+        self,
+        interval_type: Literal["target", "precursor"],
+        length: str,
+        gap: str = "0d",
+    ) -> None:
+        """Add an interval to the calendar. The interval can be a target or a precursor.
 
-    def append(self, period_block):
-        """Append target/precursor periods to the calendar.
-
-        Handler of _append method.
+        Args:
+            interval_type: Either a 'target' or 'precursor' interval.
+            length: The length of the interval, in a format of '5d' for five days, '2W'
+                for two weeks, or '1M' for one month.
+            gap: The gap between this interval and the preceding target/precursor
+                interval. Same format as the length argument.
         """
-        self._append(period_block)
+        if interval_type == "target":
+            self._append(TargetPeriod(length, gap))
+        elif interval_type == "precursor":
+            self._append(PrecursorPeriod(length, gap))
+        else:
+            raise ValueError(
+                f"Type '{interval_type}' is not a valid interval type. Please "
+                "choose between 'target' and 'precursor'"
+            )
 
     def show(self) -> pd.DataFrame:
         """Displays the intervals the Calendar will generate for the current setup.

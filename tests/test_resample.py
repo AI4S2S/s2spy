@@ -8,8 +8,6 @@ import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
 from s2spy.time import CustomCalendar
-from s2spy.time import PrecursorPeriod
-from s2spy.time import TargetPeriod
 from s2spy.time import resample
 
 
@@ -200,9 +198,9 @@ class TestResample:
         series = pd.Series(test_data, index=time_index, name="data1")
 
         calendar = CustomCalendar(anchor="10-05")
-        calendar.append(TargetPeriod("60d"))
-        calendar.append(PrecursorPeriod("60d"))
-        calendar.append(PrecursorPeriod("60d", gap="-60d"))
+        calendar.add_interval("target", "60d")
+        calendar.add_interval("precursor", "60d")
+        calendar.add_interval("precursor", "60d", gap="-60d")
 
         calendar.map_to_data(series)
         resampled_data = resample(calendar, series)
