@@ -296,7 +296,7 @@ class BaseCalendar(ABC):
 
     def _set_mapping(self, mapping):
         if mapping is None:
-            pass
+            pass  # NOSONAR
         elif mapping[0] == "years":
             self.map_years(mapping[1], mapping[2])
         elif mapping[0] == "data":
