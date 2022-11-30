@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
-from s2spy.time import CustomCalendar
+from s2spy.time import Calendar
 from s2spy.time import resample
 
 
@@ -198,7 +198,7 @@ class TestResample:
         test_data = np.random.random(len(time_index))
         series = pd.Series(test_data, index=time_index, name="data1")
 
-        calendar = CustomCalendar(anchor="10-05")
+        calendar = Calendar(anchor="10-05")
         calendar.add_interval("target", "60d")
         calendar.add_interval("precursor", "60d")
         calendar.add_interval("precursor", "60d", gap="-60d")

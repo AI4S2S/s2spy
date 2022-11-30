@@ -1,11 +1,11 @@
-"""Tests for the s2spy.time.CustomCalendar module.
+"""Tests for the s2spy.time.Calendar module.
 """
 from typing import Literal
 import numpy as np
 import pandas as pd
 import pytest
 from pandas.tseries.offsets import DateOffset
-from s2spy.time import CustomCalendar
+from s2spy.time import Calendar
 from s2spy.time import Interval
 
 
@@ -57,12 +57,12 @@ class TestInterval:
         _ = eval(repr(target))
 
 
-class TestCustomCalendar:
-    """Test CustomCalendar methods."""
+class TestCalendar:
+    """Test the (custom) Calendar methods."""
 
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
-        cal = CustomCalendar(anchor="12-31")
+        cal = Calendar(anchor="12-31")
         # append building blocks
         cal.add_interval("target", "20d")
         cal.add_interval("precursor", "10d")
@@ -71,12 +71,12 @@ class TestCustomCalendar:
         return cal
 
     def test_init(self):
-        cal = CustomCalendar(anchor="12-31")
-        assert isinstance(cal, CustomCalendar)
+        cal = Calendar(anchor="12-31")
+        assert isinstance(cal, Calendar)
 
     def test_repr_basic(self):
-        cal = CustomCalendar(anchor="12-31")
-        expected = "CustomCalendar(anchor='12-31',allow_overlap=False,mapping=None,intervals=None)"
+        cal = Calendar(anchor="12-31")
+        expected = "Calendar(anchor='12-31',allow_overlap=False,mapping=None,intervals=None)"
         calrepr = repr(cal)
 
         # Test that the repr can be pasted back into the terminal
@@ -87,7 +87,7 @@ class TestCustomCalendar:
         assert calrepr == expected
 
     def test_repr_reproducible(self):
-        cal = CustomCalendar(anchor="12-31", allow_overlap=True)
+        cal = Calendar(anchor="12-31", allow_overlap=True)
         cal.add_interval("target", "10d")
         cal.map_years(2020, 2022)
         repr_dict = eval(repr(cal)).__dict__
@@ -107,7 +107,7 @@ class TestCustomCalendar:
         assert repr(dummy_calendar.show()).replace(" ", "") == expected_calendar_repr
 
     def test_no_intervals(self):
-        cal = CustomCalendar(anchor="12-31")
+        cal = Calendar(anchor="12-31")
         with pytest.raises(ValueError):
             cal.get_intervals()
 
@@ -164,7 +164,7 @@ class TestCustomCalendar:
         assert np.array_equal(calendar.flat, expected)
 
     def test_non_day_interval_length(self):
-        cal = CustomCalendar(anchor="December")
+        cal = Calendar(anchor="December")
         cal.add_interval("target", "1M")
         cal.add_interval("precursor", "10M")
         cal.map_years(2020, 2020)
@@ -178,7 +178,7 @@ class TestCustomCalendar:
                              ((True, [2022, 2021, 2020]),
                               (False, [2022, 2020])))
     def test_allow_overlap(self, allow_overlap, expected_anchors):
-        cal = CustomCalendar(anchor="12-31", allow_overlap=allow_overlap)
+        cal = Calendar(anchor="12-31", allow_overlap=allow_overlap)
         cal.add_interval("target", length="30d")
         cal.add_interval("precursor", length="365d")
         cal.map_years(2020, 2022)

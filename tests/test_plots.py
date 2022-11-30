@@ -12,9 +12,9 @@ class TestPlots:
     def dummy_bokeh_file(self, tmp_path):
         bokeh_io.output_file(tmp_path / "test.html")
 
-    custom_cal_pre = time.CustomCalendar(anchor="12-31")
+    custom_cal_pre = time.Calendar(anchor="12-31")
     custom_cal_pre.add_interval("precursor", "10d")
-    custom_cal_tar = time.CustomCalendar(anchor="12-31")
+    custom_cal_tar = time.Calendar(anchor="12-31")
     custom_cal_tar.add_interval("target", "10d")
 
     calendars = [

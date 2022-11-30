@@ -432,7 +432,7 @@ class WeeklyCalendar(AdventCalendar):
         return self.get_intervals().applymap(self._interval_as_weeknr)
 
 
-class CustomCalendar(BaseCalendar):
+class Calendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
     def __init__(
