@@ -9,14 +9,16 @@ import re
 import warnings
 from abc import ABC
 from abc import abstractmethod
-from typing import Tuple
+from typing import List
 from typing import Literal
+from typing import Tuple
 from typing import Union
 import pandas as pd
 import xarray as xr
 from pandas.tseries.offsets import DateOffset
 from . import _plot
 from . import utils
+
 
 MappingYears = Tuple[Literal["years"], int, int]
 MappingData = Tuple[Literal["data"], pd.Timestamp, pd.Timestamp]
@@ -37,8 +39,8 @@ class BaseCalendar(ABC):
     ) -> None:
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
-        self.targets: list[Interval] = []
-        self.precursors: list[Interval] = []
+        self.targets: List[Interval] = []
+        self.precursors: List[Interval] = []
 
         self._first_year: Union[None, int] = None
         self._last_year: Union[None, int] = None

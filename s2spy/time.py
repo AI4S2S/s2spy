@@ -49,17 +49,18 @@ Example:
 """
 import calendar as pycalendar
 import re
+from os import linesep
+from typing import List
 from typing import Literal
 from typing import Tuple
 from typing import Union
-from os import linesep
 import numpy as np
 import pandas as pd
 import xarray as xr
 from ._base_calendar import BaseCalendar
 from ._base_calendar import Interval
-from ._base_calendar import MappingYears
 from ._base_calendar import MappingData
+from ._base_calendar import MappingYears
 from ._resample import resample  # pylint: disable=unused-import
 
 
@@ -442,7 +443,7 @@ class CustomCalendar(BaseCalendar):
                        Tuple[Literal["years"], int, int],
                        Tuple[Literal["data"], pd.Timestamp, pd.Timestamp]
                        ] = None,
-        intervals: Union[None, list[Interval]] = None,
+        intervals: Union[None, List[Interval]] = None,
         ):
         """Instantiate a basic container for building calendar using basic blocks.
 
@@ -487,8 +488,8 @@ class CustomCalendar(BaseCalendar):
         """
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._allow_overlap = allow_overlap
-        self.targets: list[Interval] = []
-        self.precursors: list[Interval] = []
+        self.targets: List[Interval] = []
+        self.precursors: List[Interval] = []
 
         self._first_year: Union[None, int] = None
         self._last_year: Union[None, int] = None

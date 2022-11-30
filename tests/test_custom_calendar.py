@@ -3,8 +3,8 @@
 from typing import Literal
 import numpy as np
 import pandas as pd
-from pandas.tseries.offsets import DateOffset
 import pytest
+from pandas.tseries.offsets import DateOffset
 from s2spy.time import CustomCalendar
 from s2spy.time import Interval
 
