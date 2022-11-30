@@ -10,6 +10,7 @@ import warnings
 from abc import ABC
 from abc import abstractmethod
 from typing import Tuple
+from typing import Literal
 from typing import Union
 import pandas as pd
 import xarray as xr
@@ -34,12 +35,20 @@ class BaseCalendar(ABC):
     ) -> None:
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
-        self._targets: list[TargetPeriod] = []
-        self._precursors: list[PrecursorPeriod] = []
+        self.targets: list[Interval] = []
+        self.precursors: list[Interval] = []
+
+        self._first_year: Union[None, int] = None
+        self._last_year: Union[None, int] = None
 
         self.n_targets = 0
         self._max_lag: int = 0
         self._allow_overlap: bool = False
+
+    @property
+    def anchor(self):
+        "Makes anchor a property so it shows up in the repr."
+        return self._anchor
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
@@ -93,13 +102,13 @@ class BaseCalendar(ABC):
             )
         return anchor_str, fmt
 
-    def _append(self, period_block):
+    def _append(self, interval):
         """Append target/precursor periods to the calendar."""
         # pylint: disable=protected-access
-        if period_block._target:
-            self._targets.append(period_block)
+        if interval.is_target:
+            self.targets.append(interval)
         else:
-            self._precursors.append(period_block)
+            self.precursors.append(interval)
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -118,10 +127,9 @@ class BaseCalendar(ABC):
             Pandas Series filled with Intervals of the calendar's frequency, counting
             backwards from the calendar's achor.
         """
-        intervals_target = self._concatenate_periods(year, self._targets, True)
-        intervals_precursor = self._concatenate_periods(year, self._precursors, False)
+        intervals_target = self._concatenate_periods(year, self.targets, True)
+        intervals_precursor = self._concatenate_periods(year, self.precursors, False)
 
-        self.n_targets = len(intervals_target)
         year_intervals = intervals_precursor[::-1] + intervals_target
 
         # turn the list of intervals into pandas series
@@ -170,13 +178,13 @@ class BaseCalendar(ABC):
         skip_years = 0
 
         start_calendar = self._get_anchor(proto_year)
-        for prec in self._precursors:
+        for prec in self.precursors:
             start_calendar -= prec.gap
             start_calendar -= prec.length
 
         while True:
             prev_end_calendar = self._get_anchor(proto_year - 1 - skip_years)
-            for target in self._targets:
+            for target in self.targets:
                 prev_end_calendar += target.gap
                 prev_end_calendar += target.length
             if prev_end_calendar > start_calendar:
@@ -231,6 +239,10 @@ class BaseCalendar(ABC):
         self._first_year = start
         self._last_year = end
         self._mapping = "years"
+
+        self._first_timestamp = None
+        self._last_timestamp = None
+
         return self
 
     def map_to_data(
@@ -261,12 +273,14 @@ class BaseCalendar(ABC):
             self._last_timestamp = pd.Timestamp(input_data.time.max().values)
 
         self._mapping = "data"
+        self._first_year = None
+        self._last_year = None
 
         return self
 
     def _set_year_range_from_timestamps(self):
-        min_year = self._first_timestamp.year
-        max_year = self._last_timestamp.year
+        min_year = self._first_timestamp.year  # type: ignore
+        max_year = self._last_timestamp.year  # type: ignore
 
         # ensure that the input data could always cover the advent calendar
         # last date check
@@ -323,7 +337,7 @@ class BaseCalendar(ABC):
             self._set_year_range_from_timestamps()
 
         year_range = range(
-            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
+            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)  # type: ignore
         )
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
@@ -441,28 +455,76 @@ class BaseCalendar(ABC):
         return self.get_intervals().stack()  # type: ignore
 
 
-class Period(ABC):
-    """Basic construction element of calendar for defining target period."""
+class Interval:
+    """Basic construction element of calendar for defining precursors and targets."""
 
-    def __init__(self, length: str, gap: str = "0d") -> None:
+    def __init__(
+        self,
+        role: Literal["target", "precursor"],
+        length: Union[str, dict],
+        gap: Union[str, dict] = "0d",
+    )-> None:
+        """This is the basic construction element of the calendar.
 
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = False
+        The Interval is characterised by its type (either target or precursor), its
+        length and the gap between it and the previous interval of its type (or the
+        anchor date, if the interval is the first target/first precursor).
+
+        Args:
+            role: The type of interval. Either "target" or "precursor".
+            length: The length of the interval. This can either be a pandas-like
+                frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
+                compatible dictionary such as {days=10}, {weeks=2}, or
+                {months=1, weeks=2}.
+            gap: The gap between the previous interval and this interval. Valid inputs
+                are the same as the length keyword argument. Defaults to "0d".
+        """
+        self._length_input = length
+        self._gap_input = gap
+        self.length = length
+        self.gap = gap
+        self._role = role
+        self._target = role == "target"
+
         # TO DO: support lead_time
         # self.lead_time = lead_time
 
     @property
+    def is_target(self):
+        return self._target
+
+    @property
+    def role(self):
+        "Returns the type of interval."
+        return self._role
+
+    @property
     def length(self):
-        """Return the length of period."""
+        "Returns the length of the interval, as a pandas.DateOffset."
         return self._length
+
+    @length.setter
+    def length(self, value: Union[str, dict]):
+        self._length_input = value
+        if isinstance(value, str):
+            self._length = DateOffset(**self._parse_timestring(value))
+        else:
+            self._length = DateOffset(**value)
 
     @property
     def gap(self):
-        """Return the gap of period."""
+        """Returns the gap of the interval, as a pandas.DateOffset."""
         return self._gap
 
-    def _parse_time(self, time_str):
+    @gap.setter
+    def gap(self, value: Union[str, dict]):
+        self._gap_input = value
+        if isinstance(value, str):
+            self._gap = DateOffset(**self._parse_timestring(value))
+        else:
+            self._gap = DateOffset(**value)
+
+    def _parse_timestring(self, time_str):
         """Parses the user-input time strings.
 
         Args:
@@ -482,20 +544,13 @@ class Period(ABC):
 
         return time_dict
 
+    def __repr__(self):
+        """String representation of the Interval class."""
+        props = [
+            ("role", self.role),
+            ("length", self._length_input),
+            ("gap", self._gap_input),
+        ]
 
-class TargetPeriod(Period):
-    """Instantiate a build block as target period."""
-
-    def __init__(self, length: str, gap: str = "0d") -> None:
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = True
-
-
-class PrecursorPeriod(Period):
-    """Instantiate a build block as precursor period."""
-
-    def __init__(self, length: str, gap: str = "0d") -> None:
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = False
+        propstr = ", ".join([f"{k}={repr(v)}" for k, v in props])
+        return f"{self.__class__.__name__}({propstr})"

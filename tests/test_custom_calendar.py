@@ -6,38 +6,55 @@ import pandas as pd
 from pandas.tseries.offsets import DateOffset
 import pytest
 from s2spy.time import CustomCalendar
-from s2spy.time import PrecursorPeriod
-from s2spy.time import TargetPeriod
+from s2spy.time import Interval
 
 
 def interval(start, end, closed: Literal["left", "right", "both", "neither"] = "left"):
     """Shorthand for more readable tests."""
     return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed=closed)
 
-class TestPeriod:
-    """Test Period objects."""
+class TestInterval:
+    """Test the Interval class."""
 
-    def test_target_period(self):
-        target = TargetPeriod("20d", "10d")
-        assert isinstance(target, TargetPeriod)
+    def test_target_interval(self):
+        target = Interval("target", "20d", "10d")
+        assert isinstance(target, Interval)
         assert target.length == DateOffset(days=20)
         assert target.gap == DateOffset(days=10)
+        assert target.is_target
 
-    def test_precursor_period(self):
-        precursor = PrecursorPeriod("10d", "-5d")
-        assert isinstance(precursor, PrecursorPeriod)
-        assert precursor.length == DateOffset(days=10)
-        assert precursor.gap == DateOffset(days=-5)
+    def test_precursor_interval(self):
+        precursor = Interval("precursor", "20d", "10d")
+        assert isinstance(precursor, Interval)
+        assert precursor.length == DateOffset(days=20)
+        assert precursor.gap == DateOffset(days=10)
+        assert not precursor.is_target
 
-    def test_period_months(self):
-        target = TargetPeriod("2M", "1M")
+    def test_interval_months(self):
+        target = Interval("target", "2M", "1M")
         assert target.length == DateOffset(months=2)
         assert target.gap == DateOffset(months=1)
 
-    def test_period_weeks(self):
-        target = TargetPeriod("3W", "2W")
+    def test_interval_weeks(self):
+        target = Interval("target", "3W", "2W")
         assert target.length == DateOffset(weeks=3)
         assert target.gap == DateOffset(weeks=2)
+
+    def test_target_interval_dict(self):
+        a = dict(months=1, weeks=2, days=1)
+        b = dict(months=2, weeks=1, days=5)
+        target = Interval("target", length=a, gap=b)
+        assert target.length == DateOffset(**a)
+        assert target.gap == DateOffset(**b)
+
+    def test_repr(self):
+        target = Interval("target", "20d", "10d")
+        expected = "Interval(role='target', length='20d', gap='10d')"
+        assert repr(target) == expected
+
+    def test_repr_eval(self):
+        target = Interval("target", "20d", "10d")
+        _ = eval(repr(target))
 
 
 class TestCustomCalendar:
@@ -57,9 +74,29 @@ class TestCustomCalendar:
         cal = CustomCalendar(anchor="12-31")
         assert isinstance(cal, CustomCalendar)
 
-    def test_repr(self):
+    def test_repr_basic(self):
         cal = CustomCalendar(anchor="12-31")
-        assert repr(cal) == ("CustomCalendar(n_targets=0)")
+        expected = "CustomCalendar(anchor='12-31',allow_overlap=False,mapping=None,intervals=None)"
+        calrepr = repr(cal)
+
+        # Test that the repr can be pasted back into the terminal
+        _ = eval(calrepr)
+
+        # remove whitespaces:
+        calrepr = calrepr.replace(" ", "").replace("\r", "").replace("\n", "")
+        assert calrepr == expected
+
+    def test_repr_reproducible(self):
+        cal = CustomCalendar(anchor="12-31", allow_overlap=True)
+        cal.add_interval("target", "10d")
+        cal.map_years(2020, 2022)
+        repr_dict = eval(repr(cal)).__dict__
+        assert repr_dict["_anchor"] == "12-31"
+        assert repr_dict["_mapping"] == "years"
+        assert repr_dict["_first_year"] == 2020
+        assert repr_dict["_last_year"] == 2022
+        assert repr_dict["_allow_overlap"] == True
+        assert repr(repr_dict["targets"][0]) == "Interval(role='target', length='10d', gap='0d')"
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (

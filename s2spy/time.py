@@ -50,12 +50,14 @@ Example:
 import calendar as pycalendar
 import re
 from typing import Literal
+from typing import Tuple
+from typing import Union
+from os import linesep
 import numpy as np
 import pandas as pd
 import xarray as xr
 from ._base_calendar import BaseCalendar
-from ._base_calendar import PrecursorPeriod
-from ._base_calendar import TargetPeriod
+from ._base_calendar import Interval
 from ._resample import resample  # pylint: disable=unused-import
 
 
@@ -134,21 +136,17 @@ class AdventCalendar(BaseCalendar):
             )
 
         # generate target and precursor periods lists
-        self._targets = [TargetPeriod(self.freq) for _ in range(self.n_targets)]
+        self.targets = [Interval("target", self.freq) for _ in range(self.n_targets)]
         periods = self._get_nintervals()
-        self._precursors = [
-            PrecursorPeriod(self.freq) for _ in range(periods - self.n_targets)
+        self.precursors = [
+            Interval("precursor", self.freq) for _ in range(periods - self.n_targets)
         ]
-
-        # calculate the length
-        self._total_length_target = self.n_targets * int(self.freq[:-1])
-        self._total_length_precursor = (periods - self.n_targets) * int(self.freq[:-1])
 
         if self._mapping == "data":
             self._set_year_range_from_timestamps()
 
         year_range = range(
-            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
+            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)  # type: ignore
         )
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
@@ -324,7 +322,16 @@ class WeeklyCalendar(AdventCalendar):
 class CustomCalendar(BaseCalendar):
     """Build a calendar from sratch with basic construction elements."""
 
-    def __init__(self, anchor: str, allow_overlap: bool = False):
+    def __init__(
+        self,
+        anchor: str,
+        allow_overlap: bool = False,
+        mapping: Union[None,
+                       Tuple[Literal["years"], int, int],
+                       Tuple[Literal["data"], pd.Timestamp, pd.Timestamp]
+                       ] = None,
+        intervals: Union[None, list[Interval]] = None,
+        ):
         """Instantiate a basic container for building calendar using basic blocks.
 
         This is a highly flexible calendar which allows the user to build their own
@@ -360,34 +367,55 @@ class CustomCalendar(BaseCalendar):
         """
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
         self._allow_overlap = allow_overlap
-        self._targets: list[TargetPeriod] = []
-        self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = 0
-        self._total_length_precursor = 0
-        self.n_targets = 0
+        self.targets: list[Interval] = []
+        self.precursors: list[Interval] = []
+
+        self._first_year: Union[None, int] = None
+        self._last_year: Union[None, int] = None
+
+        if intervals is not None:
+            [self._append(iv) for iv in intervals]
+
+        if mapping is None:
+            pass
+        elif mapping[0] == "years":
+            self.map_years(mapping[1], mapping[2])
+        elif mapping[0] == "data":
+            self._mapping = "data"
+            self._first_timestamp = mapping[1]
+            self._last_timestamp = mapping[2]
+        else:
+            raise ValueError("Unknown mapping passed to calendar. Valid options are"
+                             "either 'years' or 'data'.")
+
+    @property
+    def allow_overlap(self):
+        return self._allow_overlap
+
+    @property
+    def n_targets(self):
+        return len(self.targets)
 
     def add_interval(
         self,
-        interval_type: Literal["target", "precursor"],
+        role: Literal["target", "precursor"],
         length: str,
         gap: str = "0d",
     ) -> None:
         """Add an interval to the calendar. The interval can be a target or a precursor.
 
         Args:
-            interval_type: Either a 'target' or 'precursor' interval.
+            role: Either a 'target' or 'precursor' interval.
             length: The length of the interval, in a format of '5d' for five days, '2W'
                 for two weeks, or '1M' for one month.
             gap: The gap between this interval and the preceding target/precursor
                 interval. Same format as the length argument.
         """
-        if interval_type == "target":
-            self._append(TargetPeriod(length, gap))
-        elif interval_type == "precursor":
-            self._append(PrecursorPeriod(length, gap))
+        if role in ["target", "precursor"]:
+            self._append(Interval(role, length, gap))
         else:
             raise ValueError(
-                f"Type '{interval_type}' is not a valid interval type. Please "
+                f"Type '{role}' is not a valid interval type. Please "
                 "choose between 'target' and 'precursor'"
             )
 
@@ -399,3 +427,30 @@ class CustomCalendar(BaseCalendar):
                 periods labelled.
         """
         return self.get_intervals()
+
+    def __repr__(self) -> str:
+        """String representation of the Calendar."""
+        intervals = self.targets + self.precursors
+        if len(intervals) == 0:
+            intervals_str = repr(None)
+        else:
+            intervals_str = f"[{linesep}\t\t" +\
+                            f",{linesep}\t\t".join([repr(iv) for iv in intervals]) +\
+                            f"{linesep}\t]"
+
+        if self._mapping == "years":
+            mapping = ("years", self._first_year, self._last_year)
+        elif self._mapping == "data":
+            mapping = ("data", self._first_timestamp, self._last_timestamp)
+        else:
+            mapping = None
+
+        props = [
+            ("anchor", repr(self.anchor)),
+            ("allow_overlap", repr(self.allow_overlap)),
+            ("mapping", repr(mapping)),
+            ("intervals", intervals_str),
+        ]
+
+        propstr = f"{linesep}\t" + f",{linesep}\t".join([f"{k}={v}" for k, v in props])
+        return f"{self.__class__.__name__}({propstr}{linesep})".replace("\t", "    ")
