@@ -120,13 +120,13 @@ class TestMonthlyCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_no_intervals(self):
-        cal = MonthlyCalendar()
+        cal = MonthlyCalendar(anchor="Dec")
         with pytest.raises(ValueError):
             cal.get_intervals()
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            MonthlyCalendar(freq="2d")
+            MonthlyCalendar(anchor="Dec", freq="2d")
 
 
 class TestWeeklyCalendar:
