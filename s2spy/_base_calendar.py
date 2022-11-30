@@ -18,6 +18,8 @@ from pandas.tseries.offsets import DateOffset
 from . import _plot
 from . import utils
 
+MappingYears = Tuple[Literal["years"], int, int]
+MappingData = Tuple[Literal["data"], pd.Timestamp, pd.Timestamp]
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
@@ -47,8 +49,24 @@ class BaseCalendar(ABC):
 
     @property
     def anchor(self):
-        "Makes anchor a property so it shows up in the repr."
+        "Makes anchor a property so it easier to access."
         return self._anchor
+
+    @anchor.setter
+    def anchor(self, value):
+        self._anchor, self._anchor_fmt = self._parse_anchor(value)
+
+    @property
+    def allow_overlap(self):
+        return self._allow_overlap
+
+    @allow_overlap.setter
+    def allow_overlap(self, value: bool):
+        if isinstance(value, bool):
+            self._allow_overlap = value
+        else:
+            raise ValueError(f"allow_overlap should be either True or False, not {value}"
+                             f"of type {type(value)}")
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
@@ -194,32 +212,6 @@ class BaseCalendar(ABC):
 
         return skip_years
 
-    def set_max_lag(self, max_lag: int, allow_overlap: bool = False) -> None:
-        """Set the maximum lag of a calendar.
-        Sets the maximum number of lag periods after the target period. If `0`,
-        the maximum lag will be determined by how many fit in each anchor year.
-        If a maximum lag is provided, the intervals can either only cover part
-        of the year, or extend over multiple years. In case of a large max_lag
-        number where the intervals extend over multiple years, anchor years will
-        be skipped to avoid overlapping intervals. To allow overlapping
-        intervals, use the `allow_overlap` kwarg.
-
-        Args:
-            max_lag: Maximum number of lag periods after the target period.
-            allow_overlap: Allows intervals to overlap between anchor years, if the
-                max_lag is set to a high enough number that intervals extend over
-                multiple years. `False` by default, to avoid train/test information
-                leakage.
-        """
-        if (max_lag < 0) or (max_lag % 1 > 0):
-            raise ValueError(
-                "Max lag should be an integer with a value of 0 or greater"
-                f", not {max_lag} of type {type(max_lag)}."
-            )
-
-        self._max_lag = max_lag
-        self._allow_overlap = allow_overlap
-
     def map_years(self, start: int, end: int):
         """Adds a start and end year mapping to the calendar.
 
@@ -300,6 +292,19 @@ class BaseCalendar(ABC):
             )
 
         return self
+
+    def _set_mapping(self, mapping):
+        if mapping is None:
+            pass
+        elif mapping[0] == "years":
+            self.map_years(mapping[1], mapping[2])
+        elif mapping[0] == "data":
+            self._mapping = "data"
+            self._first_timestamp = mapping[1]
+            self._last_timestamp = mapping[2]
+        else:
+            raise ValueError("Unknown mapping passed to calendar. Valid options are"
+                             "either 'years' or 'data'.")
 
     def _rename_intervals(self, intervals: pd.DataFrame) -> pd.DataFrame:
         """Adds target labels to the header row of the intervals.
