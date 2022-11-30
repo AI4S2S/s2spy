@@ -13,8 +13,15 @@ Example:
     >>>
     >>> # Countdown the weeks until New Year's Eve
     >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="7d")
-    >>> calendar
-    AdventCalendar(freq=7d, n_targets=1)
+    >>> calendar # doctest: +NORMALIZE_WHITESPACE
+    AdventCalendar(
+        anchor='12-31',
+        freq='7d',
+        n_targets=1,
+        max_lag=0,
+        allow_overlap=False,
+        mapping=None
+    )
 
     >>> # Get the 180-day periods leading up to New Year's eve for the year 2020
     >>> calendar = s2spy.time.AdventCalendar(anchor="12-31", freq="180d")
@@ -75,7 +82,7 @@ month_mapping_dict = {
 
 class AdventCalendar(BaseCalendar):
     """Countdown time to anticipated anchor date or period of interest."""
-
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         anchor: str,
@@ -83,7 +90,7 @@ class AdventCalendar(BaseCalendar):
         n_targets: int = 1,
         max_lag: int = 0,
         allow_overlap: bool = False,
-        mapping: Union[None, MappingYears, MappingData]= None,
+        mapping: Union[None, MappingYears, MappingData] = None,
         ) -> None:
         """Instantiate a basic calendar with minimal configuration.
 
@@ -222,15 +229,15 @@ class AdventCalendar(BaseCalendar):
 
 class MonthlyCalendar(AdventCalendar):
     """Countdown time to anticipated anchor month, in steps of whole months."""
-
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        anchor: str = "Dec",
+        anchor: str,
         freq: str = "1M",
         n_targets: int = 1,
         max_lag: int = 0,
         allow_overlap: bool = False,
-        mapping: Union[None, MappingYears, MappingData]= None,
+        mapping: Union[None, MappingYears, MappingData] = None,
     ) -> None:
         """Instantiate a basic monthly calendar with minimal configuration.
 
@@ -342,7 +349,7 @@ class MonthlyCalendar(AdventCalendar):
 class WeeklyCalendar(AdventCalendar):
     """Countdown time to anticipated anchor week number, in steps of calendar weeks."""
 
-    # pylint: disable=super-init-not-called
+    # pylint: disable=super-init-not-called, too-many-arguments
     def __init__(
         self,
         anchor: str,
@@ -350,7 +357,7 @@ class WeeklyCalendar(AdventCalendar):
         n_targets: int = 1,
         max_lag: int = 0,
         allow_overlap: bool = False,
-        mapping: Union[None, MappingYears, MappingData]= None,
+        mapping: Union[None, MappingYears, MappingData] = None,
     ) -> None:
         """Instantiate a basic week number calendar with minimal configuration.
 
@@ -495,7 +502,7 @@ class Calendar(BaseCalendar):
         self._last_year: Union[None, int] = None
 
         if intervals is not None:
-            [self._append(iv) for iv in intervals]
+            [self._append(iv) for iv in intervals]  # pylint: disable=expression-not-assigned
 
         self._set_mapping(mapping)
 

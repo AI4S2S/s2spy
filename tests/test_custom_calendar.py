@@ -95,7 +95,7 @@ class TestCalendar:
         assert repr_dict["_mapping"] == "years"
         assert repr_dict["_first_year"] == 2020
         assert repr_dict["_last_year"] == 2022
-        assert repr_dict["_allow_overlap"] == True
+        assert repr_dict["_allow_overlap"] is True
         assert repr(repr_dict["targets"][0]) == "Interval(role='target', length='10d', gap='0d')"
 
     def test_show(self, dummy_calendar):

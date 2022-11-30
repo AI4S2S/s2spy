@@ -124,7 +124,6 @@ class BaseCalendar(ABC):
 
     def _append(self, interval):
         """Append target/precursor periods to the calendar."""
-        # pylint: disable=protected-access
         if interval.is_target:
             self.targets.append(interval)
         else:
