@@ -5,6 +5,7 @@
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
 [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml)
 [![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
 [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
@@ -109,7 +110,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 
 (for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
-Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`.
 
 ### Train a model
 More information will follow soon.
