@@ -54,7 +54,7 @@ class TestInterval:
 
     def test_repr_eval(self):
         target = Interval("target", "20d", "10d")
-        _ = eval(repr(target))
+        _ = eval(repr(target))  # pylint: disable=eval-used
 
 
 class TestCalendar:
@@ -80,7 +80,7 @@ class TestCalendar:
         calrepr = repr(cal)
 
         # Test that the repr can be pasted back into the terminal
-        _ = eval(calrepr)
+        _ = eval(calrepr)  # pylint: disable=eval-used
 
         # remove whitespaces:
         calrepr = calrepr.replace(" ", "").replace("\r", "").replace("\n", "")
@@ -90,7 +90,7 @@ class TestCalendar:
         cal = Calendar(anchor="12-31", allow_overlap=True)
         cal.add_interval("target", "10d")
         cal.map_years(2020, 2022)
-        repr_dict = eval(repr(cal)).__dict__
+        repr_dict = eval(repr(cal)).__dict__  # pylint: disable=eval-used
         assert repr_dict["_anchor"] == "12-31"
         assert repr_dict["_mapping"] == "years"
         assert repr_dict["_first_year"] == 2020
