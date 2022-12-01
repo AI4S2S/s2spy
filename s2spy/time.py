@@ -100,8 +100,8 @@ class AdventCalendar(BaseCalendar):
 
 
         Args:
-            anchor: Tuple of the form (month, day). Effectively the origin
-                of the calendar. It will countdown until this date.
+            anchor: String in the form "12-31" for December 31st. Effectively the origin
+                of the calendar. It will countdown to this date.
             freq: Frequency of the calendar.
             n_targets: integer specifying the number of target intervals in a period.
             max_lag: Sets the maximum number of lag periods after the target period. If
@@ -247,7 +247,7 @@ class MonthlyCalendar(AdventCalendar):
 
         Args:
             anchor: Str in the form 'January' or 'Jan'. Effectively the origin
-                of the calendar. It will countdown up to this month.
+                of the calendar. It will countdown to this month.
             freq: Frequency of the calendar, in the form '1M', '2M', etc.
             n_targets: integer specifying the number of target intervals in a period.
             max_lag: Sets the maximum number of lag periods after the target period. If
@@ -368,8 +368,8 @@ class WeeklyCalendar(AdventCalendar):
         around the use of calendar weeks (Monday - Sunday), instead of 7-day periods.
 
         Args:
-            anchor: Int denoting the week number. Effectively the origin of the calendar.
-                It will countdown until this week.
+            anchor: Str in the form of "40W", denoting the week number. Effectively the
+                origin of the calendar. It will countdown to this week.
             freq: Frequency of the calendar, e.g. '2W'.
             n_targets: integer specifying the number of target intervals in a period.
             max_lag: Sets the maximum number of lag periods after the target period. If
