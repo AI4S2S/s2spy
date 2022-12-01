@@ -15,6 +15,11 @@ def interval(start, end, closed: Literal["left", "right", "both", "neither"] = "
     return pd.Interval(pd.Timestamp(start), pd.Timestamp(end), closed=closed)
 
 
+def remove_whitespace(input_string: str):
+    "Removes all whitespace. Makes testing reprs easier."
+    return input_string.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+
+
 class TestAdventCalendar:
     """Test AdventCalendar methods."""
 
@@ -31,7 +36,17 @@ class TestAdventCalendar:
 
     def test_repr(self):
         cal = AdventCalendar(anchor="12-31")
-        assert repr(cal) == ("AdventCalendar(freq=7d, n_targets=1)")
+        expected = """
+            AdventCalendar(
+                anchor='12-31',
+                freq='7d',
+                n_targets=1,
+                max_lag=0,
+                allow_overlap=False,
+                mapping=None
+            )
+        """
+        assert remove_whitespace(repr(cal)) == remove_whitespace(expected)
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -57,12 +72,13 @@ class TestAdventCalendar:
 
     def test_set_max_lag(self):
         cal = AdventCalendar(anchor="12-31")
-        cal.set_max_lag(max_lag=5)
+        cal.max_lag = 5
+        assert cal.max_lag == 5
 
     def test_set_max_lag_incorrect_val(self):
         cal = AdventCalendar(anchor="12-31")
         with pytest.raises(ValueError):
-            cal.set_max_lag(-1)
+            cal.max_lag = -1
 
 
 class TestMonthlyCalendar:
@@ -80,7 +96,17 @@ class TestMonthlyCalendar:
 
     def test_repr(self):
         cal = MonthlyCalendar(anchor="Dec", freq="2M")
-        assert repr(cal) == ("MonthlyCalendar(freq=2M, n_targets=1)")
+        expected = """
+            MonthlyCalendar(
+                anchor='12',
+                freq='2M',
+                n_targets=1,
+                max_lag=0,
+                allow_overlap=False,
+                mapping=None
+            )
+        """
+        assert remove_whitespace(repr(cal)) == remove_whitespace(expected)
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -94,13 +120,13 @@ class TestMonthlyCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_no_intervals(self):
-        cal = MonthlyCalendar()
+        cal = MonthlyCalendar(anchor="Dec")
         with pytest.raises(ValueError):
             cal.get_intervals()
 
     def test_incorrect_freq(self):
         with pytest.raises(ValueError):
-            MonthlyCalendar(freq="2d")
+            MonthlyCalendar(anchor="Dec", freq="2d")
 
 
 class TestWeeklyCalendar:
@@ -118,7 +144,17 @@ class TestWeeklyCalendar:
 
     def test_repr(self):
         cal = WeeklyCalendar(anchor="W48", freq="30W")
-        assert repr(cal) == ("WeeklyCalendar(freq=30W, n_targets=1)")
+        expected = """
+            WeeklyCalendar(
+                anchor='W48-1',
+                freq='30W',
+                n_targets=1,
+                max_lag=0,
+                allow_overlap=False,
+                mapping=None
+            )
+        """
+        assert remove_whitespace(repr(cal)) == remove_whitespace(expected)
 
     def test_show(self, dummy_calendar):
         expected_calendar_repr = (
@@ -307,7 +343,7 @@ class TestMap:
     @pytest.mark.parametrize("max_lag,expected_index,expected_size", max_lag_edge_cases)
     def test_max_lag_skip_years(self, max_lag, expected_index, expected_size):
         calendar = AdventCalendar(anchor="12-31", freq="5d")
-        calendar.set_max_lag(max_lag)
+        calendar.max_lag = max_lag
         calendar = calendar.map_years(2018, 2019)
 
         np.testing.assert_array_equal(

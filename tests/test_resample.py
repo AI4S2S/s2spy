@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from s2spy.time import AdventCalendar
-from s2spy.time import CustomCalendar
+from s2spy.time import Calendar
 from s2spy.time import resample
 
 
@@ -68,7 +68,7 @@ class TestResample:
     # Tests start here:
     def test_non_mapped_calendar(self, dummy_calendar):
         with pytest.raises(ValueError):
-            resample(dummy_calendar, None)
+            resample(dummy_calendar, None)  # type: ignore
 
     def test_nontime_index(self, dummy_calendar, dummy_series):
         series, _ = dummy_series
@@ -123,7 +123,7 @@ class TestResample:
         expected = np.zeros(resampled_data.index.size, dtype=bool)
         for i in range(calendar.n_targets):
             expected[i::3] = True
-        np.testing.assert_array_equal(resampled_data["target"].values, expected[::-1])
+        np.testing.assert_array_equal(resampled_data["target"].values, expected[::-1])  # type: ignore
 
     def test_target_period_dataset(self, dummy_calendar_targets, dummy_dataset):
         ds, _ = dummy_dataset
@@ -131,11 +131,12 @@ class TestResample:
         resampled_data = resample(calendar, ds)
         expected = np.zeros(3, dtype=bool)
         expected[: dummy_calendar_targets.n_targets] = True
-        np.testing.assert_array_equal(resampled_data["target"].values, expected[::-1])
+        np.testing.assert_array_equal(resampled_data["target"].values, expected[::-1])  # type: ignore
 
     def test_allow_overlap_dataframe(self):
         calendar = AdventCalendar(anchor="10-15", freq="100d")
-        calendar.set_max_lag(5, allow_overlap=True)
+        calendar.max_lag = 5
+        calendar.allow_overlap = True
         time_index = pd.date_range("20151101", "20211101", freq="50d")
         test_data = np.random.random(len(time_index))
         series = pd.Series(test_data, index=time_index)
@@ -197,7 +198,7 @@ class TestResample:
         test_data = np.random.random(len(time_index))
         series = pd.Series(test_data, index=time_index, name="data1")
 
-        calendar = CustomCalendar(anchor="10-05")
+        calendar = Calendar(anchor="10-05")
         calendar.add_interval("target", "60d")
         calendar.add_interval("precursor", "60d")
         calendar.add_interval("precursor", "60d", gap="-60d")
@@ -207,4 +208,4 @@ class TestResample:
 
         expected = np.array([series.values[-3], series.values[-3], series.values[-2]])
 
-        np.testing.assert_array_equal(resampled_data["data1"].values[-3:], expected)
+        np.testing.assert_array_equal(resampled_data["data1"].values[-3:], expected)  # type: ignore
