@@ -63,26 +63,26 @@ python3 -m pytest
 In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime module `time` is implemented for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `calendar` object is created using `AdventCalendar`:
 
 ```py
-calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
-calendar = calendar.map_years(2020, 2021)
-calendar.show()
->>>    i_interval                 (target) 0                         1
->>>    anchor_year
->>>    2021         (2021-06-03, 2021-11-30]  (2020-12-05, 2021-06-03]
->>>    2020         (2020-06-03, 2020-11-30]  (2019-12-06, 2020-06-03]
+>>> calendar = s2spy.time.AdventCalendar(anchor="11-30", freq='180d')
+>>> calendar = calendar.map_years(2020, 2021)
+>>> calendar.show()
+i_interval                         -1                         1
+anchor_year
+2021         [2021-06-03, 2021-11-30)  [2021-11-30, 2022-05-29)
+2020         [2020-06-03, 2020-11-30)  [2020-11-30, 2021-05-29)
 ```
 
 Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and resample it to the desired timescales configured in the calendar:
 
 ```py
-calendar = calendar.map_to_data(input_data)
-bins = s2spy.time.resample(calendar, input_data)
-bins
->>>       anchor_year  i_interval                  interval  mean_data  target
->>>     0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
->>>     1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
->>>     2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
->>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
+>>> calendar = calendar.map_to_data(input_data)
+>>> bins = s2spy.time.resample(calendar, input_data)
+>>> bins
+  anchor_year  i_interval                  interval  mean_data  target
+0        2020          -1  [2020-06-03, 2020-11-30)      275.5    True
+1        2020           1  [2020-11-30, 2021-05-29)       95.5   False
+2        2021          -1  [2021-06-03, 2021-11-30)      640.5    True
+3        2021           1  [2021-11-30, 2022-05-29)      460.5   False
 ```
 
 Depending on data preparations, we can choose different types of calendars e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar).

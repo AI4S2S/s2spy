@@ -164,8 +164,8 @@ class BaseCalendar(ABC):
             left_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                left_date += block.gap
-                right_date = left_date + block.length
+                left_date += block.gap_dateoffset
+                right_date = left_date + block.length_dateoffset
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update left date
                 left_date = right_date
@@ -174,8 +174,8 @@ class BaseCalendar(ABC):
             right_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                right_date -= block.gap
-                left_date = right_date - block.length
+                right_date -= block.gap_dateoffset
+                left_date = right_date - block.length_dateoffset
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update right date
                 right_date = left_date
@@ -198,14 +198,14 @@ class BaseCalendar(ABC):
 
         start_calendar = self._get_anchor(proto_year)
         for prec in self.precursors:
-            start_calendar -= prec.gap
-            start_calendar -= prec.length
+            start_calendar -= prec.gap_dateoffset
+            start_calendar -= prec.length_dateoffset
 
         while True:
             prev_end_calendar = self._get_anchor(proto_year - 1 - skip_years)
             for target in self.targets:
-                prev_end_calendar += target.gap
-                prev_end_calendar += target.length
+                prev_end_calendar += target.gap_dateoffset
+                prev_end_calendar += target.length_dateoffset
             if prev_end_calendar > start_calendar:
                 skip_years += 1
             else:
@@ -485,12 +485,13 @@ class Interval:
             gap: The gap between the previous interval and this interval. Valid inputs
                 are the same as the length keyword argument. Defaults to "0d".
         """
-        self._length_input = length
-        self._gap_input = gap
         self.length = length
         self.gap = gap
         self._role = role
         self._target = role == "target"
+
+        self._gap_dateoffset: pd.DateOffset
+        self._length_dateoffset: pd.DateOffset
 
         # TO DO: support lead_time
         # self.lead_time = lead_time
@@ -511,11 +512,15 @@ class Interval:
 
     @length.setter
     def length(self, value: Union[str, dict]):
-        self._length_input = value
+        self._length = value
         if isinstance(value, str):
-            self._length = DateOffset(**self._parse_timestring(value))
+            self._length_dateoffset = DateOffset(**self._parse_timestring(value))
         else:
-            self._length = DateOffset(**value)
+            self._length_dateoffset = DateOffset(**value)
+
+    @property
+    def length_dateoffset(self):
+        return self._length_dateoffset
 
     @property
     def gap(self):
@@ -524,11 +529,15 @@ class Interval:
 
     @gap.setter
     def gap(self, value: Union[str, dict]):
-        self._gap_input = value
+        self._gap = value
         if isinstance(value, str):
-            self._gap = DateOffset(**self._parse_timestring(value))
+            self._gap_dateoffset = DateOffset(**self._parse_timestring(value))
         else:
-            self._gap = DateOffset(**value)
+            self._gap_dateoffset = DateOffset(**value)
+
+    @property
+    def gap_dateoffset(self):
+        return self._gap_dateoffset
 
     def _parse_timestring(self, time_str):
         """Parses the user-input time strings.
@@ -554,9 +563,9 @@ class Interval:
         """String representation of the Interval class."""
         props = [
             ("role", self.role),
-            ("length", self._length_input),
-            ("gap", self._gap_input),
+            ("length", self.length),
+            ("gap", self.gap),
         ]
 
         propstr = ", ".join([f"{k}={repr(v)}" for k, v in props])
-        return f"{self.__class__.__name__}({propstr})"
+        return f"s2spy.time.{self.__class__.__name__}({propstr})"
