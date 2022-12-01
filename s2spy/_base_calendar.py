@@ -568,4 +568,4 @@ class Interval:
         ]
 
         propstr = ", ".join([f"{k}={repr(v)}" for k, v in props])
-        return f"s2spy.time.{self.__class__.__name__}({propstr})"
+        return f"{self.__class__.__name__}({propstr})"

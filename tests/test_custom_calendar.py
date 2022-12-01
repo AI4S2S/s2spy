@@ -19,33 +19,33 @@ class TestInterval:
     def test_target_interval(self):
         target = Interval("target", "20d", "10d")
         assert isinstance(target, Interval)
-        assert target.length == DateOffset(days=20)
-        assert target.gap == DateOffset(days=10)
+        assert target.length_dateoffset == DateOffset(days=20)
+        assert target.gap_dateoffset == DateOffset(days=10)
         assert target.is_target
 
     def test_precursor_interval(self):
         precursor = Interval("precursor", "20d", "10d")
         assert isinstance(precursor, Interval)
-        assert precursor.length == DateOffset(days=20)
-        assert precursor.gap == DateOffset(days=10)
+        assert precursor.length_dateoffset == DateOffset(days=20)
+        assert precursor.gap_dateoffset == DateOffset(days=10)
         assert not precursor.is_target
 
     def test_interval_months(self):
         target = Interval("target", "2M", "1M")
-        assert target.length == DateOffset(months=2)
-        assert target.gap == DateOffset(months=1)
+        assert target.length_dateoffset == DateOffset(months=2)
+        assert target.gap_dateoffset == DateOffset(months=1)
 
     def test_interval_weeks(self):
         target = Interval("target", "3W", "2W")
-        assert target.length == DateOffset(weeks=3)
-        assert target.gap == DateOffset(weeks=2)
+        assert target.length_dateoffset == DateOffset(weeks=3)
+        assert target.gap_dateoffset == DateOffset(weeks=2)
 
     def test_target_interval_dict(self):
         a = dict(months=1, weeks=2, days=1)
         b = dict(months=2, weeks=1, days=5)
         target = Interval("target", length=a, gap=b)
-        assert target.length == DateOffset(**a)
-        assert target.gap == DateOffset(**b)
+        assert target.length_dateoffset == DateOffset(**a)
+        assert target.gap_dateoffset == DateOffset(**b)
 
     def test_repr(self):
         target = Interval("target", "20d", "10d")
