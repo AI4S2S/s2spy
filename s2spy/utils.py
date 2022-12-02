@@ -1,5 +1,6 @@
 import re
 import warnings
+from typing import Dict
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -32,7 +33,7 @@ def check_time_dim_xarray(data) -> None:
         raise ValueError(
             "The input DataArray/Dataset does not contain a `time` dimension"
         )
-    if not xr.core.common.is_np_datetime_like(data["time"].dtype):
+    if not xr.core.common.is_np_datetime_like(data["time"].dtype):  # type: ignore
         raise ValueError("The `time` dimension is not of a datetime format")
 
 
@@ -81,7 +82,7 @@ def check_input_frequency(calendar, data):
     builtin one fails.
     """
     if isinstance(data, PandasData):
-        data_freq = pd.infer_freq(data.index)
+        data_freq = pd.infer_freq(data.index)  # type: ignore
         if data_freq is None:  # Manually infer the frequency
             data_freq = np.min(data.index.values[1:] - data.index.values[:-1])
     else:
@@ -122,14 +123,99 @@ def convert_interval_to_bounds(data: xr.Dataset) -> xr.Dataset:
     return stacked.unstack("coord")
 
 
-def bokeh_available():
-    """Util that attempts to load the optional module bokeh"""
+def assert_bokeh_available():
+    """Util that attempts to load the optional module bokeh."""
     try:
         import bokeh as _  # pylint: disable=import-outside-toplevel
 
-        return True
     except ImportError as e:
         raise ImportError(
             "Could not import the `bokeh` module.\nPlease install this"
             " before continuing, with either `pip` or `conda`."
         ) from e
+
+
+def get_month_names() -> Dict:
+    """Generates a dictionary with English lowercase month names and abbreviations.
+
+    Returns:
+        Dictionary containing the English names of the months, including their
+            abbreviations, linked to the number of each month.
+            E.g. {'december': 12, 'jan': 1}
+    """
+    return {
+        "january": 1,
+        "february": 2,
+        "march": 3,
+        "april": 4,
+        "may": 5,
+        "june": 6,
+        "july": 7,
+        "august": 8,
+        "september": 9,
+        "october": 10,
+        "november": 11,
+        "december": 12,
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
+    }
+
+
+def check_month_day(month: int, day: int = 1):
+    """Checks if the input day/month combination is valid.
+
+    Months must be between 1 and 12, and days must be within 1 and 28/30/31 (depending
+    on the month).
+
+    Args:
+        month: Month number
+        day: Day number. Defaults to 1.
+    """
+
+    if month in {1, 3, 5, 7, 8, 10, 12}:
+        if (day < 1) or (day > 31):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    elif month in {4, 6, 9, 11}:
+        if (day < 1) or (day > 30):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    elif month == 2:
+        if (day < 1) or (day > 28):
+            raise ValueError(
+                "Incorrect anchor input. "
+                f"Day number {day} is not a valid day for month {month}"
+            )
+    else:
+        raise ValueError(
+            "Incorrect anchor input. Month number must be between 1 and 12."
+        )
+
+
+def check_week_day(week: int, day: int = 1):
+    if week == 53:
+        raise ValueError(
+            "Incorrect anchor input. "
+            "Week 53 is not a valid input, as not every year contains a 53rd week."
+        )
+    if (week < 1) or (week > 52):
+        raise ValueError(
+            "Incorrect anchor input. Week numbers must be between 1 and 52."
+        )
+    if (day < 1) or (day > 7):
+        raise ValueError(
+            "Incorrect anchor input. Weekday numbers must be between 1 and 7."
+        )

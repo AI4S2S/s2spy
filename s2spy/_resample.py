@@ -10,7 +10,7 @@ XArrayData = (xr.DataArray, xr.Dataset)
 
 
 def mark_target_period(
-    calendar, input_data: Union[pd.DataFrame, xr.Dataset]
+    input_data: Union[pd.DataFrame, xr.Dataset]
 ) -> Union[pd.DataFrame, xr.Dataset]:
     """Mark interval periods that fall within the given number of target periods.
 
@@ -31,14 +31,14 @@ def mark_target_period(
             given inputs.
     """
     if isinstance(input_data, PandasData):
-        input_data["target"] = np.zeros(input_data.index.size, dtype=bool)
+        input_data["target"] = np.ones(input_data.index.size, dtype=bool)
         input_data["target"] = input_data["target"].where(
-            input_data["i_interval"] >= calendar.n_targets, other=True
+            input_data["i_interval"] > 0, other=False
         )
 
     else:
         # input data is xr.Dataset
-        target = input_data["i_interval"] < calendar.n_targets
+        target = input_data["i_interval"] > 0
         input_data = input_data.assign_coords(coords={"target": target})
 
     return input_data
@@ -77,6 +77,44 @@ def resample_bins_constructor(
     return bins
 
 
+def contains(interval_index: pd.IntervalIndex, timestamps) -> np.ndarray:
+    """Checks elementwise if the intervals contain the timestamps.
+    Will return a boolean array of the shape (n_timestamps, n_intervals).
+
+    Args:
+        interval_index: An IntervalIndex containing all intervals that should be checked.
+        timestamps: A 1-D array containing
+
+    Returns:
+        np.ndarray: 2-D mask array
+    """
+    if interval_index.closed_left:
+        a = np.greater_equal(timestamps, interval_index.left.values[np.newaxis].T)
+    else:
+        a = np.greater(timestamps, interval_index.left.values[np.newaxis].T)
+    if interval_index.closed_right:
+        b = np.less_equal(timestamps, interval_index.right.values[np.newaxis].T)
+    else:
+        b = np.less(timestamps, interval_index.right.values[np.newaxis].T)
+    return a & b
+
+
+def create_means_matrix(intervals, timestamps):
+    """Creates a matrix to be used to compute the mean data value of each interval.
+
+    E.g.: `means = np.dot(matrix, data)`.
+
+    Args:
+        intervals: A 1-D array-like containing the pd.Interval objects.
+        timestamps: A 1-D array containing the timestamps of the input data.
+
+    Returns:
+        np.ndarray: 2-D array that can will compute the mean.
+    """
+    matrix = contains(pd.IntervalIndex(intervals), timestamps).astype(float)
+    return matrix / matrix.sum(axis=1, keepdims=True)
+
+
 def resample_pandas(
     calendar, input_data: Union[pd.Series, pd.DataFrame]
 ) -> pd.DataFrame:
@@ -90,28 +128,20 @@ def resample_pandas(
         pd.DataFrame: DataFrame containing the intervals and data resampled to
             these intervals.
     """
-    bins = resample_bins_constructor(calendar.get_intervals())
+    if isinstance(input_data, pd.Series):
+        name = "data" if input_data.name is None else input_data.name
+        input_data = pd.DataFrame(input_data.rename(name))
 
-    interval_index = pd.IntervalIndex(bins["interval"])
-    interval_groups = interval_index.get_indexer(input_data.index)
-    interval_means = input_data.groupby(interval_groups).mean()
+    data = resample_bins_constructor(calendar.get_intervals())
+    means_matrix = create_means_matrix(data.interval.values, input_data.index.values)
 
-    # Reindex the intervals. Empty intervals will contain NaN values.
-    interval_means = interval_means.reindex(np.arange(len(interval_index)))
+    for colname in input_data.columns:
+        data[colname] = np.dot(means_matrix, input_data[colname])
 
-    if isinstance(input_data, pd.DataFrame):
-        for name in input_data.keys():
-            bins[name] = interval_means[name].values
-    else:
-        name = "mean_data" if input_data.name is None else input_data.name
-        bins[name] = interval_means.values
-
-    return bins
+    return data
 
 
-def resample_xarray(
-    calendar, input_data: Union[xr.DataArray, xr.Dataset]
-) -> xr.Dataset:
+def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     """Internal function to handle resampling of xarray data.
 
     Args:
@@ -122,44 +152,33 @@ def resample_xarray(
         xr.Dataset: Dataset containing the intervals and data resampled to
             these intervals.
     """
-    bins = resample_bins_constructor(calendar.get_intervals())
 
-    # Create the indexer to connect the input data with the intervals
-    interval_index = pd.IntervalIndex(bins["interval"])
-    interval_groups = interval_index.get_indexer(input_data["time"])
-    interval_means = input_data.groupby(
-        xr.IndexVariable("time", interval_groups)
-    ).mean()
-    interval_means = interval_means.rename({"time": "index"})
+    data = calendar.flat.to_xarray().rename("interval")
+    data = data.to_dataset()
+    data = data.stack(anch_int=("anchor_year", "i_interval"))
 
-    # drop the indices below 0, as it represents data outside of all intervals
-    interval_means = interval_means.sel(index=slice(0, None))
-
-    # Turn the bins dataframe into an xarray object and merge the data means into it
-    bins = bins.to_xarray()
-    if isinstance(interval_means, xr.DataArray) and interval_means.name is None:
-        interval_means = interval_means.rename("mean_values")
-    bins = xr.merge([bins, interval_means])
-
-    bins["anchor_year"] = bins["anchor_year"].astype(int)
-
-    # Turn the anchor year and interval count into coordinates
-    bins = bins.assign_coords(
-        {"anchor_year": bins["anchor_year"], "i_interval": bins["i_interval"]}
+    means_matrix = xr.DataArray.from_dict(
+        {
+            "coords": {
+                "time": {"dims": "time", "data": input_data["time"].values},
+            },
+            "dims": ("anch_int", "time"),
+            "data": create_means_matrix(
+                data["interval"].values, input_data["time"].values
+            ),
+        }
     )
-    # Also make the intervals themselves a coordinate so they are not lost when
-    #   grabbing a variable from the resampled dataset.
-    bins = bins.set_coords("interval")
 
-    # Reshaping the dataset to have the anchor_year and i_interval as dimensions.
-    #   set anchor_year or i_interval as the main dimension
-    #   (otherwise index is kept as dimension)
-    bins = bins.swap_dims({"index": "anchor_year"})
-    bins = bins.set_index(ai=("anchor_year", "i_interval"))
-    bins = bins.unstack()
-    bins = bins.transpose("anchor_year", "i_interval", ...)
+    resampled_vars = [xr.DataArray] * len(input_data.data_vars)
+    for i, var in enumerate(input_data.data_vars):
+        resampled_vars[i] = xr.dot(input_data[var], means_matrix, dims=["time"]).rename(
+            var
+        )
 
-    return utils.convert_interval_to_bounds(bins)
+    data = xr.merge([data] + resampled_vars)
+    data = data.unstack().set_coords(["interval"])
+    data = utils.convert_interval_to_bounds(data)
+    return data.transpose("anchor_year", "i_interval", ...)
 
 
 def resample(
@@ -201,32 +220,38 @@ def resample(
         >>> import s2spy.time
         >>> import pandas as pd
         >>> import numpy as np
-        >>> cal = s2spy.time.AdventCalendar(freq='180d')
-        >>> time_index = pd.date_range('20191201', '20211231', freq='1d')
+        >>> cal = s2spy.time.AdventCalendar(anchor="12-31", freq="180d")
+        >>> time_index = pd.date_range("20191201", "20211231", freq="1d")
         >>> var = np.arange(len(time_index))
         >>> input_data = pd.Series(var, index=time_index)
         >>> cal = cal.map_to_data(input_data)
         >>> bins = s2spy.time.resample(cal, input_data)
         >>> bins # doctest: +NORMALIZE_WHITESPACE
-            anchor_year  i_interval                  interval  mean_data  target
-        0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
-        1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
-        2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
-        3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
-
+            anchor_year  i_interval                  interval   data  target
+        0          2019          -1  [2019-07-04, 2019-12-31)   14.5   False
+        1          2019           1  [2019-12-31, 2020-06-28)  119.5    True
+        2          2020          -1  [2020-07-04, 2020-12-31)  305.5   False
+        3          2020           1  [2020-12-31, 2021-06-29)  485.5    True
     """
-    if mapped_calendar.get_intervals() is None:
+    intervals = mapped_calendar.get_intervals()
+
+    if intervals is None:
         raise ValueError("Generate a calendar map before calling resample")
 
     utils.check_timeseries(input_data)
-    utils.check_input_frequency(mapped_calendar, input_data)
+    # This check is still valid for all calendars with `freq`, but not for CustomCalendar
+    # TO DO: add this check when all calendars are rebased on the CustomCalendar
+    # utils.check_input_frequency(mapped_calendar, input_data)
 
     if isinstance(input_data, PandasData):
         resampled_data = resample_pandas(mapped_calendar, input_data)
     else:
-        resampled_data = resample_xarray(mapped_calendar, input_data)
+        if isinstance(input_data, xr.DataArray):
+            input_data.name = "data" if input_data.name is None else input_data.name
+            input_data = input_data.to_dataset()
+        resampled_data = resample_dataset(mapped_calendar, input_data)
 
     utils.check_empty_intervals(resampled_data)
 
     # mark target periods before returning the resampled data
-    return mark_target_period(mapped_calendar, resampled_data)
+    return mark_target_period(resampled_data)

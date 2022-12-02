@@ -24,7 +24,7 @@ matplotlib.use("Agg")
 
 @pytest.fixture(autouse=True, scope="class")
 def dummy_calendar():
-    return AdventCalendar(anchor=(8, 31), freq="30d")
+    return AdventCalendar(anchor="8-2", freq="30d")
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -42,19 +42,19 @@ def raw_field():
 @pytest.fixture(autouse=True, scope="class")
 def example_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_field).sst.isel(i_interval=1)
+    return resample(cal, raw_field).sst.sel(i_interval=-1)
 
 
 @pytest.fixture(autouse=True, scope="class")
 def example_field_multiple_lags(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_field).sst.isel(i_interval=slice(1, 4))
+    return resample(cal, raw_field).sst.sel(i_interval=slice(-3, -1))
 
 
 @pytest.fixture(autouse=True, scope="class")
 def example_target(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_target).ts.isel(i_interval=0)
+    return resample(cal, raw_target).ts.sel(i_interval=1)
 
 
 @pytest.fixture(scope="class")
@@ -232,7 +232,7 @@ class TestRGDR:
         rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=1000**2)
         clustered_data = rgdr.fit_transform(example_field, example_target)
         expected_labels = np.array(
-            ["lag:1_cluster:-2", "lag:1_cluster:1"]
+            ["i_interval:-1_cluster:-2", "i_interval:-1_cluster:1"]
         )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
@@ -243,9 +243,10 @@ class TestRGDR:
         clustered_data = rgdr.fit_transform(example_field_multiple_lags, example_target)
         expected_labels = np.array(
             [
-               "lag:1_cluster:-1", "lag:1_cluster:-2", "lag:1_cluster:1",
-               "lag:2_cluster:-1", "lag:2_cluster:1",
-               "lag:3_cluster:-1", "lag:3_cluster:1"
+                "i_interval:-1_cluster:-1", "i_interval:-1_cluster:-2",
+                "i_interval:-1_cluster:1", "i_interval:-2_cluster:-1",
+                "i_interval:-2_cluster:1", "i_interval:-3_cluster:-1",
+                "i_interval:-3_cluster:1"
             ]
         )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
@@ -256,7 +257,7 @@ class TestRGDR:
     def test_corr_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target, lag=1)
+        dummy_rgdr.preview_correlation(example_field_multiple_lags, example_target, i_interval=-1)
 
     def test_corr_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
@@ -274,7 +275,7 @@ class TestRGDR:
     def test_cluster_preview_multiple_lags(
         self, dummy_rgdr, example_field_multiple_lags, example_target
         ):
-        dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target, lag=1)
+        dummy_rgdr.preview_clusters(example_field_multiple_lags, example_target, i_interval=-1)
 
     def test_cluster_preview_multiple_lags_fail(
         self, dummy_rgdr, example_field_multiple_lags, example_target
