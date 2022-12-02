@@ -337,11 +337,11 @@ class MonthlyCalendar(AdventCalendar):
         return f"[{left}, {right})"
 
     def show(self) -> pd.DataFrame:
-        """Displays the intervals the Calendar will generate for the current setup.
+        """Gives the intervals the Calendar will generate for the current setup.
 
         Returns:
-            pd.Dataframe: Dataframe containing the calendar intervals, with the target
-                periods labelled.
+            pd.Dataframe: Dataframe containing the calendar intervals, with the
+                intervals shown as months instead of full dates.
         """
         return self.get_intervals().applymap(self._interval_as_month)
 
@@ -430,11 +430,11 @@ class WeeklyCalendar(AdventCalendar):
         return f"[{left}, {right})"
 
     def show(self) -> pd.DataFrame:
-        """Displays the intervals the Calendar will generate for the current setup.
+        """Gives the intervals the Calendar will generate for the current setup.
 
         Returns:
-            pd.Dataframe: Dataframe containing the calendar intervals, with the target
-                periods labelled.
+            pd.Dataframe: Dataframe containing the calendar intervals, with the
+                intervals shown as weeknumbers instead of dates.
         """
         return self.get_intervals().applymap(self._interval_as_weeknr)
 
@@ -537,8 +537,7 @@ class Calendar(BaseCalendar):
         """Displays the intervals the Calendar will generate for the current setup.
 
         Returns:
-            pd.Dataframe: Dataframe containing the calendar intervals, with the target
-                periods labelled.
+            pd.Dataframe: Dataframe containing the calendar intervals.
         """
         return self.get_intervals()
 
