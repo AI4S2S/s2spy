@@ -177,7 +177,8 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
 
     data = xr.merge([data] + resampled_vars)
     data = data.unstack().set_coords(["interval"])
-    return utils.convert_interval_to_bounds(data)
+    data = utils.convert_interval_to_bounds(data)
+    return data.transpose("anchor_year", "i_interval", ...)
 
 
 def resample(
