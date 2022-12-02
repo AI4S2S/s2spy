@@ -13,8 +13,8 @@ ignore-paths:
   - docs
   - build
 
-# pyroma:  # see https://github.com/PyCQA/prospector/issues/545
-#     run: true
+pyroma:
+    run: true
 
 pycodestyle:
     full: true
