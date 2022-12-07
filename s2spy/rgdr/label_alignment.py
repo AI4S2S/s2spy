@@ -1,11 +1,14 @@
+import string
+from copy import deepcopy
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Tuple
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Set, Dict, List
-import string
-from copy import deepcopy
 from s2spy.rgdr import utils
-from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
@@ -43,7 +46,7 @@ def _init_overlap_df(split_array: xr.DataArray):
     split_label_dict = _get_split_label_dict(split_array)
 
     # create a list of tuples:
-    tuple_list = []
+    tuple_list = []  # type: ignore
     for split_number, label_list in split_label_dict.items():
         tuple_list.extend((split_number, label) for label in label_list)
 
@@ -67,6 +70,7 @@ def _init_overlap_df(split_array: xr.DataArray):
     return df
 
 
+# pylint: disable=too-many-locals
 def overlap_labels(split_array: xr.DataArray):
     """
     Function to create a dataframe that shows how many grid cells
@@ -217,7 +221,8 @@ def remove_overlapping_clusters(clusters: Set) -> Set:
     sanitised_clusters = []
     for _ in range(len(clusterlist)):
         cluster = clusterlist.pop(0)
-        [cluster.difference_update(cl) for cl in clusterlist]
+        for cl in clusterlist:
+            cluster.difference_update(cl)
         sanitised_clusters.append(cluster)
     return {frozenset(cluster) for cluster in sanitised_clusters}
 
@@ -265,8 +270,8 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict:
         for el in aligned_clusters[key]:
             inversed_names[el] = key
 
-    renaming_dict = {}
-    for key in inversed_names:
+    renaming_dict: Dict[int, List[Tuple[int, str]]] = {}
+    for key in inversed_names: # pylint: disable=consider-using-dict-items
         ky = key.split("_")
         split = int(ky[0])
         cluster = int(ky[1])
@@ -300,7 +305,7 @@ def ensure_unique_names(renaming_dict: Dict) -> Dict:
             x if cluster_new_names.count(x) > 1 else None
             for x in set(cluster_new_names)
         ]
-        double_names = list(np.array(double_names)[np.array(double_names) != None])
+        double_names = list(np.array(double_names)[np.array(double_names) is not None])
 
         zero_names = []
         for double_name in double_names:
@@ -375,9 +380,9 @@ def rename_labels(
     clusters = get_overlapping_clusters(cluster_map_ds["cluster_labels"])
     clusters = remove_subsets(clusters)
     clusters = remove_overlapping_clusters(clusters)
-    clusters = name_clusters(clusters)
+    cluster_names = name_clusters(clusters)
 
-    renaming_dict = create_renaming_dict(clusters)
+    renaming_dict = create_renaming_dict(cluster_names)
     renaming_dict = ensure_unique_names(renaming_dict)
 
     return _rename_datasets(rgdr_list, clustered_data, renaming_dict)

@@ -13,6 +13,7 @@ import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
 from sklearn.model_selection._split import BaseShuffleSplit
 
+
 # Mypy type aliases
 XType = Union[xr.DataArray, List[xr.DataArray]]
 CVtype = Union[BaseCrossValidator, BaseShuffleSplit]

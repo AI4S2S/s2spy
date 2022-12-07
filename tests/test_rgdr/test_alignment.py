@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from sklearn.model_selection import ShuffleSplit
 import s2spy
 import s2spy.rgdr
-from s2spy.rgdr import label_alignment
 from s2spy import RGDR
+from s2spy.rgdr import label_alignment
 from s2spy.time import AdventCalendar
 from s2spy.time import resample
-from sklearn.model_selection import ShuffleSplit
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
