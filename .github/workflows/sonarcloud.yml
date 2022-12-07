@@ -4,12 +4,10 @@ on:
   push:
     branches:
     - main
-    - calendar_development
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
     - main
-    - calendar_development
 
 jobs:
 

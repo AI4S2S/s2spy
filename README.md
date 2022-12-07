@@ -5,6 +5,7 @@
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
 [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml)
 [![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
 [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
@@ -62,26 +63,26 @@ python3 -m pytest
 In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime module `time` is implemented for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `calendar` object is created using `AdventCalendar`:
 
 ```py
-calendar = s2spy.time.AdventCalendar(anchor=(11, 30), freq='180d')
-calendar = calendar.map_years(2020, 2021)
-calendar.show()
->>>    i_interval                 (target) 0                         1
->>>    anchor_year
->>>    2021         (2021-06-03, 2021-11-30]  (2020-12-05, 2021-06-03]
->>>    2020         (2020-06-03, 2020-11-30]  (2019-12-06, 2020-06-03]
+>>> calendar = s2spy.time.AdventCalendar(anchor="11-30", freq='180d')
+>>> calendar = calendar.map_years(2020, 2021)
+>>> calendar.show()
+i_interval                         -1                         1
+anchor_year
+2021         [2021-06-03, 2021-11-30)  [2021-11-30, 2022-05-29)
+2020         [2020-06-03, 2020-11-30)  [2020-11-30, 2021-05-29)
 ```
 
 Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and resample it to the desired timescales configured in the calendar:
 
 ```py
-calendar = calendar.map_to_data(input_data)
-bins = s2spy.time.resample(calendar, input_data)
-bins
->>>       anchor_year  i_interval                  interval  mean_data  target
->>>     0        2020           0  (2020-06-03, 2020-11-30]      275.5    True
->>>     1        2020           1  (2019-12-06, 2020-06-03]       95.5   False
->>>     2        2021           0  (2021-06-03, 2021-11-30]      640.5    True
->>>     3        2021           1  (2020-12-05, 2021-06-03]      460.5   False
+>>> calendar = calendar.map_to_data(input_data)
+>>> bins = s2spy.time.resample(calendar, input_data)
+>>> bins
+  anchor_year  i_interval                  interval  mean_data  target
+0        2020          -1  [2020-06-03, 2020-11-30)      275.5    True
+1        2020           1  [2020-11-30, 2021-05-29)       95.5   False
+2        2021          -1  [2021-06-03, 2021-11-30)      640.5    True
+3        2021           1  [2021-11-30, 2022-05-29)      460.5   False
 ```
 
 Depending on data preparations, we can choose different types of calendars e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar).
@@ -109,7 +110,7 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 
 (for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/notebooks/tutorial_RGDR.ipynb).)
 
-Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`.
 
 ### Train a model
 More information will follow soon.

@@ -4,18 +4,24 @@ The BaseCalendar includes most methods required for all calendar operations, exc
 a set of abstract methods (e.g., __init__, _get_anchor, ...). These will have to be
 customized for each specific calendar.
 """
+import copy
 import re
+import warnings
 from abc import ABC
 from abc import abstractmethod
+from typing import List
+from typing import Literal
 from typing import Tuple
 from typing import Union
-import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas.tseries.offsets import DateOffset
 from . import _plot
 from . import utils
 
+
+MappingYears = Tuple[Literal["years"], int, int]
+MappingData = Tuple[Literal["data"], pd.Timestamp, pd.Timestamp]
 
 PandasData = (pd.Series, pd.DataFrame)
 XArrayData = (xr.DataArray, xr.Dataset)
@@ -29,18 +35,40 @@ class BaseCalendar(ABC):
     @abstractmethod
     def __init__(
         self,
-        anchor,
-    ):
+        anchor: str,
+    ) -> None:
         """For initializing calendars, the following five variables will be required."""
         self._anchor, self._anchor_fmt = self._parse_anchor(anchor)
-        self._targets: list[TargetPeriod] = []
-        self._precursors: list[PrecursorPeriod] = []
-        self._total_length_target = 0
-        self._total_length_precursor = 0
+        self.targets: List[Interval] = []
+        self.precursors: List[Interval] = []
+
+        self._first_year: Union[None, int] = None
+        self._last_year: Union[None, int] = None
 
         self.n_targets = 0
         self._max_lag: int = 0
         self._allow_overlap: bool = False
+
+    @property
+    def anchor(self):
+        "Makes anchor a property so it easier to access."
+        return self._anchor
+
+    @anchor.setter
+    def anchor(self, value):
+        self._anchor, self._anchor_fmt = self._parse_anchor(value)
+
+    @property
+    def allow_overlap(self):
+        return self._allow_overlap
+
+    @allow_overlap.setter
+    def allow_overlap(self, value: bool):
+        if isinstance(value, bool):
+            self._allow_overlap = value
+        else:
+            raise ValueError(f"allow_overlap should be either True or False, not {value}"
+                             f"of type {type(value)}")
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
@@ -94,22 +122,12 @@ class BaseCalendar(ABC):
             )
         return anchor_str, fmt
 
-    def _append(self, period_block):
+    def _append(self, interval):
         """Append target/precursor periods to the calendar."""
-        # pylint: disable=protected-access
-        if period_block._target:
-            self._targets.append(period_block)
-            # count length
-            self._total_length_target += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
-            )
-
+        if interval.is_target:
+            self.targets.append(interval)
         else:
-            self._precursors.append(period_block)
-            # count length
-            self._total_length_precursor += (
-                period_block.length.kwds["days"] + period_block.gap.kwds["days"]
-            )
+            self.precursors.append(interval)
 
     def _map_year(self, year: int) -> pd.Series:
         """Internal routine to return a concrete IntervalIndex for the given year.
@@ -128,10 +146,9 @@ class BaseCalendar(ABC):
             Pandas Series filled with Intervals of the calendar's frequency, counting
             backwards from the calendar's achor.
         """
-        intervals_target = self._concatenate_periods(year, self._targets, True)
-        intervals_precursor = self._concatenate_periods(year, self._precursors, False)
+        intervals_target = self._concatenate_periods(year, self.targets, True)
+        intervals_precursor = self._concatenate_periods(year, self.precursors, False)
 
-        self.n_targets = len(intervals_target)
         year_intervals = intervals_precursor[::-1] + intervals_target
 
         # turn the list of intervals into pandas series
@@ -147,8 +164,8 @@ class BaseCalendar(ABC):
             left_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                left_date += block.gap
-                right_date = left_date + block.length
+                left_date += block.gap_dateoffset
+                right_date = left_date + block.length_dateoffset
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update left date
                 left_date = right_date
@@ -157,8 +174,8 @@ class BaseCalendar(ABC):
             right_date = self._get_anchor(year)
             # loop through all the building blocks to
             for block in list_periods:
-                right_date -= block.gap
-                left_date = right_date - block.length
+                right_date -= block.gap_dateoffset
+                left_date = right_date - block.length_dateoffset
                 intervals.append(pd.Interval(left_date, right_date, closed="left"))
                 # update right date
                 right_date = left_date
@@ -173,35 +190,28 @@ class BaseCalendar(ABC):
         Returns:
             int: Number of years that need to be skipped.
         """
-        years = (self._total_length_target + self._total_length_precursor) / 365
+        if self._allow_overlap:
+            return 0
 
-        return 0 if self._allow_overlap else int(np.ceil(years).astype(int) - 1)
+        proto_year = 2000
+        skip_years = 0
 
-    def set_max_lag(self, max_lag: int, allow_overlap: bool = False) -> None:
-        """Set the maximum lag of a calendar.
-        Sets the maximum number of lag periods after the target period. If `0`,
-        the maximum lag will be determined by how many fit in each anchor year.
-        If a maximum lag is provided, the intervals can either only cover part
-        of the year, or extend over multiple years. In case of a large max_lag
-        number where the intervals extend over multiple years, anchor years will
-        be skipped to avoid overlapping intervals. To allow overlapping
-        intervals, use the `allow_overlap` kwarg.
+        start_calendar = self._get_anchor(proto_year)
+        for prec in self.precursors:
+            start_calendar -= prec.gap_dateoffset
+            start_calendar -= prec.length_dateoffset
 
-        Args:
-            max_lag: Maximum number of lag periods after the target period.
-            allow_overlap: Allows intervals to overlap between anchor years, if the
-                max_lag is set to a high enough number that intervals extend over
-                multiple years. `False` by default, to avoid train/test information
-                leakage.
-        """
-        if (max_lag < 0) or (max_lag % 1 > 0):
-            raise ValueError(
-                "Max lag should be an integer with a value of 0 or greater"
-                f", not {max_lag} of type {type(max_lag)}."
-            )
+        while True:
+            prev_end_calendar = self._get_anchor(proto_year - 1 - skip_years)
+            for target in self.targets:
+                prev_end_calendar += target.gap_dateoffset
+                prev_end_calendar += target.length_dateoffset
+            if prev_end_calendar > start_calendar:
+                skip_years += 1
+            else:
+                break
 
-        self._max_lag = max_lag
-        self._allow_overlap = allow_overlap
+        return skip_years
 
     def map_years(self, start: int, end: int):
         """Adds a start and end year mapping to the calendar.
@@ -222,6 +232,10 @@ class BaseCalendar(ABC):
         self._first_year = start
         self._last_year = end
         self._mapping = "years"
+
+        self._first_timestamp = None
+        self._last_timestamp = None
+
         return self
 
     def map_to_data(
@@ -252,12 +266,14 @@ class BaseCalendar(ABC):
             self._last_timestamp = pd.Timestamp(input_data.time.max().values)
 
         self._mapping = "data"
+        self._first_year = None
+        self._last_year = None
 
         return self
 
     def _set_year_range_from_timestamps(self):
-        min_year = self._first_timestamp.year
-        max_year = self._last_timestamp.year
+        min_year = self._first_timestamp.year  # type: ignore
+        max_year = self._last_timestamp.year  # type: ignore
 
         # ensure that the input data could always cover the advent calendar
         # last date check
@@ -277,6 +293,19 @@ class BaseCalendar(ABC):
             )
 
         return self
+
+    def _set_mapping(self, mapping):
+        if mapping is None:
+            pass  # NOSONAR
+        elif mapping[0] == "years":
+            self.map_years(mapping[1], mapping[2])
+        elif mapping[0] == "data":
+            self._mapping = "data"
+            self._first_timestamp = mapping[1]
+            self._last_timestamp = mapping[2]
+        else:
+            raise ValueError("Unknown mapping passed to calendar. Valid options are"
+                             "either 'years' or 'data'.")
 
     def _rename_intervals(self, intervals: pd.DataFrame) -> pd.DataFrame:
         """Adds target labels to the header row of the intervals.
@@ -314,7 +343,7 @@ class BaseCalendar(ABC):
             self._set_year_range_from_timestamps()
 
         year_range = range(
-            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)
+            self._last_year, self._first_year - 1, -(self._get_skip_nyears() + 1)  # type: ignore
         )
 
         intervals = pd.concat([self._map_year(year) for year in year_range], axis=1).T
@@ -341,51 +370,90 @@ class BaseCalendar(ABC):
         calendar_name = self.__class__.__name__
         return f"{calendar_name}({props})"
 
+    #  pylint: disable=too-many-arguments
     def visualize(
         self,
         n_years: int = 3,
+        interactive: bool = False,
         relative_dates: bool = False,
-        add_length: bool = False,
+        show_length: bool = False,
+        add_legend: bool = True,
+        ax=None,
+        **bokeh_kwargs,
     ) -> None:
         """Plots a visualization of the current calendar setup, to aid in user setup.
 
+        Note: The interactive visualization requires the `bokeh` package to be installed
+        in the active Python environment.
+
         Args:
-            add_length: Toggles if the frequency of the intervals should be displayed.
-                      Defaults to False (Matplotlib plotter only)
             n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
+                default only the most recent 3 are visualized, to ensure that they
+                fit within the plot.
+            interactive: If False, matplotlib will be used for the visualization. If
+                True, bokeh will be used.
+            relative_dates: Toggles if the intervals should be displayed relative to the
+                anchor date, or as absolute dates.
+            show_length: Toggles if the frequency of the intervals should be displayed.
+                Defaults to False (Matplotlib plotter only).
+            add_legend: Toggles if a legend should be added to the plot (Matplotlib only)
+            ax: Matplotlib axis object to plot the visualization into.
+            **bokeh_kwargs: Keyword arguments to pass to Bokeh's plotting.Figure. See
+                https://docs.bokeh.org/en/2.4.2/docs/reference/plotting/figure.html
+                for a list of possible keyword arguments.
         """
+        calendar = copy.deepcopy(self)
+        if calendar._mapping is None:  # pylint: disable=protected-access
+            calendar.map_years(2000, 2000)
+            if not relative_dates:
+                print(
+                    "Setting relative_dates=True. To see absolute dates, first call "
+                    "calendar.map_years or calendar.map_data"
+                )
+                relative_dates = True
+            add_yticklabels=False
+        else:
+            add_yticklabels=True
+
         n_years = max(n_years, 1)
-        n_years = min(n_years, len(self.get_intervals().index))
-        _plot.matplotlib_visualization(self, n_years, relative_dates, add_length)
+        n_years = min(n_years, len(calendar.get_intervals().index))
 
-    def visualize_interactive(
-        self,
-        relative_dates: bool,
-        n_years: int = 3,
-    ) -> None:
-        """Plots a visualization of the current calendar setup using `bokeh`.
+        if interactive:
+            utils.assert_bokeh_available()
+            from ._bokeh_plots import bokeh_visualization  # pylint: disable=import-outside-toplevel
 
-        Note: Requires the `bokeh` package to be installed in the active enviroment.
+            if ax is not None:
+                warnings.warn(
+                    "ax is only a valid keyword argument for the non-interactive "
+                    "matplotlib backend. Bokeh's figure can be controlled by passing "
+                    "Bokeh Figure keyword arguments (e.g. width=800).",
+                    UserWarning
+                )
+            bokeh_visualization(
+                calendar,
+                n_years,
+                relative_dates,
+                add_yticklabels,
+                **bokeh_kwargs
+            )
+        else:
+            if bokeh_kwargs:
+                warnings.warn(
+                    "kwargs for bokeh have been passed to visualize(), but the "
+                    "matplotlib backend does not support these. Use the 'ax' kwarg "
+                    "instead to control the generated figure.",
+                    UserWarning
+                )
 
-        Args:
-            relative_dates: If False, absolute dates will be used. If True, each anchor
-                            year is aligned by the anchor date, so that all anchor years
-                            line up vertically.
-            n_years: Sets the maximum number of anchor years that should be shown. By
-                     default only the most recent 3 are visualized, to ensure that they
-                     fit within the plot.
-
-        Returns:
-            None
-        """
-        if utils.bokeh_available():
-            # pylint: disable=import-outside-toplevel
-            from ._bokeh_plots import bokeh_visualization
-
-            return bokeh_visualization(self, n_years, relative_dates)
-        return None
+            _plot.matplotlib_visualization(
+                calendar,
+                n_years,
+                relative_dates,
+                show_length,
+                add_legend,
+                add_yticklabels,
+                ax=ax,
+            )
 
     @property
     def flat(self) -> pd.DataFrame:
@@ -393,28 +461,85 @@ class BaseCalendar(ABC):
         return self.get_intervals().stack()  # type: ignore
 
 
-class Period(ABC):
-    """Basic construction element of calendar for defining target period."""
+class Interval:
+    """Basic construction element of calendar for defining precursors and targets."""
 
-    def __init__(self, length: str, gap: str = "0d") -> None:
+    def __init__(
+        self,
+        role: Literal["target", "precursor"],
+        length: Union[str, dict],
+        gap: Union[str, dict] = "0d",
+    )-> None:
+        """This is the basic construction element of the calendar.
 
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = False
+        The Interval is characterised by its type (either target or precursor), its
+        length and the gap between it and the previous interval of its type (or the
+        anchor date, if the interval is the first target/first precursor).
+
+        Args:
+            role: The type of interval. Either "target" or "precursor".
+            length: The length of the interval. This can either be a pandas-like
+                frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
+                compatible dictionary such as {days=10}, {weeks=2}, or
+                {months=1, weeks=2}.
+            gap: The gap between the previous interval and this interval. Valid inputs
+                are the same as the length keyword argument. Defaults to "0d".
+        """
+        self.length = length
+        self.gap = gap
+        self._role = role
+        self._target = role == "target"
+
+        self._gap_dateoffset: pd.DateOffset
+        self._length_dateoffset: pd.DateOffset
+
         # TO DO: support lead_time
         # self.lead_time = lead_time
 
     @property
+    def is_target(self):
+        return self._target
+
+    @property
+    def role(self):
+        "Returns the type of interval."
+        return self._role
+
+    @property
     def length(self):
-        """Return the length of period."""
+        "Returns the length of the interval, as a pandas.DateOffset."
         return self._length
+
+    @length.setter
+    def length(self, value: Union[str, dict]):
+        self._length = value
+        if isinstance(value, str):
+            self._length_dateoffset = DateOffset(**self._parse_timestring(value))
+        else:
+            self._length_dateoffset = DateOffset(**value)
+
+    @property
+    def length_dateoffset(self):
+        return self._length_dateoffset
 
     @property
     def gap(self):
-        """Return the gap of period."""
+        """Returns the gap of the interval, as a pandas.DateOffset."""
         return self._gap
 
-    def _parse_time(self, time_str):
+    @gap.setter
+    def gap(self, value: Union[str, dict]):
+        self._gap = value
+        if isinstance(value, str):
+            self._gap_dateoffset = DateOffset(**self._parse_timestring(value))
+        else:
+            self._gap_dateoffset = DateOffset(**value)
+
+    @property
+    def gap_dateoffset(self):
+        return self._gap_dateoffset
+
+    def _parse_timestring(self, time_str):
         """Parses the user-input time strings.
 
         Args:
@@ -434,20 +559,13 @@ class Period(ABC):
 
         return time_dict
 
+    def __repr__(self):
+        """String representation of the Interval class."""
+        props = [
+            ("role", self.role),
+            ("length", self.length),
+            ("gap", self.gap),
+        ]
 
-class TargetPeriod(Period):
-    """Instantiate a build block as target period."""
-
-    def __init__(self, length: str, gap: str = "0d") -> None:
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = True
-
-
-class PrecursorPeriod(Period):
-    """Instantiate a build block as precursor period."""
-
-    def __init__(self, length: str, gap: str = "0d") -> None:
-        self._length = DateOffset(**self._parse_time(length))
-        self._gap = DateOffset(**self._parse_time(gap))
-        self._target = False
+        propstr = ", ".join([f"{k}={repr(v)}" for k, v in props])
+        return f"{self.__class__.__name__}({propstr})"
