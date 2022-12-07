@@ -305,7 +305,8 @@ def ensure_unique_names(renaming_dict: Dict) -> Dict:
             x if cluster_new_names.count(x) > 1 else None
             for x in set(cluster_new_names)
         ]
-        double_names = list(np.array(double_names)[np.array(double_names) is not None])
+        # pylint:disable=singleton-comparison
+        double_names = list(np.array(double_names)[np.array(double_names) != None])  # noqa
 
         zero_names = []
         for double_name in double_names:
