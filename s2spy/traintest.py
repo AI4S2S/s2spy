@@ -11,10 +11,11 @@ from typing import Union
 import numpy as np
 import xarray as xr
 from sklearn.model_selection._split import BaseCrossValidator
-
+from sklearn.model_selection._split import BaseShuffleSplit
 
 # Mypy type aliases
 XType = Union[xr.DataArray, List[xr.DataArray]]
+CVtype = Union[BaseCrossValidator, BaseShuffleSplit]
 
 # For output types, variables are split in 2
 XOnly = Tuple[XType, XType]
@@ -51,7 +52,7 @@ class TrainTestSplit():
             `fit(X)` method which splits up `X` into multiple folds of
             train/test data.
     """
-    def __init__(self, splitter: Type[BaseCrossValidator]) -> None:
+    def __init__(self, splitter: Type[CVtype]) -> None:
         self.splitter = splitter
 
     def split(
