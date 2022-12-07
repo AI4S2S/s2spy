@@ -13,71 +13,62 @@ if TYPE_CHECKING:
 
 
 def _get_split_label_dict(split_array: xr.DataArray):
-    ''' Function to return a dict of splits numbers as keys
-    and a list of label values for a given lag.'''
+    """Function to return a dict of splits numbers as keys
+    and a list of label values for a given lag."""
 
     split_labels_dict = {}
-    #loop over splits
+    # loop over splits
     for split_number, split in enumerate(split_array):
         unique_labels = np.unique(split)
-        unique_labels = unique_labels[unique_labels != 0] #0 are no precursor fields
+        unique_labels = unique_labels[unique_labels != 0]  # 0 are no precursor fields
         split_labels_dict[split_number] = list(unique_labels)
 
     return split_labels_dict
 
 
 def array_label_count(array: np.ndarray):
-    '''Function to return a dict of values in an array with their number of occurences.'''
-    unique, counts = np.unique(array, return_counts = True)
-    return dict(zip(unique,counts))
+    """Function to return a dict of values in an array with their number of occurences."""
+    unique, counts = np.unique(array, return_counts=True)
+    return dict(zip(unique, counts))
 
 
 def _init_overlap_df(split_array: xr.DataArray):
-    ''' Function to create a pandas dataframe with a multi index of split
+    """Function to create a pandas dataframe with a multi index of split
     numbers as the first index and precursor region labels from every split
     as the second index. The same multi index is used for the columns.
     This df can be used to show how labels from different splits overlap.
     The lag must be already preselected since we can only compare found regions from
-    the same lag over splits.'''
+    the same lag over splits."""
 
     split_label_dict = _get_split_label_dict(split_array)
 
-    #create a list of tuples:
+    # create a list of tuples:
     tuple_list = []
     for split_number, label_list in split_label_dict.items():
         tuple_list.extend((split_number, label) for label in label_list)
 
-    #create multi index with tuple list
-    multi_index = pd.MultiIndex.from_tuples(tuple_list, names=('split','label'))
+    # create multi index with tuple list
+    multi_index = pd.MultiIndex.from_tuples(tuple_list, names=("split", "label"))
 
-    #create empty dataframe
-    df = pd.DataFrame(np.nan, index = multi_index, columns = multi_index)
+    # create empty dataframe
+    df = pd.DataFrame(np.nan, index=multi_index, columns=multi_index)
 
-    #add label cell count column
-    df['label_cell_count'] = 0
+    # add label cell count column
+    df["label_cell_count"] = 0
 
-    #get label cell counts
+    # get label cell counts
     for split_number, label_list in split_label_dict.items():
         for label in label_list:
-            split = split_array.sel({'split':split_number})
-            split_labelmask = split.where(split == label,0)
-            label_count = array_label_count(split_labelmask)
-            df.at[(split_number, label), 'label_cell_count'] = label_count[label]
+            split = split_array.sel({"split": split_number})
+            split_labelmask = split.where(split == label, 0)
+            label_count = array_label_count(split_labelmask.values)
+            df.at[(split_number, label), "label_cell_count"] = label_count[label]
 
     return df
 
 
-def mysign(x: int):
-    ''' Simple function to return sign of an int, with zero as 0.'''
-    if x > 0:
-        return 1
-    if x == 0:
-        return 0
-    return -1
-
-
 def overlap_labels(split_array: xr.DataArray):
-    '''
+    """
     Function to create a dataframe that shows how many grid cells
     of a found precursor region of a lag in a training split overlap with
     a region found in another split at the same lag.
@@ -86,67 +77,81 @@ def overlap_labels(split_array: xr.DataArray):
         dimensions 'lag' and 'split'
         - lag: optional, if given one can give the df and lag separately,
         else the split_array has no dimension i_interval
-    '''
+    """
 
-    #initialize empty dataframe
+    # initialize empty dataframe
     df = _init_overlap_df(split_array)
 
-    #get list of split numbers
+    # get list of split numbers
     split_number_list = list(split_array.split.values)
 
-    #loop over splits
+    # loop over splits
     for split_number in split_number_list:
 
-        #select a split
-        split = split_array.sel({'split': split_number})
-        #get labels
-        labels = df.loc[split_number,:].index.get_level_values(0)
+        # select a split
+        split = split_array.sel({"split": split_number})
+        # get labels
+        labels = df.loc[split_number, :].index.get_level_values(0)
 
-        #loop over every label in the splits
+        # loop over every label in the splits
         for label in labels:
 
-            #mask the array for label
-            split_labelmask = split.where(split == label,0)
-            #convert where equal to label to 1
+            # mask the array for label
+            split_labelmask = split.where(split == label, 0)
+            # convert where equal to label to 1
             split_labelmask = split_labelmask.where(split_labelmask != label, 1)
 
-            #create other split list
-            other_split_number_list = [other_split_number for other_split_number in
-            split_number_list if other_split_number != split_number]
+            # create other split list
+            other_split_number_list = [
+                other_split_number
+                for other_split_number in split_number_list
+                if other_split_number != split_number
+            ]
 
-            #loop over other splits
+            # loop over other splits
             for other_split_number in other_split_number_list:
 
-                #select other split
-                other_split = split_array.sel({'split':other_split_number})
-                #get list of labels in this split
-                other_split_labels = df.loc[other_split_number,:].index.get_level_values(0)
-                #create list with labels in other split with same sign as label
-                other_split_labels_samesign = [other_label for other_label in
-                other_split_labels if mysign(other_label) == mysign(label)]
+                # select other split
+                other_split = split_array.sel({"split": other_split_number})
+                # get list of labels in this split
+                other_split_labels = df.loc[
+                    other_split_number, :
+                ].index.get_level_values(0)
+                # create list with labels in other split with same sign as label
+                other_split_labels_samesign = [
+                    other_label
+                    for other_label in other_split_labels
+                    if np.sign(other_label) == np.sign(label)
+                ]
 
-                #loop over labels of same sign
+                # loop over labels of same sign
                 for other_label in other_split_labels_samesign:
 
-                    #mask for other_label
-                    other_split_labelmask = other_split.where(other_split == other_label, 0)
-                    #convert where equal to label to 1
-                    other_split_labelmask = other_split.where(other_split_labelmask != other_label, 1)
+                    # mask for other_label
+                    other_split_labelmask = other_split.where(
+                        other_split == other_label, 0
+                    )
+                    # convert where equal to label to 1
+                    other_split_labelmask = other_split.where(
+                        other_split_labelmask != other_label, 1
+                    )
 
-                    #check where regions overlap
-                    overlap_array = split_labelmask.where(split_labelmask == other_split_labelmask)
-                    #count the number of cells in the overlap array
-                    overlap_count_dict = array_label_count(overlap_array)
-                    if 1 not in overlap_count_dict:
-                        overlap_count = 0
-                    else:
-                        overlap_count = overlap_count_dict[1]
+                    # check where regions overlap
+                    overlap_array = split_labelmask.where(
+                        split_labelmask == other_split_labelmask
+                    )
 
-                    #append to df
-                    df.at[
-                        (split_number,label),
-                        (other_split_number, other_label)
-                        ] = overlap_count / df.loc[(split_number, label), 'label_cell_count']
+                    # count the number of cells in the overlap array
+                    overlap_count_dict = array_label_count(overlap_array.values)
+                    overlap_count = (
+                        0 if 1 not in overlap_count_dict else overlap_count_dict[1]
+                    )
+
+                    # append to df
+                    df.at[(split_number, label), (other_split_number, other_label)] = (
+                        overlap_count
+                        / df.loc[(split_number, label), "label_cell_count"]
+                    )  # type: ignore
 
     return df
 
@@ -167,17 +172,19 @@ def get_overlapping_clusters(cluster_labels, min_overlap: float = 0.1) -> Set:
             clusters that overlap.
     """
     overlap_df = overlap_labels(cluster_labels)
-    overlap_df = overlap_df.drop(columns='label_cell_count')
+    overlap_df = overlap_df.drop(columns="label_cell_count")
     overlap_df.columns = [
-        '_'.join([str(el) for el in col]) for col in overlap_df.columns.values
-        ]  # type: ignore
+        "_".join([str(el) for el in col]) for col in overlap_df.columns.values
+    ]  # type: ignore
     overlap_df.index = [
-        '_'.join([str(el) for el in idx]) for idx in overlap_df.index.values
-        ]  # type: ignore
+        "_".join([str(el) for el in idx]) for idx in overlap_df.index.values
+    ]  # type: ignore
 
     clusters = set()
-    for row in range(overlap_df.index.size): # type: ignore
-        overlapping = overlap_df.iloc[row].where(overlap_df.iloc[row] > min_overlap).dropna()
+    for row in range(overlap_df.index.size):  # type: ignore
+        overlapping = (
+            overlap_df.iloc[row].where(overlap_df.iloc[row] > min_overlap).dropna()
+        )
         cluster = set(overlapping.index)
         cluster.add(overlap_df.iloc[row].name)
         clusters.add(frozenset(cluster))
@@ -225,11 +232,16 @@ def name_clusters(clusters: Set) -> Dict:
     Returns:
         A dictionary in the form {clustername0: clusters0, cluster_name1: cluster1}
     """
-    #Ensure a sufficiently long list of possible names
+    # Ensure a sufficiently long list of possible names
     cluster_names = list(string.ascii_uppercase) + list(string.ascii_lowercase)
 
+    clusters_list = list(clusters)
+
+    # Ensure reproducable behavior, as sets are unordered.
+    clusters_list.sort(key=lambda l: sum(ord(c) for c in str(l)), reverse=True)
+
     named_clusters = {}
-    for cluster in clusters:
+    for cluster in clusters_list:
         name = cluster_names.pop(0)
         named_clusters[name] = set(cluster)
 
@@ -255,7 +267,7 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict:
 
     renaming_dict = {}
     for key in inversed_names:
-        ky = key.split('_')
+        ky = key.split("_")
         split = int(ky[0])
         cluster = int(ky[1])
         if split in renaming_dict:
@@ -284,7 +296,10 @@ def ensure_unique_names(renaming_dict: Dict) -> Dict:
         cluster_old_names = [cl for cl, _ in renamed_dict[split]]
         cluster_new_names = [cl for _, cl in renamed_dict[split]]
 
-        double_names = [x if cluster_new_names.count(x)>1 else None for x in set(cluster_new_names)]
+        double_names = [
+            x if cluster_new_names.count(x) > 1 else None
+            for x in set(cluster_new_names)
+        ]
         double_names = list(np.array(double_names)[np.array(double_names) != None])
 
         zero_names = []
@@ -297,15 +312,14 @@ def ensure_unique_names(renaming_dict: Dict) -> Dict:
                     zero_names.append(double_name + str(i))
         # Re-rename the "name0" cluster to "name"
         for name in zero_names:
-            cluster_new_names[cluster_new_names.index(name)] = name.replace("0","")
+            cluster_new_names[cluster_new_names.index(name)] = name.replace("0", "")
         renamed_dict[split] = list(zip(cluster_old_names, cluster_new_names))
     return renamed_dict
 
 
-def _rename_datsets(
-    rgdr_list: List["RGDR"],
-    clustered_data: List[xr.DataArray],
-    renaming_dict: Dict) -> List[xr.DataArray]:
+def _rename_datasets(
+    rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray], renaming_dict: Dict
+) -> List[xr.DataArray]:
     """Applies the renaming dictionary to the labels of the clustered data.
 
     Args:
@@ -320,21 +334,20 @@ def _rename_datsets(
     renamed = []
     for split, _rgdr in enumerate(rgdr_list):
         data = clustered_data[split]
-        labels = data['cluster_labels'].values
+        labels = data["cluster_labels"].values
         i_interval = str(_rgdr.cluster_map["i_interval"].values)  # type: ignore
         for cl in renaming_dict[split]:
             if f"i_interval:{i_interval}_cluster:{cl[0]}" not in labels:
                 break
-            labels[labels==f"i_interval:{i_interval}_cluster:{cl[0]}"] = cl[1]
-        data['cluster_labels'] = labels
+            labels[labels == f"i_interval:{i_interval}_cluster:{cl[0]}"] = cl[1]
+        data["cluster_labels"] = labels
         renamed.append(data)
     return renamed
 
 
 def rename_labels(
-    rgdr_list: List["RGDR"],
-    clustered_data: List[xr.DataArray]
-    ) -> List[xr.DataArray]:
+    rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]
+) -> List[xr.DataArray]:
     """Renames labels of clustered data over different splits to have similar names.
 
     To aid in users comparing the clustering over different splits, this function tries
@@ -351,11 +364,13 @@ def rename_labels(
         A list of the input clustered data, with the labels renamed.
     """
     n_splits = len(rgdr_list)
-    cluster_maps = [utils.cluster_labels_to_ints(
-                        rgdr_list[split].cluster_map.reset_coords()  # type: ignore
-                        )
-                    for split in range(n_splits)]
-    cluster_map_ds = xr.concat(cluster_maps, dim='split')
+    cluster_maps = [
+        utils.cluster_labels_to_ints(
+            rgdr_list[split].cluster_map.reset_coords()  # type: ignore
+        )
+        for split in range(n_splits)
+    ]
+    cluster_map_ds = xr.concat(cluster_maps, dim="split")
 
     clusters = get_overlapping_clusters(cluster_map_ds["cluster_labels"])
     clusters = remove_subsets(clusters)
@@ -365,4 +380,4 @@ def rename_labels(
     renaming_dict = create_renaming_dict(clusters)
     renaming_dict = ensure_unique_names(renaming_dict)
 
-    return _rename_datsets(rgdr_list, clustered_data, renaming_dict)
+    return _rename_datasets(rgdr_list, clustered_data, renaming_dict)
