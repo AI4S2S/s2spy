@@ -157,25 +157,40 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     data = data.to_dataset()
     data = data.stack(anch_int=("anchor_year", "i_interval"))
 
-    means_matrix = xr.DataArray.from_dict(
-        {
-            "coords": {
-                "time": {"dims": "time", "data": input_data["time"].values},
-            },
-            "dims": ("anch_int", "time"),
-            "data": create_means_matrix(
-                data["interval"].values, input_data["time"].values
-            ),
-        }
+    # Separate data with time dims (should be resampled), from data without time dims
+    #   (which does not need resampling). Otherwise stacking ALL dims together will
+    #   cause the stacked dimension become needlessly large, making resampling slow.
+    input_data_time = input_data[
+        [var for var in input_data.data_vars if "time" in input_data[var].dims]
+    ]
+    input_data_nontime = input_data[
+        [var for var in input_data.data_vars if "time" not in input_data[var].dims]
+    ]
+
+    stacking_dims = list(input_data_time.dims.keys())
+    stacking_dims.remove("time")
+    if stacking_dims:  # There might not be extra dims to stack!
+        input_data_time = input_data_time.stack(allstack=stacking_dims)
+
+    da_coords = {"anch_int": data["anch_int"]}
+    if stacking_dims:
+        da_coords["allstack"] = input_data_time["allstack"]
+
+    means_matrix = create_means_matrix(
+        data["interval"].values, input_data_time["time"].values
     )
 
-    resampled_vars = [xr.DataArray] * len(input_data.data_vars)
-    for i, var in enumerate(input_data.data_vars):
-        resampled_vars[i] = xr.dot(input_data[var], means_matrix, dims=["time"]).rename(
-            var
-        )
+    resampled_vars = [xr.DataArray] * len(input_data_time.data_vars)
+    for i, var in enumerate(input_data_time.data_vars):
+        resampled_vars[i] = xr.DataArray(  # type: ignore
+            data=np.matmul(means_matrix, input_data_time[var].values), coords=da_coords
+        ).rename(var)
 
-    data = xr.merge([data] + resampled_vars)
+    if input_data_nontime.data_vars:
+        data = xr.merge([data, input_data_nontime] + resampled_vars)
+    else:
+        data = xr.merge([data] + resampled_vars)
+
     data = data.unstack().set_coords(["interval"])
     data = utils.convert_interval_to_bounds(data)
     return data.transpose("anchor_year", "i_interval", ...)
