@@ -61,11 +61,13 @@ def check_empty_intervals(data: Union[pd.DataFrame, xr.Dataset]) -> None:
     """
     if isinstance(data, pd.DataFrame) and not np.any(np.isnan(data.iloc[:, 3:])):
         return None
-    if isinstance(data, xr.Dataset) and not any(
-        data[var].isnull().any(dim=["i_interval", "anchor_year"]).all()
-        for var in data.data_vars
-    ):
-        return None
+    if isinstance(data, xr.Dataset):
+        time_vars = [var for var in data.data_vars if "anchor_year" in data[var].dims]
+        if not any(
+            data[var].isnull().any(dim=["i_interval", "anchor_year"]).all()
+            for var in time_vars
+        ):
+            return None
 
     warnings.warn(
         "The input data could not fully cover the calendar's intervals. "

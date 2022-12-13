@@ -141,6 +141,7 @@ def resample_pandas(
     return data
 
 
+# pylint: disable=too-many-locals
 def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     """Internal function to handle resampling of xarray data.
 
@@ -157,25 +158,52 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     data = data.to_dataset()
     data = data.stack(anch_int=("anchor_year", "i_interval"))
 
-    means_matrix = xr.DataArray.from_dict(
-        {
-            "coords": {
-                "time": {"dims": "time", "data": input_data["time"].values},
-            },
-            "dims": ("anch_int", "time"),
-            "data": create_means_matrix(
-                data["interval"].values, input_data["time"].values
-            ),
-        }
+    # Separate data with time dims (should be resampled), from data without time dims
+    #   (which does not need resampling). Otherwise stacking ALL dims together will
+    #   cause the stacked dimension become needlessly large, making resampling slow.
+    input_data_time = input_data[
+        [var for var in input_data.data_vars if "time" in input_data[var].dims]
+    ]
+    input_data_nontime = input_data[
+        [var for var in input_data.data_vars if "time" not in input_data[var].dims]
+    ]
+
+    stacking_dims = list(input_data_time.dims.keys())
+    stacking_dims.remove("time")
+    if stacking_dims:  # There might not be extra dims to stack!
+        input_data_time = input_data_time.stack(allstack=stacking_dims)
+
+    da_coords = {"anch_int": data["anch_int"]}
+    if stacking_dims:
+        da_coords["allstack"] = input_data_time["allstack"]
+
+    contains_matrix = contains(
+        pd.IntervalIndex(data["interval"].values), input_data_time["time"].values
     )
 
-    resampled_vars = [xr.DataArray] * len(input_data.data_vars)
-    for i, var in enumerate(input_data.data_vars):
-        resampled_vars[i] = xr.dot(input_data[var], means_matrix, dims=["time"]).rename(
-            var
-        )
+    resampled_vars = [xr.DataArray] * len(input_data_time.data_vars)
+    for i, var in enumerate(input_data_time.data_vars):
+        size_input = input_data_time[var].shape[1] if stacking_dims else 1
+        resampled_data = np.zeros((contains_matrix.shape[0], size_input))
 
-    data = xr.merge([data] + resampled_vars)
+        # Note: while looping, contains_matrix will have a size of
+        # (n_intervals * n_anchor_years), making it the most reliably small dim.
+        _data = input_data_time[var].values
+        for j, row in enumerate(contains_matrix):
+            # Note: next line allows for np.median / np.max etc. To be implemented later
+            resampled_data[j,:] = np.mean(_data[row], axis=0)
+
+        resampled_data = np.squeeze(resampled_data)  # in case of (1, n) resampled data
+
+        resampled_vars[i] = xr.DataArray(  # type: ignore
+            data=resampled_data, coords=da_coords
+        ).rename(var)
+
+    if input_data_nontime.data_vars:
+        data = xr.merge([data, input_data_nontime] + resampled_vars)
+    else:
+        data = xr.merge([data] + resampled_vars)
+
     data = data.unstack().set_coords(["interval"])
     data = utils.convert_interval_to_bounds(data)
     return data.transpose("anchor_year", "i_interval", ...)
