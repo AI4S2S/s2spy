@@ -182,19 +182,20 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
 
     resampled_vars = [xr.DataArray] * len(input_data_time.data_vars)
     for i, var in enumerate(input_data_time.data_vars):
-        size_input = input_data_time[var].values.shape[1] if stacking_dims else 1
-        resampled_data = np.zeros((size_input, contains_matrix.shape[0]))
+        size_input = input_data_time[var].shape[1] if stacking_dims else 1
+        resampled_data = np.zeros((contains_matrix.shape[0], size_input))
 
         # Note: while looping, contains_matrix will have a size of
         # (n_intervals * n_anchor_years), making it the most reliably small dim.
+        _data = input_data_time[var].values
         for j, row in enumerate(contains_matrix):
             # Note: next line allows for np.median / np.max etc. To be implemented later
-            resampled_data[:, j] = np.mean(input_data_time[var].values[row], axis=0)
+            resampled_data[j,:] = np.mean(_data[row], axis=0)
 
         resampled_data = np.squeeze(resampled_data)  # in case of (1, n) resampled data
 
         resampled_vars[i] = xr.DataArray(  # type: ignore
-            data=resampled_data.T if stacking_dims else resampled_data, coords=da_coords
+            data=resampled_data if stacking_dims else resampled_data, coords=da_coords
         ).rename(var)
 
     if input_data_nontime.data_vars:
