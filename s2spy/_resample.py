@@ -141,6 +141,7 @@ def resample_pandas(
     return data
 
 
+# pylint: disable=too-many-locals
 def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     """Internal function to handle resampling of xarray data.
 
@@ -195,7 +196,7 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
         resampled_data = np.squeeze(resampled_data)  # in case of (1, n) resampled data
 
         resampled_vars[i] = xr.DataArray(  # type: ignore
-            data=resampled_data if stacking_dims else resampled_data, coords=da_coords
+            data=resampled_data, coords=da_coords
         ).rename(var)
 
     if input_data_nontime.data_vars:
