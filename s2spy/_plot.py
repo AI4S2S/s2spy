@@ -174,7 +174,9 @@ def matplotlib_visualization(
         add_yticklabels: If the years should be displayed on the y-axis ticks.
     """
     if ax is None:
-        _, ax = plt.subplots(figsize=(7,4))
+        fig, ax = plt.subplots(figsize=(7,4))
+    else:
+        fig = None
 
     intervals = calendar.get_intervals()[:n_years]
 
@@ -201,8 +203,8 @@ def matplotlib_visualization(
         ax.xaxis.set_major_formatter(formatter)
         ax.set_xlim(
             (
-                intervals.stack().values.min().left - pd.Timedelta(days=5),
-                intervals.stack().values.max().right + pd.Timedelta(days=5),
+                intervals.stack().values.min().left - pd.Timedelta(days=2),
+                intervals.stack().values.max().right + pd.Timedelta(days=2),
             )
         )
 
@@ -227,3 +229,6 @@ def matplotlib_visualization(
         ),
         ]
         ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
+
+    if not relative_dates and fig is not None:
+        fig.autofmt_xdate()  # Formats the dates nicely so they do not overlap
