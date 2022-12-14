@@ -36,12 +36,13 @@ def array_label_count(array: np.ndarray):
 
 def _init_overlap_df(split_array: xr.DataArray):
     """Build an empty dataframe with multi-indexes for clusters and labels.
-    
-    The structure will be something like {split1: [label1, label2], split2: [label1, label3], ...}.
-    The same multi-index is used for both rows and columns, such that the dataframe can 
-    be populated with the overlap between labels from different splits.
 
-    split_label_dict = _get_split_label_dict(split_array)
+    The structure will be something like {split1: [label1, label2], split2: [label1, label3], ...}.
+    The same multi-index is used for both rows and columns, such that the dataframe can
+    be populated with the overlap between labels from different splits.
+    """
+
+    split_label_dict = _extract_split_labels(split_array)
 
     # create a list of tuples:
     tuple_list = []  # type: ignore
@@ -69,27 +70,27 @@ def _init_overlap_df(split_array: xr.DataArray):
 
 
 # pylint: disable=too-many-locals
-def overlap_labels(split_array: xr.DataArray):
+def overlap_labels(da_splits: xr.DataArray):
     """
     Function to create a dataframe that shows how many grid cells
     of a found precursor region of a lag in a training split overlap with
     a region found in another split at the same lag.
     Args:
-        - split_array: an xr.DataArray containing the cluster labels with
+        - da_splits: an xr.DataArray containing the cluster labels with
         dimensions 'lag' and 'split'
         - lag: optional, if given one can give the df and lag separately,
-        else the split_array has no dimension i_interval
+        else the da_splits has no dimension i_interval
     """
 
     # initialize empty dataframe
-    df = _init_overlap_df(split_array)
+    overlap_df = _init_overlap_df(da_splits)
 
-    for split_number in split_array.split.values:
+    for split_number in da_splits.split.values:
 
         # select a split
-        split = split_array.sel({"split": split_number})
+        split = da_splits.sel({"split": split_number})
         # get labels
-        labels = df.loc[split_number, :].index.get_level_values(0)
+        labels = overlap_df.loc[split_number, :].index.get_level_values(0)
 
         for label in labels:
 
@@ -101,7 +102,7 @@ def overlap_labels(split_array: xr.DataArray):
             # create other split list
             other_split_number_list = [
                 other_split_number
-                for other_split_number in split_number_list
+                for other_split_number in da_splits.split.values
                 if other_split_number != split_number
             ]
 
@@ -109,9 +110,9 @@ def overlap_labels(split_array: xr.DataArray):
             for other_split_number in other_split_number_list:
 
                 # select other split
-                other_split = split_array.sel({"split": other_split_number})
+                other_split = da_splits.sel({"split": other_split_number})
                 # get list of labels in this split
-                other_split_labels = df.loc[
+                other_split_labels = overlap_df.loc[
                     other_split_number, :
                 ].index.get_level_values(0)
                 # create list with labels in other split with same sign as label
@@ -145,12 +146,12 @@ def overlap_labels(split_array: xr.DataArray):
                     )
 
                     # append to df
-                    df.at[(split_number, label), (other_split_number, other_label)] = (
+                    overlap_df.at[(split_number, label), (other_split_number, other_label)] = (
                         overlap_count
-                        / df.loc[(split_number, label), "label_cell_count"]
+                        / overlap_df.loc[(split_number, label), "label_cell_count"]
                     )  # type: ignore
 
-    return df
+    return overlap_df
 
 
 def get_overlapping_clusters(cluster_labels, min_overlap: float = 0.1) -> Set:
