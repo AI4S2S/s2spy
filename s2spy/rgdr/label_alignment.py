@@ -15,9 +15,8 @@ if TYPE_CHECKING:
     from s2spy.rgdr.rgdr import RGDR
 
 
-def _get_split_label_dict(split_array: xr.DataArray):
-    """Function to return a dict of splits numbers as keys
-    and a list of label values for a given lag."""
+def _extract_split_labels(split_array: xr.DataArray):
+    """Generate a dictionary of all cluster labels in each split."""
 
     split_labels_dict = {}
     # loop over splits
@@ -30,18 +29,17 @@ def _get_split_label_dict(split_array: xr.DataArray):
 
 
 def array_label_count(array: np.ndarray):
-    """Function to return a dict of values in an array with their number of occurences."""
+    """Count the total occurrence of each unique label."""
     unique, counts = np.unique(array, return_counts=True)
     return dict(zip(unique, counts))
 
 
 def _init_overlap_df(split_array: xr.DataArray):
-    """Function to create a pandas dataframe with a multi index of split
-    numbers as the first index and precursor region labels from every split
-    as the second index. The same multi index is used for the columns.
-    This df can be used to show how labels from different splits overlap.
-    The lag must be already preselected since we can only compare found regions from
-    the same lag over splits."""
+    """Build an empty dataframe with multi-indexes for clusters and labels.
+    
+    The structure will be something like {split1: [label1, label2], split2: [label1, label3], ...}.
+    The same multi-index is used for both rows and columns, such that the dataframe can 
+    be populated with the overlap between labels from different splits.
 
     split_label_dict = _get_split_label_dict(split_array)
 
@@ -86,18 +84,13 @@ def overlap_labels(split_array: xr.DataArray):
     # initialize empty dataframe
     df = _init_overlap_df(split_array)
 
-    # get list of split numbers
-    split_number_list = list(split_array.split.values)
-
-    # loop over splits
-    for split_number in split_number_list:
+    for split_number in split_array.split.values:
 
         # select a split
         split = split_array.sel({"split": split_number})
         # get labels
         labels = df.loc[split_number, :].index.get_level_values(0)
 
-        # loop over every label in the splits
         for label in labels:
 
             # mask the array for label
