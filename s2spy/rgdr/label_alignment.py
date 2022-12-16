@@ -15,153 +15,145 @@ if TYPE_CHECKING:
     from s2spy.rgdr.rgdr import RGDR
 
 
-def _extract_split_labels(split_array: xr.DataArray):
-    """Generate a dictionary of all cluster labels in each split."""
+def _get_split_cluster_dict(cluster_labels: xr.DataArray) -> dict:
+    """Generate a dictionary of all cluster labels in each split.
 
-    split_labels_dict = {}
-    # loop over splits
-    for split_number, split in enumerate(split_array):
-        unique_labels = np.unique(split)
-        unique_labels = unique_labels[unique_labels != 0]  # 0 are no precursor fields
-        split_labels_dict[split_number] = list(unique_labels)
+    Args:
+        cluster_labels: DataArray containing all the cluster maps, with the dimension
+            "split" for the different clusters over splits.
 
-    return split_labels_dict
-
-
-def array_label_count(array: np.ndarray):
-    """Count the total occurrence of each unique label."""
-    unique, counts = np.unique(array, return_counts=True)
-    return dict(zip(unique, counts))
+    Returns:
+        Dictionary in the form {0: [cluster_a, cluster_b], 1: [cluster_a], ...}
+"""
+    return {i_split: list(np.unique(split_data.values)[np.unique(split_data.values)!=0])
+            for i_split, split_data in enumerate(cluster_labels)}
 
 
-def _init_overlap_df(split_array: xr.DataArray):
+def _flatten_cluster_dict(cluster_dict: dict) -> List[Tuple[int, int]]:
+    """'Flattens' a cluster dictionary to a list with (split, cluster) as values.
+
+    For example, if the input is {0: [-1, -2, 1], 1: [-1, 1]}, this function will return
+    the following list: [(0, -1), (0, -2), (0, 1), (1, -1), (1, 1)]
+
+    Args:
+        cluster_dict: The cluster dictionary which should be flattened
+
+    Returns:
+        A list of the clusters and their splits
+    """
+    flat_clusters: List[Tuple[int, int]] = []
+    for split in cluster_dict:
+        flat_clusters.extend((split, cluster) for cluster in cluster_dict[split])
+    return flat_clusters
+
+
+def _init_overlap_df(cluster_labels: xr.DataArray):
     """Build an empty dataframe with multi-indexes for clusters and labels.
 
-    The structure will be something like {split1: [label1, label2], split2: [label1, label3], ...}.
+    The structure will be something like the following table:
+
+    split       |        0         1
+    label       |       -1        -1
+    ------------|-------------------
+    split label |
+    0     -1    |      NaN  0.583333
+    1     -1    | 0.333333       NaN
+
     The same multi-index is used for both rows and columns, such that the dataframe can
     be populated with the overlap between labels from different splits.
-    """
 
-    split_label_dict = _extract_split_labels(split_array)
-
-    # create a list of tuples:
-    tuple_list = []  # type: ignore
-    for split_number, label_list in split_label_dict.items():
-        tuple_list.extend((split_number, label) for label in label_list)
-
-    # create multi index with tuple list
-    multi_index = pd.MultiIndex.from_tuples(tuple_list, names=("split", "label"))
-
-    # create empty dataframe
-    df = pd.DataFrame(np.nan, index=multi_index, columns=multi_index)
-
-    # add label cell count column
-    df["label_cell_count"] = 0
-
-    # get label cell counts
-    for split_number, label_list in split_label_dict.items():
-        for label in label_list:
-            split = split_array.sel({"split": split_number})
-            split_labelmask = split.where(split == label, 0)
-            label_count = array_label_count(split_labelmask.values)
-            df.at[(split_number, label), "label_cell_count"] = label_count[label]
-
-    return df
-
-
-# pylint: disable=too-many-locals
-def overlap_labels(da_splits: xr.DataArray):
-    """
-    Function to create a dataframe that shows how many grid cells
-    of a found precursor region of a lag in a training split overlap with
-    a region found in another split at the same lag.
     Args:
-        - da_splits: an xr.DataArray containing the cluster labels with
-        dimensions 'lag' and 'split'
-        - lag: optional, if given one can give the df and lag separately,
-        else the da_splits has no dimension i_interval
+        cluster_labels: DataArray containing all the cluster maps, with the dimension
+            "split" for the different clusters over splits.
+
+    Returns:
+        A pandas dataframe containing a table
     """
 
-    # initialize empty dataframe
-    overlap_df = _init_overlap_df(da_splits)
+    split_label_dict = _get_split_cluster_dict(cluster_labels)
+    flat_clusters = _flatten_cluster_dict(split_label_dict)
+    multi_index = pd.MultiIndex.from_tuples(flat_clusters, names=("split", "label"))
 
-    for split_number in da_splits.split.values:
+    return pd.DataFrame(np.nan, index=multi_index, columns=multi_index)
 
-        # select a split
-        split = da_splits.sel({"split": split_number})
-        # get labels
-        labels = overlap_df.loc[split_number, :].index.get_level_values(0)
 
-        for label in labels:
+def _calculate_overlap(
+    cluster_labels: xr.DataArray,
+    split_a: int,
+    cluster_a: int,
+    split_b: int,
+    cluster_b: int
+    ) -> float:
+    """Calculates the overlapping fraction between two clusters, over different splits.
 
-            # mask the array for label
-            split_labelmask = split.where(split == label, 0)
-            # convert where equal to label to 1
-            split_labelmask = split_labelmask.where(split_labelmask != label, 1)
+    The overlap is defines as:
+        overlap = n_overlapping_cells / total_cells_cluster_a
 
-            # create other split list
-            other_split_number_list = [
-                other_split_number
-                for other_split_number in da_splits.split.values
-                if other_split_number != split_number
-            ]
+    Args:
+        cluster_labels: DataArray containing all the cluster maps, with the dimension
+            "split" for the different clusters over splits.
+        split_a: The index of the split of the first cluster
+        cluster_a: The value of the first cluster in the clusters_da DataArray.
+        split_b: The index of the split of the second cluster
+        cluster_b: The value of the second cluster in the clusters_da DataArray.
 
-            # loop over other splits
-            for other_split_number in other_split_number_list:
+    Returns:
+        Overlap of the first cluster with the second cluster, as a fraction (0.0 - 1.0)
+    """
+    mask_a = xr.where(cluster_labels.sel(split=split_a)==cluster_a, 1, 0).values
+    mask_b = xr.where(cluster_labels.sel(split=split_b)==cluster_b, 1, 0).values
 
-                # select other split
-                other_split = da_splits.sel({"split": other_split_number})
-                # get list of labels in this split
-                other_split_labels = overlap_df.loc[
-                    other_split_number, :
-                ].index.get_level_values(0)
-                # create list with labels in other split with same sign as label
-                other_split_labels_samesign = [
-                    other_label
-                    for other_label in other_split_labels
-                    if np.sign(other_label) == np.sign(label)
-                ]
+    return np.sum(np.logical_and(mask_a, mask_b))/np.sum(mask_a)
 
-                # loop over labels of same sign
-                for other_label in other_split_labels_samesign:
 
-                    # mask for other_label
-                    other_split_labelmask = other_split.where(
-                        other_split == other_label, 0
-                    )
-                    # convert where equal to label to 1
-                    other_split_labelmask = other_split.where(
-                        other_split_labelmask != other_label, 1
-                    )
+def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
+    """Fills the overlap table with the overlap between clusters over different splits.
 
-                    # check where regions overlap
-                    overlap_array = split_labelmask.where(
-                        split_labelmask == other_split_labelmask
-                    )
+    Args:
+        cluster_labels: DataArray containing all the cluster maps, with the dimension
+            "split" for the different clusters over splits.
 
-                    # count the number of cells in the overlap array
-                    overlap_count_dict = array_label_count(overlap_array.values)
-                    overlap_count = (
-                        0 if 1 not in overlap_count_dict else overlap_count_dict[1]
-                    )
+    Returns:
+        The overlap table with all valid combinations filled in. Non valid combinations
+            of clusters (the cluster itself, or within the same split) will have NaN
+            values.
+    """
+    overlap_df = _init_overlap_df(cluster_labels)
 
-                    # append to df
-                    overlap_df.at[(split_number, label), (other_split_number, other_label)] = (
-                        overlap_count
-                        / overlap_df.loc[(split_number, label), "label_cell_count"]
-                    )  # type: ignore
+    all_clusters = _get_split_cluster_dict(cluster_labels)
+
+    pos_clusters = {split:[el for el in cluster_list if np.sign(el)==1]
+                for (split,cluster_list) in all_clusters.items()}
+    neg_clusters = {split:[el for el in cluster_list if np.sign(el)==-1]
+                for (split,cluster_list) in all_clusters.items()}
+
+    for clusters in (pos_clusters, neg_clusters):
+        flat_clusters = _flatten_cluster_dict(clusters)
+
+        for (split, cluster) in flat_clusters:
+            other_clusters = _flatten_cluster_dict(
+                {k:v for (k,v) in clusters.items() if k != split}
+            )
+            for (other_split, other_cluster) in other_clusters:
+                overlap = _calculate_overlap(
+                    cluster_labels, split, cluster, other_split, other_cluster
+                )
+                overlap_df.at[(split, cluster), (other_split, other_cluster)] = overlap
 
     return overlap_df
 
 
-def get_overlapping_clusters(cluster_labels, min_overlap: float = 0.1) -> Set:
+def get_overlapping_clusters(
+    cluster_labels: xr.DataArray, min_overlap: float = 0.1
+    ) -> Set:
     """Creates sets of overlapping clusters.
 
     Clusters will be considered to have sufficient overlap if they overlap at least by
     the minimum threshold. Note that this is a one way criterion.
 
     Args:
-        cluster_labels
+        cluster_labels: DataArray containing all the cluster maps, with the dimension
+            "split" for the different clusters over splits.
         min_overlap: Minimum overlap when clusters are considered to be sufficiently
             overlapping to belong to the same signal. Defaults to 0.1.
 
@@ -169,8 +161,8 @@ def get_overlapping_clusters(cluster_labels, min_overlap: float = 0.1) -> Set:
         A set of (frozen) sets, each set corresponding to a possible combination of
             clusters that overlap.
     """
-    overlap_df = overlap_labels(cluster_labels)
-    overlap_df = overlap_df.drop(columns="label_cell_count")
+    overlap_df = calculate_overlap_table(cluster_labels)
+
     overlap_df.columns = [
         "_".join([str(el) for el in col]) for col in overlap_df.columns.values
     ]  # type: ignore
