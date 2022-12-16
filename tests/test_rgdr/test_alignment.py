@@ -111,9 +111,9 @@ class TestAlignmentSubfunctions:
             2: [(-1, 'B')]
         }
         expected = {
-            0: [(-1, 'B')],
-            1: [(-2, 'B'), (-1, 'B1')],
-            2: [(-1, 'B')]
+            0: [(-1, 'B1')],
+            1: [(-2, 'B1'), (-1, 'B2')],
+            2: [(-1, 'B1')]
         }
         assert expected == label_alignment.ensure_unique_names(dummy_names)
 

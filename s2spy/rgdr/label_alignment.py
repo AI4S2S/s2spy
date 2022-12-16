@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from s2spy.rgdr import utils
+from copy import copy
 
 
 if TYPE_CHECKING:
@@ -151,11 +152,28 @@ def get_overlapping_clusters(
     Clusters will be considered to have sufficient overlap if they overlap at least by
     the minimum threshold. Note that this is a one way criterion.
 
+    For example, if the overlap table is like the following:
+    split       |    0       1
+    label       |   -1      -1
+    ------------|-------------
+    split label |
+    0     -1    |  NaN    0.05
+    1     -1    | 0.20     NaN
+
+    Then cluster (split: 0, label: -1) will overlap with cluster (1, -1) by 0.05. This
+    is insufficient to be considered the same cluster. However, cluster (1, -1) does
+    overlap by 0.20 with cluster (0, -1), so they *will* be considered the same cluster.
+    This situation can arise when one cluster is much bigger than another one.
+
+    In this example, the overlapping set will be {frozenset("0_-1", "1_-1")}.
+    Note that if we would use a threshold of 0.05, the output would not change, as the
+    two nexted sets {"0_-1", "1_-1"} and {"1_-1", "0_-1"} are the same.
+
     Args:
         cluster_labels: DataArray containing all the cluster maps, with the dimension
             "split" for the different clusters over splits.
-        min_overlap: Minimum overlap when clusters are considered to be sufficiently
-            overlapping to belong to the same signal. Defaults to 0.1.
+        min_overlap: Minimum overlap (0.0 - 1.0) when clusters are considered to be
+            sufficiently overlapping to belong to the same signal. Defaults to 0.1.
 
     Returns:
         A set of (frozen) sets, each set corresponding to a possible combination of
@@ -171,7 +189,7 @@ def get_overlapping_clusters(
     ]  # type: ignore
 
     clusters = set()
-    for row in range(overlap_df.index.size):  # type: ignore
+    for row, _ in enumerate(overlap_df.index):
         overlapping = (
             overlap_df.iloc[row].where(overlap_df.iloc[row] > min_overlap).dropna()
         )
@@ -214,7 +232,10 @@ def remove_overlapping_clusters(clusters: Set) -> Set:
 
 
 def name_clusters(clusters: Set) -> Dict:
-    """Gives each cluster a unique letter.
+    """Gives each cluster a unique name.
+
+    Note: the first 52 names will be from A - Z, and a - z. If more than 52 clusters are
+    present, these will get names with two uppercase letters.
 
     Args:
         clusters: A set of different clusters. Each element is a list of clusters and
@@ -225,6 +246,10 @@ def name_clusters(clusters: Set) -> Dict:
     """
     # Ensure a sufficiently long list of possible names
     cluster_names = list(string.ascii_uppercase) + list(string.ascii_lowercase)
+    # Extend (A-z) with (AA-ZZ).
+    for first_letter in string.ascii_uppercase:
+        cluster_names.extend(first_letter + second_letter
+            for second_letter in string.ascii_uppercase)
 
     clusters_list = list(clusters)
 
@@ -239,7 +264,7 @@ def name_clusters(clusters: Set) -> Dict:
     return named_clusters
 
 
-def create_renaming_dict(aligned_clusters: Dict) -> Dict:
+def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, str]]]:
     """Creates a dictionary that can be used to rename the clusters to the aligned names.
 
     Args:
@@ -269,12 +294,17 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict:
     return renaming_dict
 
 
-def ensure_unique_names(renaming_dict: Dict) -> Dict:
+def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict:
     """This function ensures that in every split, every cluster has a unique name.
 
     The function finds the non-unqiue names within each split, and will rename these by
     adding a number. For example, there are three clusters in the first split with the
     name "C". The new names will be "C", "C1" and "C2".
+
+    If renaming_dict is the following:
+        {0: [(-1, "A"), (1, "B")], 1: [(-1, "A"), (-2, "A")]}
+    The renamed dictionary will be:
+        {0: [(-1, "A1"), (1, "B")], 1: [(-1, "A1"), (-2, "A2")]}
 
     Args:
         renaming_dict: Renaming dictionary with non unique names.
@@ -283,29 +313,30 @@ def ensure_unique_names(renaming_dict: Dict) -> Dict:
         Renaming dictionary with only unique names
     """
     renamed_dict = deepcopy(renaming_dict)
+
+    double_names_any: Set[str] = set()
     for split in renamed_dict:
         cluster_old_names = [cl for cl, _ in renamed_dict[split]]
         cluster_new_names = [cl for _, cl in renamed_dict[split]]
 
-        double_names = [
-            x if cluster_new_names.count(x) > 1 else None
-            for x in set(cluster_new_names)
-        ]
-        # pylint:disable=singleton-comparison
-        double_names = list(np.array(double_names)[np.array(double_names) != None])  # noqa
+        double_names = [x for x in set(cluster_new_names)
+                        if cluster_new_names.count(x) > 1]
 
-        zero_names = []
         for double_name in double_names:
+            double_names_any.add(double_name)
             ndouble = cluster_new_names.count(double_name)
             for i in range(ndouble):
                 el = cluster_new_names.index(double_name)
-                cluster_new_names[el] = double_name + str(i)  # type: ignore
-                if i == 0:
-                    zero_names.append(double_name + str(i))
-        # Re-rename the "name0" cluster to "name"
-        for name in zero_names:
-            cluster_new_names[cluster_new_names.index(name)] = name.replace("0", "")
+                cluster_new_names[el] = double_name + str(i + 1)
         renamed_dict[split] = list(zip(cluster_old_names, cluster_new_names))
+
+    # If any new label was renamed in a different cluster, e.g. A -> A1, make sure that
+    # any other "A" label is also renamed.
+    for split, clusters in renamed_dict.items():
+        for i, (old_name, new_name) in enumerate(clusters):
+            if new_name in double_names_any:
+                renamed_dict[split][i] = (old_name, f"{new_name}1")
+
     return renamed_dict
 
 
@@ -325,7 +356,8 @@ def _rename_datasets(
     """
     renamed = []
     for split, _rgdr in enumerate(rgdr_list):
-        data = clustered_data[split]
+        # A copy is required to not modify labels of the input data
+        data = copy(clustered_data[split])
         labels = data["cluster_labels"].values
         i_interval = str(_rgdr.cluster_map["i_interval"].values)  # type: ignore
         for cl in renaming_dict[split]:
