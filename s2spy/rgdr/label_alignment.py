@@ -1,4 +1,5 @@
 import string
+from copy import copy
 from copy import deepcopy
 from typing import TYPE_CHECKING
 from typing import Dict
@@ -9,7 +10,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from s2spy.rgdr import utils
-from copy import copy
 
 
 if TYPE_CHECKING:
