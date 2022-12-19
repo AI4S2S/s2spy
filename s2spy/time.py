@@ -512,7 +512,7 @@ class Calendar(BaseCalendar):
     def n_targets(self):
         return len(self.targets)
 
-    def add_interval(
+    def add_intervals(
         self,
         role: Literal["target", "precursor"],
         length: str,
