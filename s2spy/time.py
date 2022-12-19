@@ -519,8 +519,10 @@ class Calendar(BaseCalendar):
         gap: str = "0d",
         n: int = 1,
     ) -> None:
-        """Add one or more intervals to the calendar. The interval can be a target or a
-        precursor.
+        """Add one or more intervals to the calendar.
+
+        The interval can be a target or a precursor, and can be defined by its length,
+        a possible gap between this interval and the preceding interval.
 
         Args:
             role: Either a 'target' or 'precursor' interval(s).
