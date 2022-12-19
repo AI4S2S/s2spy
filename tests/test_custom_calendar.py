@@ -64,8 +64,8 @@ class TestCalendar:
     def dummy_calendar(self):
         cal = Calendar(anchor="12-31")
         # append building blocks
-        cal.add_interval("target", "20d")
-        cal.add_interval("precursor", "10d")
+        cal.add_intervals("target", "20d")
+        cal.add_intervals("precursor", "10d")
         # map years
         cal = cal.map_years(2021, 2021)
         return cal
@@ -88,7 +88,7 @@ class TestCalendar:
 
     def test_repr_reproducible(self):
         cal = Calendar(anchor="12-31", allow_overlap=True)
-        cal.add_interval("target", "10d")
+        cal.add_intervals("target", "10d")
         cal.map_years(2020, 2022)
         repr_dict = eval(repr(cal)).__dict__  # pylint: disable=eval-used
         assert repr_dict["_anchor"] == "12-31"
@@ -118,8 +118,8 @@ class TestCalendar:
         )
         assert np.array_equal(dummy_calendar.flat, expected)
 
-    def test_append(self, dummy_calendar):
-        dummy_calendar.add_interval("target", "30d")
+    def test_add_intervals(self, dummy_calendar):
+        dummy_calendar.add_intervals("target", "30d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-21", "2021-12-31", closed="left"),
@@ -128,8 +128,24 @@ class TestCalendar:
         )
         assert np.array_equal(dummy_calendar.flat, expected)
 
+    def test_add_intervals_multiple(self, dummy_calendar):
+        dummy_calendar.add_intervals("target", "30d", n=2)
+        dummy_calendar = dummy_calendar.map_years(2021, 2021)
+        expected = np.array(
+            [interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left"),
+             interval("2022-01-20", "2022-02-19", closed="left"),
+             interval("2022-02-19", "2022-03-21", closed="left"),]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    @pytest.mark.parametrize("incorrect_n", (2.0, [1], 0, -10))  # non-int or <=0.
+    def test_add_intervals_incorrect_n(self, dummy_calendar, incorrect_n):
+        with pytest.raises(ValueError):
+            dummy_calendar.add_intervals("target", "30d", n=incorrect_n)
+
     def test_gap_intervals(self, dummy_calendar):
-        dummy_calendar.add_interval("target", "20d", gap="10d")
+        dummy_calendar.add_intervals("target", "20d", gap="10d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-21", "2021-12-31", closed="left"),
@@ -139,7 +155,7 @@ class TestCalendar:
         assert np.array_equal(dummy_calendar.flat, expected)
 
     def test_overlap_intervals(self, dummy_calendar):
-        dummy_calendar.add_interval("precursor", "10d", gap="-5d")
+        dummy_calendar.add_intervals("precursor", "10d", gap="-5d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
             [interval("2021-12-16", "2021-12-26", closed="left"),
@@ -165,8 +181,8 @@ class TestCalendar:
 
     def test_non_day_interval_length(self):
         cal = Calendar(anchor="December")
-        cal.add_interval("target", "1M")
-        cal.add_interval("precursor", "10M")
+        cal.add_intervals("target", "1M")
+        cal.add_intervals("precursor", "10M")
         cal.map_years(2020, 2020)
         expected = np.array(
             [interval("2020-02-01", "2020-12-01", closed="left"),
@@ -179,8 +195,8 @@ class TestCalendar:
                               (False, [2022, 2020])))
     def test_allow_overlap(self, allow_overlap, expected_anchors):
         cal = Calendar(anchor="12-31", allow_overlap=allow_overlap)
-        cal.add_interval("target", length="30d")
-        cal.add_interval("precursor", length="365d")
+        cal.add_intervals("target", length="30d")
+        cal.add_intervals("precursor", length="365d")
         cal.map_years(2020, 2022)
         assert np.array_equal(
             expected_anchors,
