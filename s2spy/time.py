@@ -517,18 +517,30 @@ class Calendar(BaseCalendar):
         role: Literal["target", "precursor"],
         length: str,
         gap: str = "0d",
+        n: int = 1,
     ) -> None:
-        """Add an interval to the calendar. The interval can be a target or a precursor.
+        """Add one or more intervals to the calendar. The interval can be a target or a
+        precursor.
 
         Args:
-            role: Either a 'target' or 'precursor' interval.
-            length: The length of the interval, in a format of '5d' for five days, '2W'
+            role: Either a 'target' or 'precursor' interval(s).
+            length: The length of the interval(s), in a format of '5d' for five days, '2W'
                 for two weeks, or '1M' for one month.
             gap: The gap between this interval and the preceding target/precursor
                 interval. Same format as the length argument.
+            n: The number of intervals which should be added to the calendar. Defaults
+                to 1.
         """
+        if not isinstance(n, int):
+            raise ValueError("Please input an 'int' type for the 'n' argument."
+                             f" Not a {type(n)}.")
+        if n <= 0:
+            raise ValueError("The number of intervals 'n' has to be 1 or greater, "
+                             f"not '{n}'.")
+
         if role in ["target", "precursor"]:
-            self._append(Interval(role, length, gap))
+            for _ in range(n):
+                self._append(Interval(role, length, gap))
         else:
             raise ValueError(
                 f"Type '{role}' is not a valid interval type. Please "

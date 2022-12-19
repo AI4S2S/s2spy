@@ -118,7 +118,7 @@ class TestCalendar:
         )
         assert np.array_equal(dummy_calendar.flat, expected)
 
-    def test_append(self, dummy_calendar):
+    def test_add_interval(self, dummy_calendar):
         dummy_calendar.add_interval("target", "30d")
         dummy_calendar = dummy_calendar.map_years(2021, 2021)
         expected = np.array(
@@ -127,6 +127,22 @@ class TestCalendar:
              interval("2022-01-20", "2022-02-19", closed="left"),]
         )
         assert np.array_equal(dummy_calendar.flat, expected)
+
+    def test_add_interval_multiple(self, dummy_calendar):
+        dummy_calendar.add_interval("target", "30d", n=2)
+        dummy_calendar = dummy_calendar.map_years(2021, 2021)
+        expected = np.array(
+            [interval("2021-12-21", "2021-12-31", closed="left"),
+             interval("2021-12-31", "2022-01-20", closed="left"),
+             interval("2022-01-20", "2022-02-19", closed="left"),
+             interval("2022-02-19", "2022-03-21", closed="left"),]
+        )
+        assert np.array_equal(dummy_calendar.flat, expected)
+
+    @pytest.mark.parametrize("incorrect_n", (2.0, [1], 0, -10))  # non-int or <=0.
+    def test_add_interval_incorrect_n(self, dummy_calendar, incorrect_n):
+        with pytest.raises(ValueError):
+            dummy_calendar.add_interval("target", "30d", n=incorrect_n)
 
     def test_gap_intervals(self, dummy_calendar):
         dummy_calendar.add_interval("target", "20d", gap="10d")
