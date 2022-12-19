@@ -6,7 +6,7 @@ from s2spy.time import resample  # pylint: disable=unused-import
 
 # pylint: disable=too-many-arguments
 def cal_builder(
-    anchor_date,
+    anchor,
     target_length,
     precur_length,
     n_targetperiods=1,
@@ -24,20 +24,21 @@ def cal_builder(
         7 months ahead
     This timeframe is usually repeated on a regular basis as new data comes in. For
     example, every first of the month the forecast is reinitiated.
-    - Args:
-        - anchor_date : the referral date of your calendar. This is the first day of the
+    Args:
+        anchor_date: the referral date of your calendar. This is the first day of the
             first target period.
-        - target_length : length of a target period
-        - precur_length : length of a precursor period
-        - n_targetperiods: number of targetperiods
-        - target_overlap: overlap between target periods
-        - n_precurperiods: number of precursorperiods
-        - precur_overlap: overlap between precursor periods
-        - precur_leadtime: gap (leadtime) between first target (i_interval = 0) and
+        target_length: length of a target period
+        precur_length: length of a precursor period
+        n_targetperiods: number of targetperiods
+        target_overlap: overlap between target periods
+        n_precurperiods: number of precursorperiods
+        precur_overlap: overlap between precursor periods
+        precur_leadtime: gap (leadtime) between first target (i_interval = 0) and
             first precursor period (i_interval = -1)
-    - Returns:
-        - A calendar
-    - Example:
+    Returns:
+        A calendar
+
+    Example:
         >>> import s2spy.time
         >>> cal = nwp_calendar_builder(start_date, '7d', '7d', precur_leadtime='14d', n_precurperiods=4)
         >>> cal
@@ -72,7 +73,7 @@ def cal_builder(
     return cal
 
 
-def _gap_shift(interval: s2spy.time.Interval, shift: str) -> dict:
+def _gap_shift(interval: s2spy.time.Interval, shift: Union[str, dict[str, int]]) -> dict[str, int]:
     """
     Shift a gap from a calendar interval by an input of a pandas-like
     frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
@@ -91,7 +92,6 @@ def _gap_shift(interval: s2spy.time.Interval, shift: str) -> dict:
         >>> gap_shifted
         {'days': 7}
     """
-    # parse timestrings to timedicts
     # pylint: disable=protected-access
     if isinstance(interval.gap, str):
         gap_time_dict = interval._parse_timestring(interval.gap)
@@ -149,18 +149,9 @@ def cal_shifter(
             ]
         )
     """
-    # get 1st target interval and 1st precursor interval from calendar
-    target_interval = calendar.targets[0]
-    precursor_interval = calendar.precursors[0]
-
-    # shift gaps
-    target_gap_shifted = _gap_shift(target_interval, shift)
-    precursor_gap_shifted = _gap_shift(precursor_interval, shift)
-
-    # set the new gaps on the calendar
     calendar_shifted = copy.deepcopy(calendar)
-    calendar_shifted.targets[0].gap = target_gap_shifted
-    calendar_shifted.precursors[0].gap = precursor_gap_shifted
+    calendar_shifted.targets[0].gap = _gap_shift(calendar.targets[0], shift)
+    calendar_shifted.precursors[0].gap = _gap_shift(calendar.precursors[0], shift)
 
     return calendar_shifted
 
@@ -174,14 +165,7 @@ def cal_list_resampler(cal_list: list, ds: xr.Dataset) -> xr.DataArray:
         - ds: dataset to resample
     """
     # loop over calendar in the nwp_calendar_list
-    for x, cal_x in enumerate(cal_list):
-        cal_x_mapped = cal_x.map_to_data(ds)
-        # resample and concatenate on dimension 'run'
-        if x == 0:
-            ds_r = s2spy.time.resample(cal_x_mapped, ds)
-        else:
-            ds_toconcat = s2spy.time.resample(cal_x_mapped, ds)
-            ds_r = xr.concat([ds_r, ds_toconcat], dim="run")
+    ds_r = xr.concat([s2spy.time.resample(cal, ds) for cal in cal_list], dim="run")
     # add coordinates for dimension 'run'
     ds_r = ds_r.assign_coords({"run": ds_r.run.values})
 
