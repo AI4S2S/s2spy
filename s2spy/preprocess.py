@@ -66,8 +66,9 @@ class Preprocessor:
         self._detrend = detrend
         self._remove_climatology = remove_climatology
 
-        self.climatology = None
-        self.trend: dict = {}
+        self._climatology: Union[xr.DataArray, xr.Dataset]
+        self._trend: dict
+        self._is_fit = False
 
     def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
         check_input_data(data)
@@ -78,27 +79,31 @@ class Preprocessor:
         # TODO: give option to be a gaussian-like window, instead of a block.
 
         if self._detrend is not None:
-            self.trend = get_trend(data_rolling, self._detrend)
+            self._trend = get_trend(data_rolling, self._detrend)
 
         if self._remove_climatology:
-            self.climatology = get_climatology(
+            self._climatology = get_climatology(
                 (
-                    apply_trend(data_rolling, self._detrend, self.trend)
+                    apply_trend(data_rolling, self._detrend, self._trend)
                     if self._detrend is not None
                     else data_rolling
                 )
             )
+        self._is_fit = True
 
     def transform(
         self, data: Union[xr.DataArray, xr.Dataset]
     ) -> Union[xr.DataArray, xr.Dataset]:
+        if not self._is_fit:
+            raise ValueError("The preprocessor has to be fit to data before a transform"
+                             " can be applied")
 
-        if self._detrend is not None and self.trend is not None:
+        if self._detrend is not None:
             d = apply_trend(data, self._detrend, self.trend)
         else:
             d = data
 
-        if self._remove_climatology and self.climatology is not None:
+        if self._remove_climatology:
             return d.groupby("time.dayofyear") - self.climatology
         return d
 
@@ -107,3 +112,22 @@ class Preprocessor:
     ) -> Union[xr.DataArray, xr.Dataset]:
         self.fit(data)
         return self.transform(data)
+
+    @property
+    def trend(self) -> dict:
+        if not self._is_fit:
+            raise ValueError("The preprocessor has to be fit to data before the trend"
+                             " can be requested.")
+        if not self._detrend:
+            raise ValueError("Detrending is set to `None`, so no trend is available")
+        return self._trend
+
+    @property
+    def climatology(self) -> Union[xr.DataArray, xr.Dataset]:
+        if not self._is_fit:
+            raise ValueError("The preprocessor has to be fit to data before the"
+                             " climatology can be requested.")
+        if not self._remove_climatology:
+            raise ValueError("`remove_climatology is set to `False`, so no climatology "
+                             "data is available")
+        return self._climatology
