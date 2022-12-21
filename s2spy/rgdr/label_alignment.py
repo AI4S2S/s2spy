@@ -1,3 +1,4 @@
+import itertools
 import string
 from copy import copy
 from copy import deepcopy
@@ -24,10 +25,11 @@ def _get_split_cluster_dict(cluster_labels: xr.DataArray) -> dict:
             "split" for the different clusters over splits.
 
     Returns:
-        Dictionary in the form {0: [cluster_a, cluster_b], 1: [cluster_a], ...}
-"""
-    return {i_split: list(np.unique(split_data.values)[np.unique(split_data.values)!=0])
-            for i_split, split_data in enumerate(cluster_labels)}
+        Dictionary in the form {0: [cluster_a, cluster_b], 1: [cluster_a], ...}"""
+    return {
+        i_split: list(np.unique(split_data.values)[np.unique(split_data.values) != 0])
+        for i_split, split_data in enumerate(cluster_labels)
+    }
 
 
 def _flatten_cluster_dict(cluster_dict: dict) -> List[Tuple[int, int]]:
@@ -83,8 +85,8 @@ def _calculate_overlap(
     split_a: int,
     cluster_a: int,
     split_b: int,
-    cluster_b: int
-    ) -> float:
+    cluster_b: int,
+) -> float:
     """Calculates the overlapping fraction between two clusters, over different splits.
 
     The overlap is defines as:
@@ -101,10 +103,10 @@ def _calculate_overlap(
     Returns:
         Overlap of the first cluster with the second cluster, as a fraction (0.0 - 1.0)
     """
-    mask_a = xr.where(cluster_labels.sel(split=split_a)==cluster_a, 1, 0).values
-    mask_b = xr.where(cluster_labels.sel(split=split_b)==cluster_b, 1, 0).values
+    mask_a = xr.where(cluster_labels.sel(split=split_a) == cluster_a, 1, 0).values
+    mask_b = xr.where(cluster_labels.sel(split=split_b) == cluster_b, 1, 0).values
 
-    return np.sum(np.logical_and(mask_a, mask_b))/np.sum(mask_a)
+    return np.sum(np.logical_and(mask_a, mask_b)) / np.sum(mask_a)
 
 
 def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
@@ -123,17 +125,21 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
 
     all_clusters = _get_split_cluster_dict(cluster_labels)
 
-    pos_clusters = {split:[el for el in cluster_list if np.sign(el)==1]
-                for (split,cluster_list) in all_clusters.items()}
-    neg_clusters = {split:[el for el in cluster_list if np.sign(el)==-1]
-                for (split,cluster_list) in all_clusters.items()}
+    pos_clusters = {
+        split: [el for el in cluster_list if np.sign(el) == 1]
+        for (split, cluster_list) in all_clusters.items()
+    }
+    neg_clusters = {
+        split: [el for el in cluster_list if np.sign(el) == -1]
+        for (split, cluster_list) in all_clusters.items()
+    }
 
     for clusters in (pos_clusters, neg_clusters):
         flat_clusters = _flatten_cluster_dict(clusters)
 
         for (split, cluster) in flat_clusters:
             other_clusters = _flatten_cluster_dict(
-                {k:v for (k,v) in clusters.items() if k != split}
+                {k: v for (k, v) in clusters.items() if k != split}
             )
             for (other_split, other_cluster) in other_clusters:
                 overlap = _calculate_overlap(
@@ -146,7 +152,7 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
 
 def get_overlapping_clusters(
     cluster_labels: xr.DataArray, min_overlap: float = 0.1
-    ) -> Set:
+) -> Set:
     """Creates sets of overlapping clusters.
 
     Clusters will be considered to have sufficient overlap if they overlap at least by
@@ -245,12 +251,11 @@ def name_clusters(clusters: Set) -> Dict:
         A dictionary in the form {clustername0: clusters0, cluster_name1: cluster1}
     """
     # Ensure a sufficiently long list of possible names
-    cluster_names = list(string.ascii_uppercase) + list(string.ascii_lowercase)
-    # Extend (A-z) with (AA-ZZ).
-    for first_letter in string.ascii_uppercase:
-        cluster_names.extend(first_letter + second_letter
-            for second_letter in string.ascii_uppercase)
-
+    cluster_names = list(string.ascii_uppercase)
+    # Extend (A-Z) with (AA-ZZ).
+    cluster_names += [
+        a + b for a, b in itertools.product(list(string.ascii_uppercase), repeat=2)
+    ]
     clusters_list = list(clusters)
 
     # Ensure reproducable behavior, as sets are unordered.
@@ -282,7 +287,7 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, st
             inversed_names[el] = key
 
     renaming_dict: Dict[int, List[Tuple[int, str]]] = {}
-    for key in inversed_names: # pylint: disable=consider-using-dict-items
+    for key in inversed_names:  # pylint: disable=consider-using-dict-items
         ky = key.split("_")
         split = int(ky[0])
         cluster = int(ky[1])
@@ -319,8 +324,9 @@ def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict
         cluster_old_names = [cl for cl, _ in renamed_dict[split]]
         cluster_new_names = [cl for _, cl in renamed_dict[split]]
 
-        double_names = [x for x in set(cluster_new_names)
-                        if cluster_new_names.count(x) > 1]
+        double_names = [
+            x for x in set(cluster_new_names) if cluster_new_names.count(x) > 1
+        ]
 
         for double_name in double_names:
             double_names_any.add(double_name)
