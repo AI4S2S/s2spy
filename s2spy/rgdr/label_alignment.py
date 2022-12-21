@@ -250,12 +250,9 @@ def name_clusters(clusters: Set) -> Dict:
     Returns:
         A dictionary in the form {clustername0: clusters0, cluster_name1: cluster1}
     """
-    # Ensure a sufficiently long list of possible names
     cluster_names = list(string.ascii_uppercase)
-    # Extend (A-Z) with (AA-ZZ).
-    cluster_names += [
-        a + b for a, b in itertools.product(list(string.ascii_uppercase), repeat=2)
-    ]
+    # Ensure a sufficiently long list of possible names, by extending (A-Z) with (AA-ZZ)
+    cluster_names += [a + b for a, b in itertools.product(cluster_names, repeat=2)]
     clusters_list = list(clusters)
 
     # Ensure reproducable behavior, as sets are unordered.
