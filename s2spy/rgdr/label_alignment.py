@@ -375,7 +375,7 @@ def _rename_datasets(
 def rename_labels(
     rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]
 ) -> List[xr.DataArray]:
-    """Renames labels of clustered data over different splits to have similar names.
+    """Returns a new object with renamed cluster labels aligned over different splits.
 
     To aid in users comparing the clustering over different splits, this function tries
     to match the clusters over different splits, and give clusters that are in the same
