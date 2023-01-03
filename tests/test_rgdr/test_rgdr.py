@@ -128,12 +128,12 @@ class TestCorrelation:
         return dummy_dataarray.isel(lat=0, lon=0).drop_vars(["lat", "lon"])
 
     def test_pearsonr(self):
-        result = rgdr._pearsonr_nan([0, 0, 1], [0, 1, 1])
+        result = rgdr._pearsonr_nan([0, 0, 1], [0, 1, 1])  # type: ignore
         expected = (0.5, 0.66666667)
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_pearsonr_nan(self):
-        result = rgdr._pearsonr_nan([np.nan, 0, 1], [0, 1, 1])
+        result = rgdr._pearsonr_nan([np.nan, 0, 1], [0, 1, 1])  # type: ignore
         expected = (np.nan, np.nan)
         np.testing.assert_array_almost_equal(result, expected)
 
@@ -209,28 +209,39 @@ class TestDBSCAN:
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
 
 
+rgdr_test_config = dict(
+    target_intervals=[1],
+    lag=4,
+    eps_km=600,
+    alpha=0.025,
+    min_area_km2=0
+)
+
+
 class TestRGDR:
     """Test RGDR and its methods."""
 
     @pytest.fixture(autouse=True)
     def dummy_rgdr(self):
-        return RGDR(
-            target_intervals=[1],
-            lag=4,
-            eps_km=600,
-            alpha=0.025,
-            min_area_km2=0
-            )
+        return RGDR(**rgdr_test_config)  # type: ignore
 
     def test_init(self):
-        rgdr = RGDR(
-            target_intervals=[1],
-            lag=4,
-            eps_km=600,
-            alpha=0.025,
-            min_area_km2=0
-            )
+        rgdr = RGDR(**rgdr_test_config)  # type: ignore
         assert isinstance(rgdr, RGDR)
+
+    def test_target_intervals(self, dummy_rgdr):
+        assert dummy_rgdr.target_intervals == [1]
+
+    def test_precursor_intervals(self, dummy_rgdr):
+        assert dummy_rgdr.precursor_intervals == [-4]
+
+    def test_repr(self, dummy_rgdr):
+        eval(repr(dummy_rgdr))  # pylint: disable=eval-used
+
+    @pytest.mark.parametrize("prop", ("cluster_map", "pval_map", "corr_map"))
+    def test_fitted_properties_err(self, dummy_rgdr, prop):
+        with pytest.raises(ValueError):
+            getattr(dummy_rgdr, prop)
 
     def test_transform_before_fit(self, dummy_rgdr, example_precursor_field):
         "Should fail as RGDR first has to be fit to (training) data."
@@ -250,29 +261,22 @@ class TestRGDR:
 
     def test_fit_transform_fits(self, example_precursor_field, example_target_timeseries):
         # Ensures that after fit_transform, the rgdr object is fit.
-        rgdr = RGDR(
-            target_intervals=[1],
-            lag=4,
-            eps_km=600,
-            alpha=0.025,
-            min_area_km2=0
-            )
+        rgdr = RGDR(**rgdr_test_config)  # type: ignore
         _ = rgdr.fit_transform(example_precursor_field, example_target_timeseries)
         assert rgdr._area is not None
 
     def test_fit_transform(self, example_precursor_field, example_target_timeseries):
-        rgdr = RGDR(
-            target_intervals=[1],
-            lag=4,
-            eps_km=600,
-            alpha=0.025,
-            min_area_km2=0
-            )
+        rgdr = RGDR(**rgdr_test_config)  # type: ignore
         clustered_data = rgdr.fit_transform(example_precursor_field, example_target_timeseries)
         expected_labels = np.array(
             [-2, -1], dtype='int16'
         )
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
+
+    @pytest.mark.parametrize("prop", ("cluster_map", "pval_map", "corr_map"))
+    def test_fitted_properties(self, dummy_rgdr, example_precursor_field, example_target_timeseries, prop):
+        dummy_rgdr.fit(example_precursor_field, example_target_timeseries)
+        getattr(dummy_rgdr, prop)
 
     def test_corr_preview(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
         dummy_rgdr.preview_correlation(example_precursor_field, example_target_timeseries)
