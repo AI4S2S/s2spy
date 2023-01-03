@@ -1,17 +1,17 @@
+from typing import TYPE_CHECKING
 from typing import Union
 from typing import overload
 import numpy as np
 import pandas as pd
 import xarray as xr
 from . import utils
-from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from s2spy.time import Calendar
     from s2spy.time import AdventCalendar
-    from s2spy.time import WeeklyCalendar
+    from s2spy.time import Calendar
     from s2spy.time import MonthlyCalendar
+    from s2spy.time import WeeklyCalendar
     Calendars = Union[Calendar, AdventCalendar, WeeklyCalendar, MonthlyCalendar]
 
 
