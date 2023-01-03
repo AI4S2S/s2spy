@@ -10,7 +10,6 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import xarray as xr
-from s2spy.rgdr import utils
 
 
 if TYPE_CHECKING:
@@ -358,15 +357,14 @@ def _rename_datasets(
         A list of the input clustered data, with the labels renamed.
     """
     renamed = []
-    for split, _rgdr in enumerate(rgdr_list):
+    for split, _ in enumerate(rgdr_list):
         # A copy is required to not modify labels of the input data
         data = copy(clustered_data[split])
-        labels = data["cluster_labels"].values
-        i_interval = str(_rgdr.cluster_map["i_interval"].values)  # type: ignore
+        labels = data["cluster_labels"].values.astype("U32")
         for cl in renaming_dict[split]:
-            if f"i_interval:{i_interval}_cluster:{cl[0]}" not in labels:
+            if f"{cl[0]}" not in labels:
                 break
-            labels[labels == f"i_interval:{i_interval}_cluster:{cl[0]}"] = cl[1]
+            labels[labels == f"{cl[0]}"] = cl[1]
         data["cluster_labels"] = labels
         renamed.append(data)
     return renamed
@@ -392,11 +390,10 @@ def rename_labels(
     """
     n_splits = len(rgdr_list)
     cluster_maps = [
-        utils.cluster_labels_to_ints(
-            rgdr_list[split].cluster_map.reset_coords()  # type: ignore
-        )
+        rgdr_list[split].cluster_map.reset_coords()  # type: ignore
         for split in range(n_splits)
     ]
+
     cluster_map_ds = xr.concat(cluster_maps, dim="split")
 
     clusters = get_overlapping_clusters(cluster_map_ds["cluster_labels"])
