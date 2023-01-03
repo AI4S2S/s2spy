@@ -1,8 +1,18 @@
 from typing import Union
+from typing import overload
 import numpy as np
 import pandas as pd
 import xarray as xr
 from . import utils
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from s2spy.time import Calendar
+    from s2spy.time import AdventCalendar
+    from s2spy.time import WeeklyCalendar
+    from s2spy.time import MonthlyCalendar
+    Calendars = Union[Calendar, AdventCalendar, WeeklyCalendar, MonthlyCalendar]
 
 
 PandasData = (pd.Series, pd.DataFrame)
@@ -209,8 +219,24 @@ def resample_dataset(calendar, input_data: xr.Dataset) -> xr.Dataset:
     return data.transpose("anchor_year", "i_interval", ...)
 
 
+@overload
 def resample(
-    mapped_calendar,
+    mapped_calendar: "Calendars",
+    input_data: Union[xr.DataArray, xr.Dataset]
+) -> xr.Dataset:
+    ...
+
+
+@overload
+def resample(
+    mapped_calendar: "Calendars",
+    input_data: Union[pd.Series, pd.DataFrame]
+) -> pd.DataFrame:
+    ...
+
+
+def resample(
+    mapped_calendar: "Calendars",
     input_data: Union[pd.Series, pd.DataFrame, xr.DataArray, xr.Dataset],
 ) -> Union[pd.DataFrame, xr.Dataset]:
     """Resample input data to the calendar frequency.
