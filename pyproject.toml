@@ -10,6 +10,14 @@ branch = true
 source = ["s2spy"]
 command_line = "-m pytest"
 
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "@overload",
+  "if TYPE_CHECKING:",
+  "if typing.TYPE_CHECKING:"
+]
+
 [tool.tox]
 legacy_tox_ini = """
 
