@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="681.32947"
+   height="287.94186"
+   overflow="hidden"
+   version="1.1"
+   id="svg299"
+   sodipodi:docname="single_interval_illustration.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview301"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.598847"
+     inkscape:cx="368.39047"
+     inkscape:cy="78.80679"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="1552"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g297" />
+  <defs
+     id="defs159">
+    <clipPath
+       id="clip0">
+      <rect
+         x="0"
+         y="0"
+         width="1280"
+         height="720"
+         id="rect156" />
+    </clipPath>
+  </defs>
+  <g
+     clip-path="url(#clip0)"
+     id="g297"
+     transform="translate(-23.855587,-35.323769)">
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(250.975,74)"
+       id="text163">If</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="24px"
+       transform="translate(269.808,74)"
+       id="text165">lag</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(304.308,74)"
+       id="text167">= 2:</text>
+    <path
+       d="m 261.5,97.1669 c 0,-2.5774 2.089,-4.6668 4.667,-4.6668 h 238.666 c 2.578,0 4.667,2.0894 4.667,4.6668 v 18.6661 c 0,2.578 -2.089,4.667 -4.667,4.667 H 266.167 c -2.578,0 -4.667,-2.089 -4.667,-4.667 z"
+       stroke="#2f528f"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#4472c4"
+       fill-rule="evenodd"
+       id="path169" />
+    <path
+       d="m 469.5,100.5 c 0,-1.6568 1.343,-2.9999 3,-2.9999 h 27 c 1.657,0 3,1.3431 3,2.9999 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path171" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="13px"
+       transform="translate(481.711,111)"
+       id="text173">2</text>
+    <path
+       d="m 268.5,100.5 c 0,-1.6568 1.343,-2.9999 3,-2.9999 h 26 c 1.657,0 3,1.3431 3,2.9999 v 12 c 0,1.657 -1.343,3 -3,3 h -26 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path175" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(278.383,110)"
+       id="text177">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(284.049,110)"
+       id="text179">4</text>
+    <path
+       d="m 308.5,100.5 c 0,-1.6568 1.343,-2.9999 3,-2.9999 h 27 c 1.657,0 3,1.3431 3,2.9999 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path181" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(318.648,110)"
+       id="text183">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(324.315,110)"
+       id="text185">3</text>
+    <path
+       d="m 348.5,100.5 c 0,-1.6568 1.343,-2.9999 3,-2.9999 h 27 c 1.657,0 3,1.3431 3,2.9999 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path187" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(358.914,110)"
+       id="text189">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(364.581,110)"
+       id="text191">2</text>
+    <path
+       d="m 388.5,100.5 c 0,-1.6568 1.343,-2.9999 3,-2.9999 h 27 c 1.657,0 3,1.3431 3,2.9999 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path193" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(399.18,110)"
+       id="text195">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(404.847,110)"
+       id="text197">1</text>
+    <path
+       d="m 429.5,100.333 c 0,-1.5644 1.269,-2.8329 2.833,-2.8329 h 27.334 c 1.565,0 2.833,1.2685 2.833,2.8329 v 11.334 c 0,1.564 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.269 -2.833,-2.833 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path199" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="13px"
+       transform="translate(441.446,110)"
+       id="text201">1</text>
+    <path
+       d="m 384.57083,131.31307 c 0,-2.67451 1.97016,-4.84298 4.40006,-4.84298 h 32.16879 c 2.4299,0 4.40006,2.16847 4.40006,4.84298 v 19.37386 c 0,2.67451 -1.97016,4.84298 -4.40006,4.84298 h -32.16879 c -2.4299,0 -4.40006,-2.16847 -4.40006,-4.84298 z"
+       stroke="#787878"
+       stroke-width="1.27352"
+       stroke-miterlimit="8"
+       fill="#a5a5a5"
+       fill-rule="evenodd"
+       id="path203" />
+    <path
+       d="m 388.83661,134.5 c 0,-1.657 1.343,-3 3,-3 h 26 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -26 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path205" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="13px"
+       id="text207"
+       x="401.38101"
+       y="145">2</text>
+    <rect
+       x="382.5"
+       y="83.500099"
+       width="45"
+       height="82"
+       stroke="#000000"
+       stroke-width="1.33333"
+       stroke-linecap="square"
+       stroke-miterlimit="8"
+       stroke-dasharray="4, 1.33333"
+       fill="none"
+       id="rect209" />
+    <path
+       d="M 0,-0.333333 H 76.6417 L 76.5586,29.2226 75.8919,29.2208 75.9741,-9.36961e-4 76.3074,0.333333 H 0 Z M 80.2998,28.1373 75.8146,35.8757 72.315,27.6445 Z"
+       transform="matrix(0,1,1,0,405.5,165.5)"
+       id="path211" />
+    <path
+       d="m 493.5,217.167 c 0,-2.578 2.089,-4.667 4.667,-4.667 h 36.666 c 2.578,0 4.667,2.089 4.667,4.667 v 18.666 c 0,2.578 -2.089,4.667 -4.667,4.667 h -36.666 c -2.578,0 -4.667,-2.089 -4.667,-4.667 z"
+       stroke="#2f528f"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#4472c4"
+       fill-rule="evenodd"
+       id="path213" />
+    <path
+       d="m 493.5,252.333 c 0,-2.669 2.164,-4.833 4.833,-4.833 h 36.334 c 2.669,0 4.833,2.164 4.833,4.833 v 19.334 c 0,2.669 -2.164,4.833 -4.833,4.833 h -36.334 c -2.669,0 -4.833,-2.164 -4.833,-4.833 z"
+       stroke="#787878"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#a5a5a5"
+       fill-rule="evenodd"
+       id="path215" />
+    <path
+       d="m 498.5,256.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.564 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.269 -2.833,-2.833 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path217" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="15px"
+       transform="translate(510.735,267)"
+       id="text219">2</text>
+    <text
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       id="text221"
+       x="407.93799"
+       y="204">anchor year</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(455.965,234)"
+       id="text223">X =</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(455.965,268)"
+       id="text225">Y =</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(468.205,319)"
+       id="text227">Calculate: pearsonr(X, Y</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(699.478,319)"
+       id="text229">)</text>
+    <rect
+       x="487.5"
+       y="209.5"
+       width="211"
+       height="35"
+       stroke="#2f528f"
+       stroke-width="0.666667"
+       stroke-linecap="square"
+       stroke-miterlimit="8"
+       stroke-dasharray="2, 0.666667"
+       fill="none"
+       id="rect231" />
+    <rect
+       x="487.5"
+       y="245.5"
+       width="211"
+       height="34"
+       stroke="#2f528f"
+       stroke-width="0.666667"
+       stroke-linecap="square"
+       stroke-miterlimit="8"
+       stroke-dasharray="2, 0.666667"
+       fill="none"
+       id="rect233" />
+    <path
+       d="m 498.5,220.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path235" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(509.068,231)"
+       id="text237">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(514.735,231)"
+       id="text239">1</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(107.855,111)"
+       id="text241">Precursor field</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="24px"
+       transform="translate(127.751,148)"
+       id="text243">Target data</text>
+    <path
+       d="m 544.5,217.167 c 0,-2.578 2.089,-4.667 4.667,-4.667 h 35.666 c 2.578,0 4.667,2.089 4.667,4.667 v 18.666 c 0,2.578 -2.089,4.667 -4.667,4.667 h -35.666 c -2.578,0 -4.667,-2.089 -4.667,-4.667 z"
+       stroke="#2f528f"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#4472c4"
+       fill-rule="evenodd"
+       id="path245" />
+    <path
+       d="m 544.5,252.333 c 0,-2.669 2.164,-4.833 4.833,-4.833 h 35.334 c 2.669,0 4.833,2.164 4.833,4.833 v 19.334 c 0,2.669 -2.164,4.833 -4.833,4.833 h -35.334 c -2.669,0 -4.833,-2.164 -4.833,-4.833 z"
+       stroke="#787878"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#a5a5a5"
+       fill-rule="evenodd"
+       id="path247" />
+    <path
+       d="m 549.5,256.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.564 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.269 -2.833,-2.833 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path249" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="15px"
+       transform="translate(561.264,267)"
+       id="text251">2</text>
+    <path
+       d="m 549.5,220.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path253" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(559.597,231)"
+       id="text255">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(565.264,231)"
+       id="text257">1</text>
+    <path
+       d="m 595.5,217.167 c 0,-2.578 2.089,-4.667 4.667,-4.667 h 36.666 c 2.578,0 4.667,2.089 4.667,4.667 v 18.666 c 0,2.578 -2.089,4.667 -4.667,4.667 h -36.666 c -2.578,0 -4.667,-2.089 -4.667,-4.667 z"
+       stroke="#2f528f"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#4472c4"
+       fill-rule="evenodd"
+       id="path259" />
+    <path
+       d="m 595.5,252.333 c 0,-2.669 2.164,-4.833 4.833,-4.833 h 36.334 c 2.669,0 4.833,2.164 4.833,4.833 v 19.334 c 0,2.669 -2.164,4.833 -4.833,4.833 h -36.334 c -2.669,0 -4.833,-2.164 -4.833,-4.833 z"
+       stroke="#787878"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#a5a5a5"
+       fill-rule="evenodd"
+       id="path261" />
+    <path
+       d="m 600.5,256.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.564 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.269 -2.833,-2.833 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path263" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="15px"
+       transform="translate(612.724,267)"
+       id="text265">2</text>
+    <path
+       d="m 600.5,220.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path267" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(611.057,231)"
+       id="text269">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(616.724,231)"
+       id="text271">1</text>
+    <path
+       d="m 646.5,217.167 c 0,-2.578 2.089,-4.667 4.667,-4.667 h 36.666 c 2.578,0 4.667,2.089 4.667,4.667 v 18.666 c 0,2.578 -2.089,4.667 -4.667,4.667 h -36.666 c -2.578,0 -4.667,-2.089 -4.667,-4.667 z"
+       stroke="#2f528f"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#4472c4"
+       fill-rule="evenodd"
+       id="path273" />
+    <path
+       d="m 646.5,252.333 c 0,-2.669 2.164,-4.833 4.833,-4.833 h 36.334 c 2.669,0 4.833,2.164 4.833,4.833 v 19.334 c 0,2.669 -2.164,4.833 -4.833,4.833 h -36.334 c -2.669,0 -4.833,-2.164 -4.833,-4.833 z"
+       stroke="#787878"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#a5a5a5"
+       fill-rule="evenodd"
+       id="path275" />
+    <path
+       d="m 652.5,255.5 c 0,-1.657 1.343,-3 3,-3 h 26 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -26 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#507e32"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#70ad47"
+       fill-rule="evenodd"
+       id="path277" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="15px"
+       transform="translate(663.923,266)"
+       id="text279">2</text>
+    <path
+       d="m 652.5,220.5 c 0,-1.657 1.343,-3 3,-3 h 26 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -26 c -1.657,0 -3,-1.343 -3,-3 z"
+       stroke="#bc8c00"
+       stroke-width="1.33333"
+       stroke-miterlimit="8"
+       fill="#ffc000"
+       fill-rule="evenodd"
+       id="path281" />
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(662.256,230)"
+       id="text283">-</text>
+    <text
+       fill="#ffffff"
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14px"
+       transform="translate(667.923,230)"
+       id="text285">1</text>
+    <text
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12px"
+       transform="translate(504.553,204)"
+       id="text287">2016</text>
+    <text
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12px"
+       transform="translate(555.206,204)"
+       id="text289">2017</text>
+    <text
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12px"
+       transform="translate(607.304,204)"
+       id="text291">2018</text>
+    <text
+       font-family="Consolas, Consolas_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12px"
+       transform="translate(657.289,204)"
+       id="text293">2019</text>
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="24px"
+       id="text295"
+       x="23.117306"
+       y="51.636269">Single target</text>
+  </g>
+</svg>
