@@ -199,9 +199,9 @@ class TestResample:
         series = pd.Series(test_data, index=time_index, name="data1")
 
         calendar = Calendar(anchor="10-05")
-        calendar.add_interval("target", "60d")
-        calendar.add_interval("precursor", "60d")
-        calendar.add_interval("precursor", "60d", gap="-60d")
+        calendar.add_intervals("target", "60d")
+        calendar.add_intervals("precursor", "60d")
+        calendar.add_intervals("precursor", "60d", gap="-60d")
 
         calendar.map_to_data(series)
         resampled_data = resample(calendar, series)
