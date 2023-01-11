@@ -147,7 +147,7 @@ def staggered_calendar(
         )
     cal_staggered = [calendar]
     for _ in range(n_shifts):
-        cal_shifted = s2spy.calendar_shifter.calendar_shifter(cal_staggered[-1], shift)
+        cal_shifted = calendar_shifter(cal_staggered[-1], shift)
         cal_staggered.append(cal_shifted)
 
     return cal_staggered
