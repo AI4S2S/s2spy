@@ -153,7 +153,9 @@ def staggered_calendar(
     return cal_staggered
 
 
-def calendar_list_resampler(cal_list: list, ds: xr.Dataset) -> xr.Dataset:
+def calendar_list_resampler(
+    cal_list: list, ds: xr.Dataset, dim_name: str = "step"
+) -> xr.Dataset:
     """
     Resample a dataset to every calendar in a list of calendars and concatenate them
     along dimension 'step' into an xarray Dataset.
@@ -163,7 +165,7 @@ def calendar_list_resampler(cal_list: list, ds: xr.Dataset) -> xr.Dataset:
     Returns:
         resampled xr.Dataset
     """
-    ds_r = xr.concat([s2spy.time.resample(cal, ds) for cal in cal_list], dim="step")
-    ds_r = ds_r.assign_coords({"step": ds_r.step.values})
+    ds_r = xr.concat([s2spy.time.resample(cal, ds) for cal in cal_list], dim=dim_name)
+    ds_r = ds_r.assign_coords({dim_name: ds_r[dim_name].values})
 
     return ds_r
