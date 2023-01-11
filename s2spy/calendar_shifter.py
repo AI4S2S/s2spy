@@ -7,7 +7,7 @@ import s2spy.time
 
 def _gap_shift(
     interval: s2spy.time.Interval, shift: Union[str, Dict[str, int]]
-) -> dict[str, int]:
+) -> Dict[str, int]:
     """
     Shift a gap from a calendar interval by an input of a pandas-like
     frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
@@ -97,7 +97,7 @@ def calendar_shifter(
 
 def staggered_calendar(
     calendar: s2spy.time.Calendar, shift: Union[str, dict], n_shifts: int
-) -> list():
+) -> list[s2spy.time.Calendar]:
     """
     Shift a Calendar instance by a given time offset n times to create a list of shifted
     calendars. We call this list a staggered calendar.
