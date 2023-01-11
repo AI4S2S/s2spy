@@ -1,5 +1,6 @@
 import copy
 from typing import Dict
+from typing import List
 from typing import Union
 import xarray as xr
 import s2spy.time
@@ -90,7 +91,7 @@ def calendar_shifter(
 
 def staggered_calendar(
     calendar: s2spy.time.Calendar, shift: Union[str, dict], n_shifts: int
-) -> list[s2spy.time.Calendar]:
+) -> List[s2spy.time.Calendar]:
     """
     Shift a Calendar instance by a given time offset n times to create a list of shifted
     calendars. We call this list a staggered calendar.
