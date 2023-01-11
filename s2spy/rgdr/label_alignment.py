@@ -239,8 +239,8 @@ def remove_overlapping_clusters(clusters: Set) -> Set:
 def name_clusters(clusters: Set) -> Dict:
     """Gives each cluster a unique name.
 
-    Note: the first 52 names will be from A - Z, and a - z. If more than 52 clusters are
-    present, these will get names with two uppercase letters.
+    Note: the first 26 names will be from A - Z. If more than 26 clusters are present,
+    these will get names with two uppercase letters (AA - ZZ).
 
     Args:
         clusters: A set of different clusters. Each element is a list of clusters and
@@ -360,7 +360,7 @@ def _rename_datasets(
     for split, _ in enumerate(rgdr_list):
         # A copy is required to not modify labels of the input data
         data = copy(clustered_data[split])
-        labels = data["cluster_labels"].values.astype("U32")
+        labels = data["cluster_labels"].values.astype("U2")
         for cl in renaming_dict[split]:
             if f"{cl[0]}" not in labels:
                 break
