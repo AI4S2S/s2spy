@@ -17,13 +17,6 @@ def _gap_shift(
         shift: the shift for the gap
     Returns:
         dict with gap offset by shift
-    Example:
-        >>> import s2spy.time
-        >>> cal = s2spy.time.Calendar(anchor='07-01')
-        >>> cal.add_intervals("target", "7d")
-        >>> gap_shifted = _gap_shift(cal.targets[0], '7d')
-        >>> gap_shifted
-        {'days': 7}
     """
     # pylint: disable=protected-access
     if isinstance(interval.gap, str):
