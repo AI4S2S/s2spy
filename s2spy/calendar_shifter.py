@@ -20,7 +20,7 @@ def _gap_shift(
     Example:
         >>> import s2spy.time
         >>> cal = s2spy.time.Calendar(anchor='07-01')
-        >>> cal.add_interval("target", "7d")
+        >>> cal.add_intervals("target", "7d")
         >>> gap_shifted = _gap_shift(cal.targets[0], '7d')
         >>> gap_shifted
         {'days': 7}
@@ -70,10 +70,9 @@ def calendar_shifter(
         Shift a calendar by a given dateoffset.
         >>> import s2spy.time
         >>> cal = s2spy.time.Calendar(anchor='07-01')
-        >>> cal.add_interval("target", "7d")
-        >>> cal.add_interval("precursor", "7d", gap="14d")
-        >>> for _ in range(3):
-                cal.add_interval("precursor", "7d")
+        >>> cal.add_intervals("target", "7d")
+        >>> cal.add_intervals("precursor", "7d", gap="14d")
+        >>> cal.add_intervals("precursor", "7d, n=3)
         >>> cal_shifted = cal_shifter(cal, '7d')
         >>> cal_shifted
         Calendar(
@@ -113,10 +112,9 @@ def staggered_calendar(
         shifted calendars.
         >>> import s2spy.time
         >>> cal = s2spy.time.Calendar(anchor="07-01")
-        >>> cal.add_interval("target", "7d")
-        >>> cal.add_interval("precursor", "7d", gap="14d")
-        >>> for _ in range(3):
-                cal.add_interval("precursor", "7d")
+        >>> cal.add_intervals("target", "7d")
+        >>> cal.add_intervals("precursor", "7d", gap="14d")
+        >>> cal.add_intervals("precursor", "7d", n=3)
         >>> cal_shifted = cal_stagger(cal, "7d", 1)
         >>> cal_shifted
         [Calendar(

@@ -15,9 +15,9 @@ class TestCalendarShifter:
     @pytest.fixture(autouse=True)
     def dummy_calendar(self):
         cal = Calendar(anchor="12-31")
-        cal.add_interval("target", "7d")
-        cal.add_interval("precursor", "7d", "7d")
-        cal.add_interval("precursor", "7d")
+        cal.add_intervals("target", "7d")
+        cal.add_intervals("precursor", "7d", "7d")
+        cal.add_intervals("precursor", "7d")
         return cal
 
     @pytest.fixture(autouse=True)
