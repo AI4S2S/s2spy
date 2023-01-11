@@ -11,14 +11,16 @@ def _gap_shift(
     interval: s2spy.time.Interval, shift: Union[str, Dict[str, int]]
 ) -> Dict[str, int]:
     """
-    Shift a gap from a calendar interval by an input of a pandas-like
-    frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
-    compatible dictionary such as {days=10}, {weeks=2}, or {months=1, weeks=2}..
+    Shift a calendar interval's gap property by the given amount.
+
     Args:
-        gap: a pandas DateOffset from a calendar instance.
-        shift: the shift for the gap
+        gap: the pandas DateOffset from a calendar interval's `gap` property.
+        shift: the shift for the gap, in the form of a pandas-like frequency
+            string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset compatible
+            dictionary such as {days=10}, {weeks=2}, or {months=1, weeks=2}.
+
     Returns:
-        dict with gap offset by shift
+        A Pandas DateOffset compatible dictionary, with the gap offset by shift
     """
     if isinstance(interval.gap, str):
         gap_time_dict = utils.parse_freqstr_to_dateoffset(interval.gap)
@@ -34,13 +36,10 @@ def _gap_shift(
         shift_time_dict.update(
             (key, value * -1) for key, value in shift_time_dict.items()
         )
-    # combine gap and shift time dict
-    gap_shifted = {
+    return {
         k: gap_time_dict.get(k, 0) + shift_time_dict.get(k, 0)
         for k in set(gap_time_dict) | set(shift_time_dict)
     }
-
-    return gap_shifted
 
 
 def calendar_shifter(
