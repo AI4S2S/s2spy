@@ -4,6 +4,7 @@ from typing import List
 from typing import Union
 import xarray as xr
 import s2spy.time
+from . import utils
 
 
 def _gap_shift(
@@ -19,14 +20,13 @@ def _gap_shift(
     Returns:
         dict with gap offset by shift
     """
-    # pylint: disable=protected-access
     if isinstance(interval.gap, str):
-        gap_time_dict = interval._parse_timestring(interval.gap)
+        gap_time_dict = utils.parse_freqstr_to_dateoffset(interval.gap)
     else:
         gap_time_dict = interval.gap
-    # pylint: disable=protected-access
+
     if isinstance(shift, str):
-        shift_time_dict = interval._parse_timestring(shift)
+        shift_time_dict = utils.parse_freqstr_to_dateoffset(shift)
     else:
         shift_time_dict = shift
     # make the shift negative for the precursor to shift forward in time
@@ -46,20 +46,23 @@ def _gap_shift(
 def calendar_shifter(
     calendar: s2spy.time.Calendar, shift: Union[str, dict]
 ) -> s2spy.time.Calendar:
-    """
-    Shift a Calendar instance by a given time offset. Instead of shifting the
-    anchor date, this function shifts two things in reference to the anchor date:
+    """Shift a Calendar instance by a given time offset.
+
+    Instead of shifting the anchor date, this function shifts two things in reference
+    to the anchor date:
         target period(s): as a gap between the anchor date and the start of the first
             target period
         precursor period(s): as a gap between the anchor date and the start of the
             first precursor period
     This way, the anchor year from the input calendar is maintained on the returned
     calendar. This is important for train-test splitting at later stages.
+
     Args:
         calendar: a s2spy.time.Calendar instance
         shift: a pandas-like
             frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
             compatible dictionary such as {days=10}, {weeks=2}, or {months=1, weeks=2}
+
     Example:
         Shift a calendar by a given dateoffset.
         >>> import s2spy.time
@@ -92,15 +95,18 @@ def calendar_shifter(
 def staggered_calendar(
     calendar: s2spy.time.Calendar, shift: Union[str, dict], n_shifts: int
 ) -> List[s2spy.time.Calendar]:
-    """
-    Shift a Calendar instance by a given time offset n times to create a list of shifted
-    calendars. We call this list a staggered calendar.
+    """Shift a Calendar instance by a given time offset n times to create a list of
+    shifted calendars.
+
+    We call this list a staggered calendar.
+
     Args:
         calendar: an s2spy.time.Calendar instance
         shift: a pandas-like
             frequency string (e.g. "10d", "2W", or "3M"), or a pandas.DateOffset
             compatible dictionary such as {days=10}, {weeks=2}, or {months=1, weeks=2}
         n_shifts: strictly positive integer for the number of shifts
+
     Example:
         Shift an input calendar n times by a given dateoffset and return a list of these
         shifted calendars.
@@ -156,12 +162,13 @@ def staggered_calendar(
 def calendar_list_resampler(
     cal_list: list, ds: xr.Dataset, dim_name: str = "step"
 ) -> xr.Dataset:
-    """
-    Resample a dataset to every calendar in a list of calendars and concatenate them
+    """Resample a dataset to every calendar in a list of calendars and concatenate them
     along dimension 'step' into an xarray Dataset.
+
     Args:
         cal_list: list of shifted custom calendars
         ds: dataset to resample
+
     Returns:
         resampled xr.Dataset
     """

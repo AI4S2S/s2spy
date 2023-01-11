@@ -67,8 +67,10 @@ class BaseCalendar(ABC):
         if isinstance(value, bool):
             self._allow_overlap = value
         else:
-            raise ValueError(f"allow_overlap should be either True or False, not {value}"
-                             f"of type {type(value)}")
+            raise ValueError(
+                f"allow_overlap should be either True or False, not {value}"
+                f"of type {type(value)}"
+            )
 
     def _get_anchor(self, year: int) -> pd.Timestamp:
         """Method to generate an anchor timestamp for your specific calendar.
@@ -304,8 +306,10 @@ class BaseCalendar(ABC):
             self._first_timestamp = mapping[1]
             self._last_timestamp = mapping[2]
         else:
-            raise ValueError("Unknown mapping passed to calendar. Valid options are"
-                             "either 'years' or 'data'.")
+            raise ValueError(
+                "Unknown mapping passed to calendar. Valid options are"
+                "either 'years' or 'data'."
+            )
 
     def _rename_intervals(self, intervals: pd.DataFrame) -> pd.DataFrame:
         """Adds target labels to the header row of the intervals.
@@ -411,30 +415,28 @@ class BaseCalendar(ABC):
                     "calendar.map_years or calendar.map_data"
                 )
                 relative_dates = True
-            add_yticklabels=False
+            add_yticklabels = False
         else:
-            add_yticklabels=True
+            add_yticklabels = True
 
         n_years = max(n_years, 1)
         n_years = min(n_years, len(calendar.get_intervals().index))
 
         if interactive:
             utils.assert_bokeh_available()
-            from ._bokeh_plots import bokeh_visualization  # pylint: disable=import-outside-toplevel
+            from ._bokeh_plots import (
+                bokeh_visualization,
+            )  # pylint: disable=import-outside-toplevel
 
             if ax is not None:
                 warnings.warn(
                     "ax is only a valid keyword argument for the non-interactive "
                     "matplotlib backend. Bokeh's figure can be controlled by passing "
                     "Bokeh Figure keyword arguments (e.g. width=800).",
-                    UserWarning
+                    UserWarning,
                 )
             bokeh_visualization(
-                calendar,
-                n_years,
-                relative_dates,
-                add_yticklabels,
-                **bokeh_kwargs
+                calendar, n_years, relative_dates, add_yticklabels, **bokeh_kwargs
             )
         else:
             if bokeh_kwargs:
@@ -442,7 +444,7 @@ class BaseCalendar(ABC):
                     "kwargs for bokeh have been passed to visualize(), but the "
                     "matplotlib backend does not support these. Use the 'ax' kwarg "
                     "instead to control the generated figure.",
-                    UserWarning
+                    UserWarning,
                 )
 
             _plot.matplotlib_visualization(
@@ -469,7 +471,7 @@ class Interval:
         role: Literal["target", "precursor"],
         length: Union[str, dict],
         gap: Union[str, dict] = "0d",
-    )-> None:
+    ) -> None:
         """This is the basic construction element of the calendar.
 
         The Interval is characterised by its type (either target or precursor), its
@@ -514,7 +516,9 @@ class Interval:
     def length(self, value: Union[str, dict]):
         self._length = value
         if isinstance(value, str):
-            self._length_dateoffset = DateOffset(**self._parse_timestring(value))
+            self._length_dateoffset = DateOffset(
+                **utils.parse_freqstr_to_dateoffset(value)
+            )
         else:
             self._length_dateoffset = DateOffset(**value)
 
@@ -531,33 +535,15 @@ class Interval:
     def gap(self, value: Union[str, dict]):
         self._gap = value
         if isinstance(value, str):
-            self._gap_dateoffset = DateOffset(**self._parse_timestring(value))
+            self._gap_dateoffset = DateOffset(
+                **utils.parse_freqstr_to_dateoffset(value)
+            )
         else:
             self._gap_dateoffset = DateOffset(**value)
 
     @property
     def gap_dateoffset(self):
         return self._gap_dateoffset
-
-    def _parse_timestring(self, time_str):
-        """Parses the user-input time strings.
-
-        Args:
-            time_str: Time length string in the right formatting.
-
-        Returns:
-            Dictionary as keyword argument for Pandas DateOffset.
-        """
-        if re.fullmatch(r"[+-]?\d*d", time_str):
-            time_dict = {"days": int(time_str[:-1])}
-        elif re.fullmatch(r"[+-]?\d*M", time_str):
-            time_dict = {"months": int(time_str[:-1])}
-        elif re.fullmatch(r"[+-]?\d*W", time_str):
-            time_dict = {"weeks": int(time_str[:-1])}
-        else:
-            raise ValueError("Please input a time string in the correct format.")
-
-        return time_dict
 
     def __repr__(self):
         """String representation of the Interval class."""
