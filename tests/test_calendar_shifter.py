@@ -6,7 +6,6 @@ import pytest
 import xarray as xr
 import pandas as pd
 from s2spy.time import Calendar
-from s2spy.time import resample
 from s2spy import calendar_shifter
 
 
@@ -47,7 +46,6 @@ class TestCalendarShifter:
         cal_expected = copy.deepcopy(dummy_calendar)
         cal_expected.targets[0].gap = {"days": 7}
         cal_expected.precursors[0].gap = {"days": 0}
-        # pytest.set_trace()
         assert len(cal_shifted.targets + cal_shifted.precursors) == len(
             cal_expected.targets + cal_expected.precursors
         )
@@ -66,4 +64,4 @@ class TestCalendarShifter:
             cal.map_to_data(dummy_data)
         ds_resampled = calendar_shifter.calendar_list_resampler(cal_list, dummy_data)
         expected_coords = np.array([0, 1, 2, 3, 4, 5])
-        assert np.array_equal(ds_resampled.run.values, expected_coords)
+        assert np.array_equal(ds_resampled.step.values, expected_coords)

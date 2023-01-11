@@ -1,12 +1,12 @@
 import copy
+from typing import Dict
 from typing import Union
 import xarray as xr
 import s2spy.time
-from s2spy.time import resample  # pylint: disable=unused-import
 
 
 def _gap_shift(
-    interval: s2spy.time.Interval, shift: Union[str, dict[str, int]]
+    interval: s2spy.time.Interval, shift: Union[str, Dict[str, int]]
 ) -> dict[str, int]:
     """
     Shift a gap from a calendar interval by an input of a pandas-like
@@ -98,10 +98,10 @@ def calendar_shifter(
 
 def staggered_calendar(
     calendar: s2spy.time.Calendar, shift: Union[str, dict], n_shifts: int
-) -> s2spy.time.Calendar:
+) -> list():
     """
     Shift a Calendar instance by a given time offset n times to create a list of shifted
-    calendars. We call this a list a staggered calendar.
+    calendars. We call this list a staggered calendar.
     Args:
         calendar: an s2spy.time.Calendar instance
         shift: a pandas-like
@@ -112,12 +112,12 @@ def staggered_calendar(
         Shift an input calendar n times by a given dateoffset and return a list of these
         shifted calendars.
         >>> import s2spy.time
-        >>> cal = s2spy.time.Calendar(anchor='07-01')
+        >>> cal = s2spy.time.Calendar(anchor="07-01")
         >>> cal.add_interval("target", "7d")
         >>> cal.add_interval("precursor", "7d", gap="14d")
         >>> for _ in range(3):
                 cal.add_interval("precursor", "7d")
-        >>> cal_shifted = cal_stagger(cal, '7d', 1)
+        >>> cal_shifted = cal_stagger(cal, "7d", 1)
         >>> cal_shifted
         [Calendar(
             anchor='07-01',
@@ -164,14 +164,14 @@ def staggered_calendar(
 def calendar_list_resampler(cal_list: list, ds: xr.Dataset) -> xr.Dataset:
     """
     Resample a dataset to every calendar in a list of calendars and concatenate them
-    to a new xr.Dataset with dimension 'run'.
+    along dimension 'step' into an xarray Dataset.
     Args:
         cal_list: list of shifted custom calendars
         ds: dataset to resample
     Returns:
         resampled xr.Dataset
     """
-    ds_r = xr.concat([s2spy.time.resample(cal, ds) for cal in cal_list], dim="run")
-    ds_r = ds_r.assign_coords({"run": ds_r.run.values})
+    ds_r = xr.concat([s2spy.time.resample(cal, ds) for cal in cal_list], dim="step")
+    ds_r = ds_r.assign_coords({"step": ds_r.step.values})
 
     return ds_r
