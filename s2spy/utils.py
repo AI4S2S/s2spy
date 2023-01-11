@@ -221,3 +221,24 @@ def check_week_day(week: int, day: int = 1):
         raise ValueError(
             "Incorrect anchor input. Weekday numbers must be between 1 and 7."
         )
+
+
+def parse_freqstr_to_dateoffset(time_str):
+    """Parses the user-input time strings.
+
+    Args:
+        time_str: Time length string in the right formatting.
+
+    Returns:
+        Dictionary as keyword argument for Pandas DateOffset.
+    """
+    if re.fullmatch(r"[+-]?\d*d", time_str):
+        time_dict = {"days": int(time_str[:-1])}
+    elif re.fullmatch(r"[+-]?\d*M", time_str):
+        time_dict = {"months": int(time_str[:-1])}
+    elif re.fullmatch(r"[+-]?\d*W", time_str):
+        time_dict = {"weeks": int(time_str[:-1])}
+    else:
+        raise ValueError("Please input a time string in the correct format.")
+
+    return time_dict
