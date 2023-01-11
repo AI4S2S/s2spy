@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 from sklearn.model_selection import ShuffleSplit
@@ -138,14 +137,13 @@ def raw_field():
 @pytest.fixture(autouse=True, scope="class")
 def example_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_field).sst.sel(i_interval=-5)
+    return resample(cal, raw_field).sst
 
 
 @pytest.fixture(autouse=True, scope="class")
 def example_target(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_target).ts.sel(i_interval=1)
-
+    return resample(cal, raw_target).ts
 
 def test_alignment_example(example_field, example_target):
     seed = 1 #same 'randomness'
@@ -154,11 +152,19 @@ def test_alignment_example(example_field, example_target):
     shufflesplit = ShuffleSplit(n_splits=n_splits, test_size=0.25, random_state = seed)
     cv = s2spy.traintest.TrainTestSplit(shufflesplit)
 
-    rgdrs = [RGDR(eps_km=800, alpha=0.10, min_area_km2=0) for _ in range(n_splits)]
+    rgdrs = [
+        RGDR(
+            target_intervals=[1],
+            lag=5,
+            eps_km=800,
+            alpha=0.10,
+            min_area_km2=0
+        ) for _ in range(n_splits)
+        ]
 
     target_timeseries_splits = []
     precursor_field_splits = []
-    for x_train, x_test, y_train, y_test in cv.split(example_field, y=example_target):
+    for x_train, _, _, _ in cv.split(example_field, y=example_target):
         target_timeseries_splits.append(
             example_target.sel(anchor_year=x_train["anchor_year"].values))
         precursor_field_splits.append(
@@ -174,7 +180,7 @@ def test_alignment_example(example_field, example_target):
         clustered_precursors
         )
 
-    expected = [['A'], ['A', 'C'], ['A'], ['B', 'A']]
+    expected = [['A'], ['A', 'C'], ['A'], ['A', 'B']]
     clusters_list = [list(el.cluster_labels.values) for el in aligned_precursors]
-    print(clusters_list)
+
     assert expected == clusters_list
