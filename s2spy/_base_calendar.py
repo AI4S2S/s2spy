@@ -424,9 +424,10 @@ class BaseCalendar(ABC):
 
         if interactive:
             utils.assert_bokeh_available()
+            # pylint: disable=import-outside-toplevel
             from ._bokeh_plots import (
                 bokeh_visualization,
-            )  # pylint: disable=import-outside-toplevel
+            )
 
             if ax is not None:
                 warnings.warn(
