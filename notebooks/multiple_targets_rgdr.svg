@@ -21,15 +21,15 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
-     inkscape:zoom="1.890625"
-     inkscape:cx="428.42975"
-     inkscape:cy="142.28099"
+     inkscape:zoom="1.3368738"
+     inkscape:cx="610.37925"
+     inkscape:cy="182.51536"
      inkscape:window-width="1920"
      inkscape:window-height="1017"
-     inkscape:window-x="1552"
+     inkscape:window-x="1912"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg1025" />
+     inkscape:current-layer="g1023" />
   <defs
      id="defs839">
     <clipPath
@@ -226,8 +226,8 @@
        font-family="Consolas, Consolas_MSFontService, sans-serif"
        font-weight="400"
        font-size="13px"
-       transform="translate(395.959,494)"
-       id="text891">1</text>
+       id="text891"
+       transform="translate(395.959,494)">1</text>
     <rect
        x="377.5"
        y="431.5"
@@ -260,21 +260,24 @@
        fill="#a5a5a5"
        fill-rule="evenodd"
        id="path899" />
-    <path
-       d="m 568.5,604.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
-       stroke="#507e32"
-       stroke-width="1.33333"
-       stroke-miterlimit="8"
-       fill="#70ad47"
-       fill-rule="evenodd"
-       id="path901" />
-    <text
-       fill="#ffffff"
-       font-family="Consolas, Consolas_MSFontService, sans-serif"
-       font-weight="400"
-       font-size="15px"
-       transform="translate(580.584,615)"
-       id="text903">2</text>
+    <g
+       id="g416">
+      <path
+         d="m 568.48341,604.3331 c 0,-1.57398 1.34435,-2.84969 3.00302,-2.84969 h 27.02714 c 1.65867,0 3.00302,1.27571 3.00302,2.84969 v 11.39878 c 0,1.57398 -1.34435,2.84969 -3.00302,2.84969 h -27.02714 c -1.65867,0 -3.00302,-1.27571 -3.00302,-2.84969 z"
+         stroke="#507e32"
+         stroke-width="1.30015"
+         stroke-miterlimit="8"
+         fill="#70ad47"
+         fill-rule="evenodd"
+         id="path901" />
+      <text
+         fill="#ffffff"
+         font-family="Consolas, Consolas_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="15px"
+         transform="translate(580.584,615)"
+         id="text903">2</text>
+    </g>
     <path
        d="m 528.5,604.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.565 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.268 -2.833,-2.833 z"
        stroke="#507e32"
@@ -307,21 +310,6 @@
        fill-rule="evenodd"
        id="path911" />
     <path
-       d="m 659.5,604.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
-       stroke="#507e32"
-       stroke-width="1.33333"
-       stroke-miterlimit="8"
-       fill="#70ad47"
-       fill-rule="evenodd"
-       id="path913" />
-    <text
-       fill="#ffffff"
-       font-family="Consolas, Consolas_MSFontService, sans-serif"
-       font-weight="400"
-       font-size="15px"
-       transform="translate(671.837,615)"
-       id="text915">0</text>
-    <path
        d="m 619.5,604.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.565 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.268 -2.833,-2.833 z"
        stroke="#507e32"
        stroke-width="1.33333"
@@ -353,21 +341,6 @@
        fill-rule="evenodd"
        id="path923" />
     <path
-       d="m 751.5,604.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
-       stroke="#507e32"
-       stroke-width="1.33333"
-       stroke-miterlimit="8"
-       fill="#70ad47"
-       fill-rule="evenodd"
-       id="path925" />
-    <text
-       fill="#ffffff"
-       font-family="Consolas, Consolas_MSFontService, sans-serif"
-       font-weight="400"
-       font-size="15px"
-       transform="translate(763.09,615)"
-       id="text927">0</text>
-    <path
        d="m 710.5,604.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.565 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.268 -2.833,-2.833 z"
        stroke="#507e32"
        stroke-width="1.33333"
@@ -398,21 +371,6 @@
        fill="#a5a5a5"
        fill-rule="evenodd"
        id="path935" />
-    <path
-       d="m 842.5,604.5 c 0,-1.657 1.343,-3 3,-3 h 27 c 1.657,0 3,1.343 3,3 v 12 c 0,1.657 -1.343,3 -3,3 h -27 c -1.657,0 -3,-1.343 -3,-3 z"
-       stroke="#507e32"
-       stroke-width="1.33333"
-       stroke-miterlimit="8"
-       fill="#70ad47"
-       fill-rule="evenodd"
-       id="path937" />
-    <text
-       fill="#ffffff"
-       font-family="Consolas, Consolas_MSFontService, sans-serif"
-       font-weight="400"
-       font-size="15px"
-       transform="translate(854.417,615)"
-       id="text939">0</text>
     <path
        d="m 802.5,604.333 c 0,-1.564 1.269,-2.833 2.833,-2.833 h 27.334 c 1.565,0 2.833,1.269 2.833,2.833 v 11.334 c 0,1.565 -1.268,2.833 -2.833,2.833 h -27.334 c -1.564,0 -2.833,-1.268 -2.833,-2.833 z"
        stroke="#507e32"
@@ -706,5 +664,62 @@
        font-size="24px"
        transform="translate(107.186,397)"
        id="text1021">Multiple targets</text>
+    <g
+       id="g416-4"
+       transform="translate(89.788753,0.20872917)">
+      <path
+         d="m 568.48341,604.3331 c 0,-1.57398 1.34435,-2.84969 3.00302,-2.84969 h 27.02714 c 1.65867,0 3.00302,1.27571 3.00302,2.84969 v 11.39878 c 0,1.57398 -1.34435,2.84969 -3.00302,2.84969 h -27.02714 c -1.65867,0 -3.00302,-1.27571 -3.00302,-2.84969 z"
+         stroke="#507e32"
+         stroke-width="1.30015"
+         stroke-miterlimit="8"
+         fill="#70ad47"
+         fill-rule="evenodd"
+         id="path901-4" />
+      <text
+         fill="#ffffff"
+         font-family="Consolas, Consolas_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="15px"
+         transform="translate(580.584,615)"
+         id="text903-4">2</text>
+    </g>
+    <g
+       id="g416-4-5"
+       transform="translate(182.87966,-0.05573437)">
+      <path
+         d="m 568.48341,604.3331 c 0,-1.57398 1.34435,-2.84969 3.00302,-2.84969 h 27.02714 c 1.65867,0 3.00302,1.27571 3.00302,2.84969 v 11.39878 c 0,1.57398 -1.34435,2.84969 -3.00302,2.84969 h -27.02714 c -1.65867,0 -3.00302,-1.27571 -3.00302,-2.84969 z"
+         stroke="#507e32"
+         stroke-width="1.30015"
+         stroke-miterlimit="8"
+         fill="#70ad47"
+         fill-rule="evenodd"
+         id="path901-4-7" />
+      <text
+         fill="#ffffff"
+         font-family="Consolas, Consolas_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="15px"
+         transform="translate(580.584,615)"
+         id="text903-4-0">2</text>
+    </g>
+    <g
+       id="g416-4-7"
+       transform="translate(273.32594,-0.05573393)">
+      <path
+         d="m 568.48341,604.3331 c 0,-1.57398 1.34435,-2.84969 3.00302,-2.84969 h 27.02714 c 1.65867,0 3.00302,1.27571 3.00302,2.84969 v 11.39878 c 0,1.57398 -1.34435,2.84969 -3.00302,2.84969 h -27.02714 c -1.65867,0 -3.00302,-1.27571 -3.00302,-2.84969 z"
+         stroke="#507e32"
+         stroke-width="1.30015"
+         stroke-miterlimit="8"
+         fill="#70ad47"
+         fill-rule="evenodd"
+         id="path901-4-9" />
+      <text
+         fill="#ffffff"
+         font-family="Consolas, Consolas_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="15px"
+         transform="translate(580.584,615)"
+         id="text903-4-06">2</text>
+    </g>
   </g>
 </svg>
