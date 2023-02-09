@@ -195,8 +195,8 @@ class Preprocessor:
         Returns:
             Preprocessed data.
         """
-        self.fit(data)
-        return self.transform(data)
+        data_rolling = self.fit(data)
+        return self.transform(data_rolling)
 
     @property
     def trend(self) -> dict:
