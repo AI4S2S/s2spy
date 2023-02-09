@@ -133,7 +133,10 @@ class Preprocessor:
         """Fit this Preprocessor to input data.
 
         Args:
-            data
+            data: Input data to preprocess.
+
+        Returns:
+            data_rolling: Same as input but with rolling mean applied.
         """
         _check_input_data(data)
 
@@ -154,6 +157,8 @@ class Preprocessor:
                 )
             )
         self._is_fit = True
+
+        return data_rolling
 
     def transform(
         self, data: Union[xr.DataArray, xr.Dataset]
