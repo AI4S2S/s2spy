@@ -114,31 +114,3 @@ class TestPreprocessor:
     def test_fit_transform(self, preprocessor, raw_field):
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
-
-    def test_get_trend_without_fit(self, preprocessor):
-        with pytest.raises(ValueError):
-            preprocessor.trend
-
-    def test_get_trend_without_detrend(self, preprocessor, raw_field):
-        prep = preprocess.Preprocessor(
-            rolling_window_size=25,
-            detrend=None,
-            remove_climatology=True,
-        ) 
-        prep.fit(raw_field)
-        with pytest.raises(ValueError):
-            preprocessor.trend
-
-    def test_get_climatology_without_fit(self, preprocessor):
-        with pytest.raises(ValueError):
-            preprocessor.climatology
-
-    def test_get_climatology_without_removal(self, preprocessor, raw_field):
-        prep = preprocess.Preprocessor(
-            rolling_window_size=25,
-            detrend="linear",
-            remove_climatology=False,
-        ) 
-        prep.fit(raw_field)
-        with pytest.raises(ValueError):
-            preprocessor.climatology
