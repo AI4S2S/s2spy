@@ -129,7 +129,8 @@ class Preprocessor:
         self._trend: dict
         self._is_fit = False
 
-    def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
+    def fit(self, data: Union[xr.DataArray, xr.Dataset]
+    ) -> Union[xr.DataArray, xr.Dataset]:
         """Fit this Preprocessor to input data.
 
         Args:
