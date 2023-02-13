@@ -91,7 +91,7 @@ class Preprocessor:
     """Preprocessor for s2s data."""
     def __init__(
         self,
-        rolling_window_size: int,
+        rolling_window_size: Union[int, None],
         rolling_min_periods: int = 1,
         detrend: Union[str, None] = "linear",
         remove_climatology: bool = True,
@@ -129,19 +129,20 @@ class Preprocessor:
         self._trend: dict
         self._is_fit = False
 
-    def fit(self, data: Union[xr.DataArray, xr.Dataset]
-    ) -> Union[xr.DataArray, xr.Dataset]:
+    def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
         """Fit this Preprocessor to input data.
 
         Args:
             data
         """
         _check_input_data(data)
-
-        data_rolling = data.rolling(
-            dim={"time": self._window_size}, min_periods=self._min_periods, center=True
-        ).mean()
+        if self._window_size is not None:
+            data_rolling = data.rolling(
+                dim={"time": self._window_size}, min_periods=self._min_periods, center=True
+            ).mean()
         # TODO: give option to be a gaussian-like window, instead of a block.
+        else:
+            data_rolling = data
 
         if self._detrend is not None:
             self._trend = _get_trend(data_rolling, self._detrend)
@@ -191,8 +192,8 @@ class Preprocessor:
         Returns:
             Preprocessed data.
         """
-        data_rolling = self.fit(data)
-        return self.transform(data_rolling)
+        self.fit(data)
+        return self.transform(data)
 
     @property
     def trend(self) -> dict:

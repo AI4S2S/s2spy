@@ -91,17 +91,6 @@ class TestPreprocessor:
         preprocessor.fit(raw_field)
         assert preprocessor.climatology is not None # climatology with leap years are counted
 
-    def test_rolling_mean(self, raw_field):
-        prep = preprocess.Preprocessor(
-            rolling_window_size=2,
-            detrend=None,
-            remove_climatology=False,
-        )
-        test_data = raw_field.sel(time=slice("2010-01-01", "2010-01-02"))
-        data_rolling = prep.fit(test_data)
-        test_data["sst"][1,:,:] = test_data["sst"].mean(axis=0)
-        np.testing.assert_array_almost_equal(data_rolling["sst"], test_data["sst"])
-
     def test_transform(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         preprocessed_data = preprocessor.transform(raw_field)
