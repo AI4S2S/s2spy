@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- Calendar/resample and traintest modules have been moved to [Lilio](https://github.com/AI4S2S/lilio).
+
 ## 0.2.1 (2022-09-02)
 
 ### Fixed

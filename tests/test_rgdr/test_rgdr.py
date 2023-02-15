@@ -8,8 +8,8 @@ import xarray as xr
 from s2spy import RGDR
 from s2spy.rgdr import rgdr
 from s2spy.rgdr import utils
-from s2spy.time import Calendar
-from s2spy.time import resample
+from lilio import Calendar
+from lilio import resample
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
