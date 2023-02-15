@@ -85,7 +85,7 @@ Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and res
 3        2021           1  [2021-11-30, 2022-05-29)      460.5   False
 ```
 
-Depending on data preparations, we can choose different types of calendars. For more information, see [Lilio's documentation](https://lilio.readthedocs.io/en/latest/).
+Depending on data preparations, we can choose different types of calendars. For more information, see [Lilio's documentation](https://lilio.readthedocs.io/en/latest/notebooks/calendar_shorthands.html).
 
 ### Cross-validation
 Lilio can also generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
