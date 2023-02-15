@@ -1,3 +1,4 @@
+import lilio
 import numpy as np
 import pytest
 import xarray as xr
@@ -6,7 +7,6 @@ import s2spy
 import s2spy.rgdr
 from s2spy import RGDR
 from s2spy.rgdr import label_alignment
-import lilio
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
@@ -168,6 +168,8 @@ def test_alignment_example(example_field, example_target):
     )
 
     expected = [["A1"], ["A1", "A2"], ["A1"], ["A1"]]
-    clusters_list = [list(el.cluster_labels.values) for el in aligned_precursors]
+    clusters_list = [
+        sorted(list(el.cluster_labels.values)) for el in aligned_precursors
+    ]
 
     assert expected == clusters_list
