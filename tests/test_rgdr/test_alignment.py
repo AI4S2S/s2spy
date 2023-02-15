@@ -6,8 +6,7 @@ import s2spy
 import s2spy.rgdr
 from s2spy import RGDR
 from s2spy.rgdr import label_alignment
-from s2spy.time import AdventCalendar
-from s2spy.time import resample
+import lilio
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
@@ -110,7 +109,7 @@ class TestAlignmentSubfunctions:
 
 @pytest.fixture(autouse=True, scope="class")
 def dummy_calendar():
-    return AdventCalendar(anchor="08-01", freq="30d")
+    return lilio.daily_calendar(anchor="08-01", length="30d")
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -128,13 +127,13 @@ def raw_field():
 @pytest.fixture(autouse=True, scope="class")
 def example_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_field).sst
+    return lilio.resample(cal, raw_field).sst
 
 
 @pytest.fixture(autouse=True, scope="class")
 def example_target(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
-    return resample(cal, raw_target).ts
+    return lilio.resample(cal, raw_target).ts
 
 
 def test_alignment_example(example_field, example_target):
@@ -142,7 +141,7 @@ def test_alignment_example(example_field, example_target):
     n_splits = 4
 
     shufflesplit = ShuffleSplit(n_splits=n_splits, test_size=0.25, random_state=seed)
-    cv = s2spy.traintest.TrainTestSplit(shufflesplit)
+    cv = lilio.traintest.TrainTestSplit(shufflesplit)
 
     rgdrs = [
         RGDR(target_intervals=[1], lag=5, eps_km=800, alpha=0.10, min_area_km2=0)
@@ -168,7 +167,7 @@ def test_alignment_example(example_field, example_target):
         rgdrs, clustered_precursors
     )
 
-    expected = [["A"], ["A", "C"], ["A"], ["A", "B"]]
+    expected = [["A1"], ["A1", "A2"], ["A1"], ["A1"]]
     clusters_list = [list(el.cluster_labels.values) for el in aligned_precursors]
 
     assert expected == clusters_list
