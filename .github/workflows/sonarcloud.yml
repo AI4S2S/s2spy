@@ -27,12 +27,10 @@ jobs:
         run: |
           which python3
           python3 --version
-      - name: Install dependencies
-        run: python3 -m pip install .[dev]
-      - name: Check style against standards using prospector
-        run: prospector --zero-exit --output-format grouped --output-format pylint:pylint-report.txt
+      - name: Install hatch
+        run: python3 -m pip install hatch
       - name: Run unit tests with coverage
-        run: pytest --cov --cov-report term --cov-report xml --junitxml=xunit-result.xml tests/
+        run: hatch run coverage
       - name: Correct coverage paths
         run: sed -i "s+$PWD/++g" coverage.xml
       - name: SonarCloud Scan
