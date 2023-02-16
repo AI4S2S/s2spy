@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 # pylint: disable=protected-access
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def dummy_calendar():
     cal = Calendar(anchor="08-01")
     cal.add_intervals("target", length="1M", n=4)
@@ -30,23 +30,23 @@ def dummy_calendar():
     return cal
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_target():
     return xr.open_dataset(f"{TEST_FILE_PATH}/tf5_nc5_dendo_80d77.nc").sel(cluster=3)
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_field():
     return xr.open_dataset(f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc")
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_precursor_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return resample(cal, raw_field).sst
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_target_timeseries(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return resample(cal, raw_target).ts
@@ -59,7 +59,7 @@ def example_corr(example_target_timeseries, example_precursor_field):
     )
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def expected_labels():
     return np.array(
         [
@@ -100,7 +100,7 @@ class TestUtils:
 class TestCorrelation:
     """Validates that the correlation ufunc works, as well as the input checks."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_dataarray(self):
         time = pd.date_range("20161001", "20211001", freq="60d")
 
@@ -114,7 +114,7 @@ class TestCorrelation:
             },
         )
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_timeseries(self, dummy_dataarray):
         return dummy_dataarray.isel(lat=0, lon=0).drop_vars(["lat", "lon"])
 
@@ -169,7 +169,7 @@ class TestCorrelation:
 class TestDBSCAN:
     """Separately validates that the DBSCAN-based clustering works as expected."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_dbscan_params(self):
         return {"alpha": 0.025, "eps": 600, "min_area": None}
 
@@ -197,7 +197,7 @@ rgdr_test_config = dict(target_intervals=[1], lag=4, eps_km=600, alpha=0.025, mi
 class TestRGDR:
     """Test RGDR and its methods."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_rgdr(self):
         return RGDR(**rgdr_test_config)  # type: ignore
 

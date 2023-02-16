@@ -103,28 +103,28 @@ class TestAlignmentSubfunctions:
         assert expected == label_alignment.ensure_unique_names(dummy_names)
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def dummy_calendar():
     return lilio.daily_calendar(anchor="08-01", length="30d")
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_target():
     return xr.open_dataset(f"{TEST_FILE_PATH}/tf5_nc5_dendo_80d77.nc").sel(cluster=3)
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_field():
     return xr.open_dataset(f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc")
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return lilio.resample(cal, raw_field).sst
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_target(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return lilio.resample(cal, raw_target).ts
