@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"s2spy"
-copyright = u"2022, Netherlands eScience Center"
-author = u"Yang Liu"
+project = "s2spy"
+copyright = "2022, Netherlands eScience Center"
+author = "Yang Liu"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -83,22 +83,22 @@ html_theme = "sphinx_rtd_theme"
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
     "**": [
-        'globaltoc.html',
+        "globaltoc.html",
         "relations.html",  # needs 'show_related': True theme option to display
         "searchbox.html",
     ]
 }
 
-html_logo = './assets/images/ai4s2s_logo.png'
+html_logo = "./assets/images/ai4s2s_logo.png"
 
 # -- Options for Intersphinx
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'scikit-learn': ('https://scikit-learn.org/stable/', None),
-    'matplotlib': ('https://matplotlib.org/stable/', None),
-    'pandas': ('http://pandas.pydata.org/docs/', None),
-    'xarray': ('https://docs.xarray.dev/en/stable/', None),
-    #'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scikit-learn": ("https://scikit-learn.org/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "pandas": ("http://pandas.pydata.org/docs/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
 }

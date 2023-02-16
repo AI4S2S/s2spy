@@ -57,12 +57,7 @@ def cluster_area(ds: XrType, cluster_label: float) -> float:
     Returns:
         float: Area of the cluster `cluster_label`.
     """
-    return (
-        ds["area"]
-        .where(ds["cluster_labels"] == cluster_label)
-        .sum(skipna=True)
-        .values.item()
-    )
+    return ds["area"].where(ds["cluster_labels"] == cluster_label).sum(skipna=True).values.item()
 
 
 def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
@@ -80,9 +75,7 @@ def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
     areas = [cluster_area(ds, c) for c in clusters]
     valid_clusters = np.array([c for c, a in zip(clusters, areas) if a > min_area_km2])
 
-    ds["cluster_labels"] = ds["cluster_labels"].where(
-        np.isin(ds["cluster_labels"], valid_clusters), 0
-    )
+    ds["cluster_labels"] = ds["cluster_labels"].where(np.isin(ds["cluster_labels"], valid_clusters), 0)
 
     return ds
 
@@ -111,9 +104,7 @@ def assert_clusters_present(data: xr.DataArray) -> None:
         warnings.warn("No significant clusters found in the input DataArray")
 
 
-def _get_dbscan_clusters(
-    data: xr.Dataset, coords: np.ndarray, dbscan_params: dict
-) -> np.ndarray:
+def _get_dbscan_clusters(data: xr.Dataset, coords: np.ndarray, dbscan_params: dict) -> np.ndarray:
     """Generates the DBSCAN cluster labels based on the correlation and p-value.
 
         Args:
@@ -194,7 +185,6 @@ def masked_spherical_dbscan(
     p_val: xr.DataArray,
     dbscan_params: dict,
 ) -> xr.DataArray:
-
     """Determines the clusters based on sklearn's DBSCAN implementation. Alpha determines
     the mask based on the minimum p_value. Grouping can be adjusted using the `eps_km`
     parameter. Cluster labels are negative for areas with a negative correlation coefficient
@@ -244,9 +234,7 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     return _pearsonr(x, y)
 
 
-def correlation(
-    field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"
-) -> Tuple[xr.DataArray, xr.DataArray]:
+def correlation(field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time") -> Tuple[xr.DataArray, xr.DataArray]:
     """Calculate correlation maps.
 
     Args:
@@ -263,15 +251,9 @@ def correlation(
         p_value: DataArray filled with the two-tailed p-values for each computed
             correlation coefficient.
     """
-    assert (
-        corr_dim in target.dims
-    ), f"input target does not have contain the '{corr_dim}' dimension"
-    assert (
-        corr_dim in field.dims
-    ), f"input field does not have contain the '{corr_dim}' dimension"
-    assert np.all(
-        [dim in field.dims for dim in target.dims]
-    ), "Field and target dims do not match"
+    assert corr_dim in target.dims, f"input target does not have contain the '{corr_dim}' dimension"
+    assert corr_dim in field.dims, f"input field does not have contain the '{corr_dim}' dimension"
+    assert np.all([dim in field.dims for dim in target.dims]), "Field and target dims do not match"
 
     return xr.apply_ufunc(
         _pearsonr_nan,
@@ -297,12 +279,8 @@ def regression(field, target):
 
 
 def stack_input_data(precursor, target, precursor_intervals, target_intervals):
-    target = target.sel(i_interval=target_intervals).stack(
-        anch_int=["anchor_year", "i_interval"]
-    )
-    precursor = precursor.sel(i_interval=precursor_intervals).stack(
-        anch_int=["anchor_year", "i_interval"]
-    )
+    target = target.sel(i_interval=target_intervals).stack(anch_int=["anchor_year", "i_interval"])
+    precursor = precursor.sel(i_interval=precursor_intervals).stack(anch_int=["anchor_year", "i_interval"])
 
     precursor = precursor.drop_vars({"anchor_year", "anch_int", "i_interval"})
     target = target.drop_vars({"anchor_year", "anch_int", "i_interval"})
@@ -363,14 +341,8 @@ class RGDR:
         self._lag = lag
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
 
-        self._target_intervals = (
-            [target_intervals]
-            if isinstance(target_intervals, int)
-            else target_intervals
-        )
-        self._precursor_intervals = utils.intervals_subtract(
-            self._target_intervals, lag
-        )
+        self._target_intervals = [target_intervals] if isinstance(target_intervals, int) else target_intervals
+        self._precursor_intervals = utils.intervals_subtract(self._target_intervals, lag)
 
         self._corr_map: Union[None, xr.DataArray] = None
         self._pval_map: Union[None, xr.DataArray] = None
@@ -389,25 +361,19 @@ class RGDR:
     @property
     def cluster_map(self) -> xr.DataArray:
         if self._cluster_map is None:
-            raise ValueError(
-                "No cluster map exists yet, .fit() has to be called first."
-            )
+            raise ValueError("No cluster map exists yet, .fit() has to be called first.")
         return self._cluster_map
 
     @property
     def pval_map(self) -> xr.DataArray:
         if self._pval_map is None:
-            raise ValueError(
-                "No p-value map exists yet, .fit() has to be called first."
-            )
+            raise ValueError("No p-value map exists yet, .fit() has to be called first.")
         return self._pval_map
 
     @property
     def corr_map(self) -> xr.DataArray:
         if self._corr_map is None:
-            raise ValueError(
-                "No correlation map exists yet, .fit() has to be called first."
-            )
+            raise ValueError("No correlation map exists yet, .fit() has to be called first.")
         return self._corr_map
 
     def get_correlation(
@@ -428,9 +394,7 @@ class RGDR:
         if not isinstance(precursor, xr.DataArray):
             raise ValueError("Please provide an xr.DataArray, not a dataset")
 
-        p, t = stack_input_data(
-            precursor, target, self._precursor_intervals, self._target_intervals
-        )
+        p, t = stack_input_data(precursor, target, self._precursor_intervals, self._target_intervals)
 
         return correlation(p, t, corr_dim="anch_int")
 
@@ -485,9 +449,7 @@ class RGDR:
         if (ax1 is None) and (ax2 is None):
             _, (ax1, ax2) = plt.subplots(ncols=2)
         elif (ax1 is None) or (ax2 is None):
-            raise ValueError(
-                "Either pass axis handles for both ax1 and ax2, or pass neither."
-            )
+            raise ValueError("Either pass axis handles for both ax1 and ax2, or pass neither.")
 
         plot1 = corr.plot.pcolormesh(ax=ax1, cmap="coolwarm")  # type: ignore
         plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis_r", vmin=0, vmax=1)  # type: ignore
@@ -534,9 +496,7 @@ class RGDR:
 
         clusters = self.get_clusters(precursor, target)
 
-        return clusters["cluster_labels"].plot(
-            cmap="viridis", ax=ax, **kwargs
-        )  # type: ignore
+        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax, **kwargs)  # type: ignore
 
     def fit(self, precursor: xr.DataArray, target: xr.DataArray):
         """Fits RGDR clusters to precursor data.
@@ -567,9 +527,7 @@ class RGDR:
 
         corr, p_val = self.get_correlation(precursor, target)
 
-        masked_data = masked_spherical_dbscan(
-            precursor, corr, p_val, self._dbscan_params
-        )
+        masked_data = masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
         self._corr_map = corr
         self._pval_map = p_val
         self._cluster_map = masked_data.cluster_labels
@@ -583,31 +541,23 @@ class RGDR:
         data."""
 
         if self.cluster_map is None:
-            raise ValueError(
-                "Transform requires the model to be fit on other data first"
-            )
+            raise ValueError("Transform requires the model to be fit on other data first")
         data = data.sel(i_interval=self._precursor_intervals)
         data["cluster_labels"] = self.cluster_map
         data["area"] = self._area
 
-        reduced_data = utils.weighted_groupby(
-            data, groupby="cluster_labels", weight="area"
-        )
+        reduced_data = utils.weighted_groupby(data, groupby="cluster_labels", weight="area")
 
         # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.geographical_cluster_center(data, reduced_data)
         # Include explanations about geographical centers as attributes
-        reduced_data.attrs[
-            "data"
-        ] = "Clustered data with Response Guided Dimensionality Reduction."
+        reduced_data.attrs["data"] = "Clustered data with Response Guided Dimensionality Reduction."
         reduced_data.attrs[
             "coordinates"
         ] = "Latitudes and longitudes are geographical centers associated with clusters."
 
         # Remove the '0' cluster
-        reduced_data = reduced_data.where(reduced_data["cluster_labels"] != 0).dropna(
-            dim="cluster_labels"
-        )
+        reduced_data = reduced_data.where(reduced_data["cluster_labels"] != 0).dropna(dim="cluster_labels")
 
         return reduced_data.transpose(..., "cluster_labels")
 

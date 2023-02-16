@@ -7,9 +7,7 @@ import xarray as xr
 XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 
 
-def weighted_groupby(
-    ds: XrType, groupby: str, weight: str, method: str = "mean"
-) -> XrType:
+def weighted_groupby(ds: XrType, groupby: str, weight: str, method: str = "mean") -> XrType:
     """Apply a weighted reduction after a groupby call. xarray does not currently support
     combining `weighted` and `groupby`. An open PR adds supports for this functionality
     (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
@@ -34,9 +32,7 @@ def weighted_groupby(
     dims = list(group0.dims)
     stacked_dims = [dim for dim in dims if "stacked_" in str(dim)]
 
-    reduced_groups = [
-        getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups
-    ]
+    reduced_groups = [getattr(g.weighted(g[weight]), method)(dim=stacked_dims) for _, g in groups]
 
     reduced_data: XrType = xr.concat(reduced_groups, dim=groupby)
 
@@ -45,9 +41,7 @@ def weighted_groupby(
     return reduced_data
 
 
-def geographical_cluster_center(
-    masked_data: xr.DataArray, reduced_data: xr.DataArray
-) -> xr.DataArray:
+def geographical_cluster_center(masked_data: xr.DataArray, reduced_data: xr.DataArray) -> xr.DataArray:
     """Function that adds the geographical centers to the clusters.
 
     Args:
@@ -68,9 +62,7 @@ def geographical_cluster_center(
 
     for i, cluster in enumerate(clusters):
         # Select only the grid cells within the cluster
-        cluster_area = stacked_data["area"].where(
-            stacked_data["cluster_labels"] == cluster
-        )
+        cluster_area = stacked_data["area"].where(stacked_data["cluster_labels"] == cluster)
 
         if "i_interval" in cluster_area.dims:
             cluster_area = cluster_area.dropna("i_interval", how="all")
@@ -93,6 +85,4 @@ def intervals_subtract(intervals: List[int], n: int) -> List[int]:
 
     lag_intervals = [i - n for i in intervals]
     # pylint: disable=chained-comparison
-    return [
-        i - 1 if (i <= 0 and j > 0) else i for i, j in zip(lag_intervals, intervals)
-    ]
+    return [i - 1 if (i <= 0 and j > 0) else i for i, j in zip(lag_intervals, intervals)]
