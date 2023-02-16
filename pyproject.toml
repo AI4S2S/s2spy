@@ -1,9 +1,142 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.publish.index]
+disable = true  # Requires confirmation when publishing to pypi.
+
+[project]
+name = "s2spy"
+dynamic = ["version"]
+description = "python package for s2s forecasts with ai"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.8,<3.11"
+authors = [
+  {email = "y.liu@esciencecenter.nl"},
+  {name = "Yang Liu, Bart Schilperoort, Peter Kalverla, Jannes van Ingen, Sem Vijverberg"}
+]
+maintainers = [
+  {name = "Yang Liu", email = "y.liu@esciencecenter.nl"},
+  {name = "Bart Schilperoort", email = "b.schilperoort@esciencecenter.nl"},
+  {name = "Peter Kalverla", email = "b.schilperoort@esciencecenter.nl"},
+  {name = "Jannes van Ingen", email = "jannes.van.ingen@s2s-ai.com"},
+  {name = "Sem Vijverberg", email = "sem.vijverberg@vu.nl"},
+]
+keywords = [
+    "AI",
+    "S2S",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "lilio",
+    "matplotlib",
+    "netcdf4",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "xarray",
+]
+
+[project.optional-dependencies]
+dev = [
+    "bump2version",
+    "hatch",
+    "flake8",
+    "flake8-pyproject",  # Allows flake8 configuration through this file
+    "pyflakes",  # flake8 plugin, checks for errors in code
+    "mccabe",  # flake8 plugin, checks code complexity
+    "pep8-naming",  # flake8 plugin, checks PEP8 naming conventions
+    "black",
+    "isort",
+    "mypy==0.981",
+    "pytest",
+    "pytest-cov",
+]
+
+docs = [  # Required for ReadTheDocs
+  "myst_parser",
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx-autoapi",
+  "coverage[toml]",
+]
+
+bokeh = [
+  "bokeh >= 3.0.0",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/AI4S2S/ai4s2s/issues"
+Documentation = "https://ai4s2s.readthedocs.io/"
+Homepage = "https://github.com/AI4S2S/ai4s2s"
+
+[tool.hatch.version]
+path = "s2spy/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github", "/.mypy_cache", "/.pytest_cache", "/.githooks",
+  "sonar-project.properties"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["s2spy"]
+
+[tool.hatch.envs.default]
+features = ["dev", "bokeh"]
+
+[tool.hatch.envs.default.scripts]
+lint = [
+  "flake8 .",
+  "mypy s2spy",
+  "black --check --diff .",
+  "isort --check-only --diff .",
+]
+format = ["isort .", "black .", "check",]
+test = ["pytest ./s2spy/ ./tests/ --doctest-modules",]
+coverage = [
+  "pytest --cov --cov-report term --cov-report xml --junitxml=xunit-result.xml tests/",
+]
+
+[tool.hatch.envs.docs]
+features = ["bokeh", "docs"]
+
+[tool.hatch.envs.docs.scripts]
+build = [
+  "sphinx-build -c docs -b doctest docs docs/_build",
+  "sphinx-build -c docs -b coverage docs docs/_build",
+  "sphinx-build -c docs -b html docs docs/_build/html",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 88
+src_paths = ["s2spy", "tests"]
+line_length = 120
+
+[tool.flake8]
+max-line-length = 88
+ignore = [
+  "E203",  # Whitespace before ":". Not PEP8 compliant (https://github.com/psf/black/issues/315)
+  "E501",  # Line length: currently (some) docstrings do not comply.
+  "W503",  # https://peps.python.org/pep-0008/#should-a-line-break-before-or-after-a-binary-operator
+]
 
 [tool.coverage.run]
 branch = true
@@ -17,16 +150,3 @@ exclude_lines = [
   "if TYPE_CHECKING:",
   "if typing.TYPE_CHECKING:"
 ]
-
-[tool.tox]
-legacy_tox_ini = """
-
-[tox]
-envlist = py38,py39,py310
-skip_missing_interpreters = true
-
-[testenv]
-commands = pytest
-extras = dev
-
-"""
