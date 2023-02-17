@@ -1,3 +1,4 @@
+"""Commonly used utility functions for s2spy."""
 from typing import List
 from typing import TypeVar
 import numpy as np
@@ -10,9 +11,11 @@ XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 def weighted_groupby(
     ds: XrType, groupby: str, weight: str, method: str = "mean"
 ) -> XrType:
-    """Apply a weighted reduction after a groupby call. xarray does not currently support
-    combining `weighted` and `groupby`. An open PR adds supports for this functionality
-    (https://github.com/pydata/xarray/pull/5480), but this branch was never merged.
+    """Apply a weighted reduction after a groupby call.
+
+    xarray does not currently support combining `weighted` and `groupby`. An open PR
+    adds supports for this functionality (https://github.com/pydata/xarray/pull/5480),
+    but this branch was never merged.
 
     Args:
         ds: Data containing the coordinates or variables
@@ -48,7 +51,7 @@ def weighted_groupby(
 def geographical_cluster_center(
     masked_data: xr.DataArray, reduced_data: xr.DataArray
 ) -> xr.DataArray:
-    """Function that adds the geographical centers to the clusters.
+    """Add the geographical centers to the clusters.
 
     Args:
         masked_data (xr.DataArray): Precursor data before being reduced to clusters,

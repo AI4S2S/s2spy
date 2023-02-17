@@ -1,3 +1,4 @@
+"""Label alignment tools for RGDR clusters."""
 import itertools
 import string
 from copy import copy
@@ -24,7 +25,8 @@ def _get_split_cluster_dict(cluster_labels: xr.DataArray) -> dict:
             "split" for the different clusters over splits.
 
     Returns:
-        Dictionary in the form {0: [cluster_a, cluster_b], 1: [cluster_a], ...}"""
+        Dictionary in the form {0: [cluster_a, cluster_b], 1: [cluster_a], ...}
+    """
     return {
         i_split: list(np.unique(split_data.values)[np.unique(split_data.values) != 0])
         for i_split, split_data in enumerate(cluster_labels)
@@ -32,7 +34,7 @@ def _get_split_cluster_dict(cluster_labels: xr.DataArray) -> dict:
 
 
 def _flatten_cluster_dict(cluster_dict: dict) -> List[Tuple[int, int]]:
-    """'Flattens' a cluster dictionary to a list with (split, cluster) as values.
+    """Flattens a cluster dictionary to a list with (split, cluster) as values.
 
     For example, if the input is {0: [-1, -2, 1], 1: [-1, 1]}, this function will return
     the following list: [(0, -1), (0, -2), (0, 1), (1, -1), (1, 1)]
@@ -71,7 +73,6 @@ def _init_overlap_df(cluster_labels: xr.DataArray):
     Returns:
         A pandas dataframe containing a table
     """
-
     split_label_dict = _get_split_cluster_dict(cluster_labels)
     flat_clusters = _flatten_cluster_dict(split_label_dict)
     multi_index = pd.MultiIndex.from_tuples(flat_clusters, names=("split", "label"))
@@ -86,7 +87,7 @@ def _calculate_overlap(
     split_b: int,
     cluster_b: int,
 ) -> float:
-    """Calculates the overlapping fraction between two clusters, over different splits.
+    """Calculate the overlapping fraction between two clusters, over different splits.
 
     The overlap is defines as:
         overlap = n_overlapping_cells / total_cells_cluster_a
@@ -109,7 +110,7 @@ def _calculate_overlap(
 
 
 def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
-    """Fills the overlap table with the overlap between clusters over different splits.
+    """Fill the overlap table with the overlap between clusters over different splits.
 
     Args:
         cluster_labels: DataArray containing all the cluster maps, with the dimension
@@ -136,11 +137,11 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
     for clusters in (pos_clusters, neg_clusters):
         flat_clusters = _flatten_cluster_dict(clusters)
 
-        for (split, cluster) in flat_clusters:
+        for split, cluster in flat_clusters:
             other_clusters = _flatten_cluster_dict(
                 {k: v for (k, v) in clusters.items() if k != split}
             )
-            for (other_split, other_cluster) in other_clusters:
+            for other_split, other_cluster in other_clusters:
                 overlap = _calculate_overlap(
                     cluster_labels, split, cluster, other_split, other_cluster
                 )
@@ -152,7 +153,7 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
 def get_overlapping_clusters(
     cluster_labels: xr.DataArray, min_overlap: float = 0.1
 ) -> Set:
-    """Creates sets of overlapping clusters.
+    """Create sets of overlapping clusters.
 
     Clusters will be considered to have sufficient overlap if they overlap at least by
     the minimum threshold. Note that this is a one way criterion.
@@ -186,12 +187,8 @@ def get_overlapping_clusters(
     """
     overlap_df = calculate_overlap_table(cluster_labels)
 
-    overlap_df.columns = [
-        "_".join([str(el) for el in col]) for col in overlap_df.columns.values
-    ]  # type: ignore
-    overlap_df.index = [
-        "_".join([str(el) for el in idx]) for idx in overlap_df.index.values
-    ]  # type: ignore
+    overlap_df.columns = ["_".join([str(el) for el in col]) for col in overlap_df.columns.values]  # type: ignore
+    overlap_df.index = ["_".join([str(el) for el in idx]) for idx in overlap_df.index.values]  # type: ignore
 
     clusters = set()
     for row, _ in enumerate(overlap_df.index):
@@ -206,7 +203,7 @@ def get_overlapping_clusters(
 
 
 def remove_subsets(clusters: Set) -> Set:
-    """Removes subsets from the clusters.
+    """Remove subsets from the clusters.
 
     For example: {{"A"}, {"A", "B"}} will become {{"A", "B"}}, as "A" is a subset of the
     bigger cluster.
@@ -220,7 +217,8 @@ def remove_subsets(clusters: Set) -> Set:
 
 
 def remove_overlapping_clusters(clusters: Set) -> Set:
-    """Removes clusters shared between two different groups of clusters.
+    """Remove clusters shared between two different groups of clusters.
+
     Largest cluster gets priority.
 
     For example: {{"A", "D"}, {"A", "B", "C"}} will become {{"D"}, {"A", "B", "C"}}
@@ -237,7 +235,7 @@ def remove_overlapping_clusters(clusters: Set) -> Set:
 
 
 def name_clusters(clusters: Set) -> Dict:
-    """Gives each cluster a unique name.
+    """Give each cluster a unique name.
 
     Note: the first 26 names will be from A - Z. If more than 26 clusters are present,
     these will get names with two uppercase letters (AA - ZZ).
@@ -255,7 +253,9 @@ def name_clusters(clusters: Set) -> Dict:
     clusters_list = list(clusters)
 
     # Ensure reproducable behavior, as sets are unordered.
-    clusters_list.sort(key=lambda l: sum(ord(c) for c in str(l)), reverse=True)
+    clusters_list.sort(
+        key=lambda letters: sum(ord(c) for c in str(letters)), reverse=True
+    )
 
     named_clusters = {}
     for cluster in clusters_list:
@@ -266,7 +266,7 @@ def name_clusters(clusters: Set) -> Dict:
 
 
 def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, str]]]:
-    """Creates a dictionary that can be used to rename the clusters to the aligned names.
+    """Create a dictionary that can be used to rename the clusters to the aligned names.
 
     Args:
         aligned_clusters: A dictionary containing the different splits, and the mapping
@@ -275,7 +275,6 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, st
     Returns:
         A dictionary with the structure {split: [(old_name0, new_name0),
                                                  (old_name1, new_name1)]}.
-
     """
     inversed_names = {}
     for key in aligned_clusters:
@@ -296,7 +295,7 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, st
 
 
 def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict:
-    """This function ensures that in every split, every cluster has a unique name.
+    """Ensure that in every split, every cluster has a unique name.
 
     The function finds the non-unqiue names within each split, and will rename these by
     adding a number. For example, there are three clusters in the first split with the
@@ -345,7 +344,7 @@ def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict
 def _rename_datasets(
     rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray], renaming_dict: Dict
 ) -> List[xr.DataArray]:
-    """Applies the renaming dictionary to the labels of the clustered data.
+    """Apply the renaming dictionary to the labels of the clustered data.
 
     Args:
         rgdr_list: List of RGDR objects that were used to fit and transform the data.
@@ -373,7 +372,7 @@ def _rename_datasets(
 def rename_labels(
     rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]
 ) -> List[xr.DataArray]:
-    """Returns a new object with renamed cluster labels aligned over different splits.
+    """Return a new object with renamed cluster labels aligned over different splits.
 
     To aid in users comparing the clustering over different splits, this function tries
     to match the clusters over different splits, and give clusters that are in the same
@@ -389,10 +388,7 @@ def rename_labels(
         A list of the input clustered data, with the labels renamed.
     """
     n_splits = len(rgdr_list)
-    cluster_maps = [
-        rgdr_list[split].cluster_map.reset_coords()  # type: ignore
-        for split in range(n_splits)
-    ]
+    cluster_maps = [rgdr_list[split].cluster_map.reset_coords() for split in range(n_splits)]  # type: ignore
 
     cluster_map_ds = xr.concat(cluster_maps, dim="split")
 

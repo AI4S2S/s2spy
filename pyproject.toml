@@ -1,9 +1,185 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "s2spy"
+dynamic = ["version"]
+description = "python package for s2s forecasts with ai"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.8,<3.11"
+authors = [
+  {email = "y.liu@esciencecenter.nl"},
+  {name = "Yang Liu, Bart Schilperoort, Peter Kalverla, Jannes van Ingen, Sem Vijverberg"}
+]
+maintainers = [
+  {name = "Yang Liu", email = "y.liu@esciencecenter.nl"},
+  {name = "Bart Schilperoort", email = "b.schilperoort@esciencecenter.nl"},
+  {name = "Peter Kalverla", email = "b.schilperoort@esciencecenter.nl"},
+  {name = "Jannes van Ingen", email = "jannes.van.ingen@s2s-ai.com"},
+  {name = "Sem Vijverberg", email = "sem.vijverberg@vu.nl"},
+]
+keywords = [
+    "AI",
+    "S2S",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "lilio",
+    "matplotlib",
+    "netcdf4",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "xarray",
+]
+
+[project.optional-dependencies]
+dev = [
+    "bump2version",
+    "hatch",
+    "ruff",
+    "black",
+    "isort",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+]
+
+docs = [  # Required for ReadTheDocs
+  "myst_parser",
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx-autoapi",
+  "coverage[toml]",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/AI4S2S/ai4s2s/issues"
+Documentation = "https://ai4s2s.readthedocs.io/"
+Homepage = "https://github.com/AI4S2S/ai4s2s"
+
+[tool.hatch.version]
+path = "s2spy/__init__.py"
+
+[tool.hatch.publish.index]
+disable = true  # Requires confirmation when publishing to pypi.
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github", "/.mypy_cache", "/.pytest_cache", "/.githooks",
+  "sonar-project.properties"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["s2spy"]
+
+[tool.hatch.envs.default]
+features = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+lint = [
+  "ruff check .",
+  "mypy .",
+  "black --check --diff .",
+  "isort --check-only --diff .",
+]
+format = ["isort .", "black .", "check",]
+test = ["pytest ./s2spy/ ./tests/ --doctest-modules",]
+coverage = [
+  "pytest --cov --cov-report term --cov-report xml --junitxml=xunit-result.xml tests/",
+]
+
+[tool.hatch.envs.docs]
+features = ["docs"]
+
+[tool.hatch.envs.docs.scripts]
+build = [
+  "sphinx-build -c docs -b doctest docs docs/_build",
+  "sphinx-build -c docs -b coverage docs docs/_build",
+  "sphinx-build -c docs -b html docs docs/_build/html",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 88
+src_paths = ["s2spy", "tests"]
+
+[tool.ruff]
+select = [
+  "E",  # pycodestyle
+  "F",  # pyflakes
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
+  "C",  # mccabe complexity
+#  "I",  # isort (autosort not working correctly, disabled for now).
+  "N",  # PEP8-naming
+  "UP",  # pyupgrade (upgrade syntax to current syntax)
+  "PLE",  # Pylint error https://github.com/charliermarsh/ruff#error-ple
+  "PLR",  # Pylint refactor (e.g. too-many-arguments)
+  "PLW",  # Pylint warning (useless-else-on-loop)
+]
+extend-select = [
+  "D401",  # First line should be in imperative mood
+  "D400",  # First line should end in a period.
+  "D404",  # First word of the docstring should not be 'This'
+]
+ignore = [
+  "E501",  # Line length: fails on many docstrings (needs fixing).
+  "PLR2004",  # magic value used in comparsion (i.e. `if ndays == 28: month_is_feb`).
+]
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F"]
+unfixable = []
+line-length = 88
+exclude = ["docs", "build"]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+target-version = "py38"
+
+[tool.ruff.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.mccabe]
+max-complexity = 10
+
+# Configuration for when ruff's import sorting is fixed.
+# [tool.ruff.isort]
+# known-first-party = ["s2spy"]
+# force-single-line = true
+# lines-after-imports = 2
+# no-lines-before = ["future","standard-library","third-party","first-party","local-folder"]
+
+# note that currently isort is not executed using ruff
+[tool.isort]
+py_version=39
+skip = [".gitignore", ".dockerignore"]
+skip_glob = ["docs/*"]
+force_single_line = true
+lines_after_imports = 2
+known_first_party = ["s2spy"]
+src_paths = ["s2spy", "tests"]
+line_length = 120
+no_lines_before = ["FUTURE","STDLIB","THIRDPARTY","FIRSTPARTY","LOCALFOLDER"]
 
 [tool.coverage.run]
 branch = true
@@ -17,16 +193,3 @@ exclude_lines = [
   "if TYPE_CHECKING:",
   "if typing.TYPE_CHECKING:"
 ]
-
-[tool.tox]
-legacy_tox_ini = """
-
-[tox]
-envlist = py38,py39,py310
-skip_missing_interpreters = true
-
-[testenv]
-commands = pytest
-extras = dev
-
-"""

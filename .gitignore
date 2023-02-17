@@ -12,7 +12,8 @@ htmlcov
 .coverage
 coverage.xml
 .pytest_cache
-.tox
+.mypy_cache
+.ruff_cache
 
 docs/_build
 

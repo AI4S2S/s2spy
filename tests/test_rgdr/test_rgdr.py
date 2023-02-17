@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from lilio import Calendar
+from lilio import resample
 from s2spy import RGDR
 from s2spy.rgdr import rgdr
 from s2spy.rgdr import utils
-from lilio import Calendar
-from lilio import resample
 
 
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 # pylint: disable=protected-access
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def dummy_calendar():
     cal = Calendar(anchor="08-01")
     cal.add_intervals("target", length="1M", n=4)
@@ -30,25 +30,25 @@ def dummy_calendar():
     return cal
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_target():
     return xr.open_dataset(f"{TEST_FILE_PATH}/tf5_nc5_dendo_80d77.nc").sel(cluster=3)
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def raw_field():
     return xr.open_dataset(
         f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc"
     )
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_precursor_field(raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return resample(cal, raw_field).sst
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def example_target_timeseries(raw_target, raw_field, dummy_calendar):
     cal = dummy_calendar.map_to_data(raw_field)
     return resample(cal, raw_target).ts
@@ -59,19 +59,19 @@ def example_corr(example_target_timeseries, example_precursor_field):
     return rgdr.correlation(
         example_precursor_field.sel(i_interval=-4),
         example_target_timeseries.sel(i_interval=1),
-        corr_dim="anchor_year"
+        corr_dim="anchor_year",
     )
 
 
-@pytest.fixture(autouse=True, scope="class")
+@pytest.fixture(scope="class")
 def expected_labels():
     return np.array(
         [
-            [ 0,  0,  0, -1, -1,  0,  0, -2,  0,  0,  0,  0,  0],
-            [ 0,  0,  0,  0,  0,  0, -2, -2, -2, -2, -2,  0,  0],
-            [ 0,  0,  0,  0,  0,  0,  0, -2, -2, -2, -2,  0,  0],
-            [ 0,  0,  0,  0,  0,  0,  0,  0,  0, -2,  0,  0,  0],
-            [ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+            [0, 0, 0, -1, -1, 0, 0, -2, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, -2, -2, -2, -2, -2, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, -2, -2, -2, -2, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, -2, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ]
     )
 
@@ -79,24 +79,25 @@ def expected_labels():
 class TestUtils:
     """Validates the various utility functions used in RGDR"""
 
-    testdata_spherical_area = [ # lat, dlat, dlon, area
+    testdata_spherical_area = [
         (-1, 2, 2, 49500),
         (45, 5, 5, 218500),
-        (45, 5, 2.5, 109250)
-    ]
+        (45, 5, 2.5, 109250),
+    ]  # lat, dlat, dlon, area
 
     @pytest.mark.parametrize("lat, dlat, dlon, expected", testdata_spherical_area)
     def test_spherical_area(self, lat, dlat, dlon, expected):
         np.testing.assert_allclose(
             rgdr.spherical_area(lat, dlat, dlon), expected, rtol=0.05
-            )
+        )
 
-    testdata_intervals = [ # target_intervals, lag, precursor_intervals
+    testdata_intervals = [  # target_intervals, lag, precursor_intervals
         ([2], 1, [1]),
         ([1], 1, [-1]),
         ([-1], 1, [-2]),
         ([1, 2, 3, 4], 4, [-4, -3, -2, -1]),
     ]
+
     @pytest.mark.parametrize("intervals, lag, expected", testdata_intervals)
     def test_intervals_subtract(self, intervals, lag, expected):
         assert utils.intervals_subtract(intervals, lag) == expected
@@ -109,7 +110,7 @@ class TestUtils:
 class TestCorrelation:
     """Validates that the correlation ufunc works, as well as the input checks."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_dataarray(self):
         time = pd.date_range("20161001", "20211001", freq="60d")
 
@@ -123,7 +124,7 @@ class TestCorrelation:
             },
         )
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_timeseries(self, dummy_dataarray):
         return dummy_dataarray.isel(lat=0, lon=0).drop_vars(["lat", "lon"])
 
@@ -178,14 +179,17 @@ class TestCorrelation:
 class TestDBSCAN:
     """Separately validates that the DBSCAN-based clustering works as expected."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_dbscan_params(self):
         return {"alpha": 0.025, "eps": 600, "min_area": None}
 
     def test_dbscan(
-        self, example_corr, example_precursor_field, dummy_dbscan_params, expected_labels
+        self,
+        example_corr,
+        example_precursor_field,
+        dummy_dbscan_params,
+        expected_labels,
     ):
-
         corr, p_val = example_corr
 
         clusters = rgdr.masked_spherical_dbscan(
@@ -195,7 +199,11 @@ class TestDBSCAN:
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
 
     def test_dbscan_min_area(
-        self, example_corr, example_precursor_field, dummy_dbscan_params, expected_labels
+        self,
+        example_corr,
+        example_precursor_field,
+        dummy_dbscan_params,
+        expected_labels,
     ):
         corr, p_val = example_corr
         dbscan_params = dummy_dbscan_params
@@ -209,19 +217,19 @@ class TestDBSCAN:
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
 
 
-rgdr_test_config = dict(
-    target_intervals=[1],
-    lag=4,
-    eps_km=600,
-    alpha=0.025,
-    min_area_km2=0
-)
+rgdr_test_config = {
+    "target_intervals": [1],
+    "lag": 4,
+    "eps_km": 600,
+    "alpha": 0.025,
+    "min_area_km2": 0,
+}
 
 
 class TestRGDR:
     """Test RGDR and its methods."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def dummy_rgdr(self):
         return RGDR(**rgdr_test_config)  # type: ignore
 
@@ -252,14 +260,18 @@ class TestRGDR:
         dummy_rgdr.fit(example_precursor_field, example_target_timeseries)
         assert dummy_rgdr._area is not None
 
-    def test_transform(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
+    def test_transform(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries
+    ):
         dummy_rgdr.fit(example_precursor_field, example_target_timeseries)
         clustered_data = dummy_rgdr.transform(example_precursor_field)
 
-        expected_labels = np.array([-2,  -1], dtype='int16')
+        expected_labels = np.array([-2, -1], dtype="int16")
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
-    def test_fit_transform_fits(self, example_precursor_field, example_target_timeseries):
+    def test_fit_transform_fits(
+        self, example_precursor_field, example_target_timeseries
+    ):
         # Ensures that after fit_transform, the rgdr object is fit.
         rgdr = RGDR(**rgdr_test_config)  # type: ignore
         _ = rgdr.fit_transform(example_precursor_field, example_target_timeseries)
@@ -267,43 +279,55 @@ class TestRGDR:
 
     def test_fit_transform(self, example_precursor_field, example_target_timeseries):
         rgdr = RGDR(**rgdr_test_config)  # type: ignore
-        clustered_data = rgdr.fit_transform(example_precursor_field, example_target_timeseries)
-        expected_labels = np.array(
-            [-2, -1], dtype='int16'
+        clustered_data = rgdr.fit_transform(
+            example_precursor_field, example_target_timeseries
         )
+        expected_labels = np.array([-2, -1], dtype="int16")
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
 
     @pytest.mark.parametrize("prop", ("cluster_map", "pval_map", "corr_map"))
-    def test_fitted_properties(self, dummy_rgdr, example_precursor_field, example_target_timeseries, prop):
+    def test_fitted_properties(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries, prop
+    ):
         dummy_rgdr.fit(example_precursor_field, example_target_timeseries)
         getattr(dummy_rgdr, prop)
 
-    def test_corr_preview(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
-        dummy_rgdr.preview_correlation(example_precursor_field, example_target_timeseries)
+    def test_corr_preview(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries
+    ):
+        dummy_rgdr.preview_correlation(
+            example_precursor_field, example_target_timeseries
+        )
 
-    def test_corr_plot_ax(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
+    def test_corr_plot_ax(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries
+    ):
         _, (ax1, ax2) = plt.subplots(ncols=2)
-        dummy_rgdr.preview_correlation(example_precursor_field, example_target_timeseries, ax1=ax1, ax2=ax2)
+        dummy_rgdr.preview_correlation(
+            example_precursor_field, example_target_timeseries, ax1=ax1, ax2=ax2
+        )
 
-    def test_cluster_plot(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
+    def test_cluster_plot(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries
+    ):
         dummy_rgdr.preview_clusters(example_precursor_field, example_target_timeseries)
 
-    def test_cluster_plot_ax(self, dummy_rgdr, example_precursor_field, example_target_timeseries):
+    def test_cluster_plot_ax(
+        self, dummy_rgdr, example_precursor_field, example_target_timeseries
+    ):
         _, ax = plt.subplots()
-        dummy_rgdr.preview_clusters(example_precursor_field, example_target_timeseries, ax=ax)
+        dummy_rgdr.preview_clusters(
+            example_precursor_field, example_target_timeseries, ax=ax
+        )
 
     def test_multiple_targets(self, example_precursor_field, example_target_timeseries):
         rgdr = RGDR(
-            target_intervals=[1, 2],
-            lag=4,
-            eps_km=600,
-            alpha=0.025,
-            min_area_km2=0
-            )
-
-        clustered_data = rgdr.fit_transform(example_precursor_field, example_target_timeseries)
-
-        expected_labels = np.array(
-            [-2, -1], dtype='int16'
+            target_intervals=[1, 2], lag=4, eps_km=600, alpha=0.025, min_area_km2=0
         )
+
+        clustered_data = rgdr.fit_transform(
+            example_precursor_field, example_target_timeseries
+        )
+
+        expected_labels = np.array([-2, -1], dtype="int16")
         np.testing.assert_array_equal(clustered_data["cluster_labels"], expected_labels)
