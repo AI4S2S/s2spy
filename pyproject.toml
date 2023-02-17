@@ -68,10 +68,6 @@ docs = [  # Required for ReadTheDocs
   "coverage[toml]",
 ]
 
-bokeh = [
-  "bokeh >= 3.0.0",
-]
-
 [project.urls]
 "Bug Tracker" = "https://github.com/AI4S2S/ai4s2s/issues"
 Documentation = "https://ai4s2s.readthedocs.io/"
@@ -90,7 +86,7 @@ exclude = [
 packages = ["s2spy"]
 
 [tool.hatch.envs.default]
-features = ["dev", "bokeh"]
+features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
 lint = [
@@ -106,7 +102,7 @@ coverage = [
 ]
 
 [tool.hatch.envs.docs]
-features = ["bokeh", "docs"]
+features = ["docs"]
 
 [tool.hatch.envs.docs.scripts]
 build = [
