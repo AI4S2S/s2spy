@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import xarray as xr
 from sklearn.model_selection import ShuffleSplit
+
 import s2spy
 import s2spy.rgdr
 from s2spy import RGDR

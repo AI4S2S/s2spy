@@ -7,6 +7,7 @@ import pytest
 import xarray as xr
 from lilio import Calendar
 from lilio import resample
+
 from s2spy import RGDR
 from s2spy.rgdr import rgdr
 from s2spy.rgdr import utils

@@ -52,14 +52,10 @@ dependencies = [
 dev = [
     "bump2version",
     "hatch",
-    "flake8",
-    "flake8-pyproject",  # Allows flake8 configuration through this file
-    "pyflakes",  # flake8 plugin, checks for errors in code
-    "mccabe",  # flake8 plugin, checks code complexity
-    "pep8-naming",  # flake8 plugin, checks PEP8 naming conventions
+    "ruff",
     "black",
     "isort",
-    "mypy==0.981",
+    "mypy",
     "pytest",
     "pytest-cov",
 ]
@@ -98,7 +94,7 @@ features = ["dev", "bokeh"]
 
 [tool.hatch.envs.default.scripts]
 lint = [
-  "flake8 .",
+  "ruff check s2spy",
   "mypy s2spy",
   "black --check --diff .",
   "isort --check-only --diff .",
@@ -129,13 +125,60 @@ ignore_missing_imports = true
 line-length = 88
 src_paths = ["s2spy", "tests"]
 
-[tool.flake8]
-max-line-length = 88
-ignore = [
-  "E203",  # Whitespace before ":". Not PEP8 compliant (https://github.com/psf/black/issues/315)
-  "E501",  # Line length: currently (some) docstrings do not comply.
-  "W503",  # https://peps.python.org/pep-0008/#should-a-line-break-before-or-after-a-binary-operator
+[tool.ruff]
+select = [
+  "E",  # pycodestyle
+  "F",  # pyflakes
+  "B",  # flake8-bugbear
+  "D",  # pydocstyle
+  "C",  # mccabe complexity
+#  "I",  # isort (autosort not working correctly, disabled for now).
+  "N",  # PEP8-naming
+  "UP",  # pyupgrade (upgrade syntax to current syntax)
+  "PLE",  # Pylint error https://github.com/charliermarsh/ruff#error-ple
+  "PLR",  # Pylint refactor (e.g. too-many-arguments)
+  "PLW",  # Pylint warning (useless-else-on-loop)
 ]
+extend-select = [
+  "D401",  # First line should be in imperative mood
+  "D400",  # First line should end in a period.
+  "D404",  # First word of the docstring should not be 'This'
+]
+ignore = [
+  "E501",  # Line length: fails on many docstrings (needs fixing).
+  "PLR2004",  # magic value used in comparsion (i.e. `if ndays == 28: month_is_feb`).
+]
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F"]
+unfixable = []
+line-length = 88
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+target-version = "py38"
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.mccabe]
+max-complexity = 10
+
+# Configuration for when ruff's import sorting is fixed.
+# [tool.ruff.isort]
+# known-first-party = ["s2spy"]
+# force-single-line = true
+# lines-after-imports = 2
+# no-lines-before = ["future","standard-library","third-party","first-party","local-folder"]
+
+# note that currently isort is not executed using ruff
+[tool.isort]
+py_version=39
+skip = [".gitignore", ".dockerignore"]
+skip_glob = ["docs/*"]
+force_single_line = true
+lines_after_imports = 2
+known_first_party = ["s2spy"]
+src_paths = ["s2spy", "tests"]
+line_length = 120
 
 [tool.coverage.run]
 branch = true
