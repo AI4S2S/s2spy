@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Dev changes
+- Use `hatch` as the project manager.
+- Use `ruff` as the linter.
+- Notebooks have been moved to the docs folder, to be included in ReadtheDocs in the future.
+
 ### Removed
 - Calendar/resample and traintest modules have been moved to [Lilio](https://github.com/AI4S2S/lilio).
 
