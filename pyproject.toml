@@ -128,7 +128,6 @@ ignore_missing_imports = true
 [tool.black]
 line-length = 88
 src_paths = ["s2spy", "tests"]
-line_length = 120
 
 [tool.flake8]
 max-line-length = 88

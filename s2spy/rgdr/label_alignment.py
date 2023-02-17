@@ -125,25 +125,33 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
     all_clusters = _get_split_cluster_dict(cluster_labels)
 
     pos_clusters = {
-        split: [el for el in cluster_list if np.sign(el) == 1] for (split, cluster_list) in all_clusters.items()
+        split: [el for el in cluster_list if np.sign(el) == 1]
+        for (split, cluster_list) in all_clusters.items()
     }
     neg_clusters = {
-        split: [el for el in cluster_list if np.sign(el) == -1] for (split, cluster_list) in all_clusters.items()
+        split: [el for el in cluster_list if np.sign(el) == -1]
+        for (split, cluster_list) in all_clusters.items()
     }
 
     for clusters in (pos_clusters, neg_clusters):
         flat_clusters = _flatten_cluster_dict(clusters)
 
         for split, cluster in flat_clusters:
-            other_clusters = _flatten_cluster_dict({k: v for (k, v) in clusters.items() if k != split})
+            other_clusters = _flatten_cluster_dict(
+                {k: v for (k, v) in clusters.items() if k != split}
+            )
             for other_split, other_cluster in other_clusters:
-                overlap = _calculate_overlap(cluster_labels, split, cluster, other_split, other_cluster)
+                overlap = _calculate_overlap(
+                    cluster_labels, split, cluster, other_split, other_cluster
+                )
                 overlap_df.at[(split, cluster), (other_split, other_cluster)] = overlap
 
     return overlap_df
 
 
-def get_overlapping_clusters(cluster_labels: xr.DataArray, min_overlap: float = 0.1) -> Set:
+def get_overlapping_clusters(
+    cluster_labels: xr.DataArray, min_overlap: float = 0.1
+) -> Set:
     """Creates sets of overlapping clusters.
 
     Clusters will be considered to have sufficient overlap if they overlap at least by
@@ -183,7 +191,9 @@ def get_overlapping_clusters(cluster_labels: xr.DataArray, min_overlap: float = 
 
     clusters = set()
     for row, _ in enumerate(overlap_df.index):
-        overlapping = overlap_df.iloc[row].where(overlap_df.iloc[row] > min_overlap).dropna()
+        overlapping = (
+            overlap_df.iloc[row].where(overlap_df.iloc[row] > min_overlap).dropna()
+        )
         cluster = set(overlapping.index)
         cluster.add(overlap_df.iloc[row].name)
         clusters.add(frozenset(cluster))
@@ -241,7 +251,9 @@ def name_clusters(clusters: Set) -> Dict:
     clusters_list = list(clusters)
 
     # Ensure reproducable behavior, as sets are unordered.
-    clusters_list.sort(key=lambda letters: sum(ord(c) for c in str(letters)), reverse=True)
+    clusters_list.sort(
+        key=lambda letters: sum(ord(c) for c in str(letters)), reverse=True
+    )
 
     named_clusters = {}
     for cluster in clusters_list:
@@ -306,7 +318,9 @@ def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict
         cluster_old_names = [cl for cl, _ in renamed_dict[split]]
         cluster_new_names = [cl for _, cl in renamed_dict[split]]
 
-        double_names = [x for x in set(cluster_new_names) if cluster_new_names.count(x) > 1]
+        double_names = [
+            x for x in set(cluster_new_names) if cluster_new_names.count(x) > 1
+        ]
 
         for double_name in double_names:
             double_names_any.add(double_name)
@@ -354,7 +368,9 @@ def _rename_datasets(
     return renamed
 
 
-def rename_labels(rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]) -> List[xr.DataArray]:
+def rename_labels(
+    rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]
+) -> List[xr.DataArray]:
     """Returns a new object with renamed cluster labels aligned over different splits.
 
     To aid in users comparing the clustering over different splits, this function tries
