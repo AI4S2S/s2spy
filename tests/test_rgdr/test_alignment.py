@@ -170,7 +170,7 @@ def test_alignment_example(example_field, example_target):
 
     expected = [["A1"], ["A1", "A2"], ["A1"], ["A1"]]
     clusters_list = [
-        sorted(list(el.cluster_labels.values)) for el in aligned_precursors
+        sorted(el.cluster_labels.values) for el in aligned_precursors
     ]
 
     assert expected == clusters_list

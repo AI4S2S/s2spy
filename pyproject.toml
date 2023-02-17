@@ -2,9 +2,6 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.publish.index]
-disable = true  # Requires confirmation when publishing to pypi.
-
 [project]
 name = "s2spy"
 dynamic = ["version"]
@@ -75,6 +72,9 @@ Homepage = "https://github.com/AI4S2S/ai4s2s"
 
 [tool.hatch.version]
 path = "s2spy/__init__.py"
+
+[tool.hatch.publish.index]
+disable = true  # Requires confirmation when publishing to pypi.
 
 [tool.hatch.build.targets.sdist]
 exclude = [

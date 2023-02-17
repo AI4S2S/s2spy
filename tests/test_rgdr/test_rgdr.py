@@ -218,9 +218,13 @@ class TestDBSCAN:
         np.testing.assert_array_equal(clusters["cluster_labels"], expected_labels)
 
 
-rgdr_test_config = dict(
-    target_intervals=[1], lag=4, eps_km=600, alpha=0.025, min_area_km2=0
-)
+rgdr_test_config = {
+    "target_intervals": [1],
+    "lag": 4,
+    "eps_km": 600,
+    "alpha": 0.025,
+    "min_area_km2": 0,
+}
 
 
 class TestRGDR:
