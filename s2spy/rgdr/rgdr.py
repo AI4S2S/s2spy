@@ -6,14 +6,12 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
-
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from matplotlib.collections import QuadMesh
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
-
 from . import utils
 
 

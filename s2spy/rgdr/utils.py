@@ -1,7 +1,6 @@
 """Commonly used utility functions for s2spy."""
 from typing import List
 from typing import TypeVar
-
 import numpy as np
 import xarray as xr
 

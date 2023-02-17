@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 import xarray as xr
 from sklearn.model_selection import ShuffleSplit
-
 import s2spy
 import s2spy.rgdr
 from s2spy import RGDR
@@ -169,8 +168,6 @@ def test_alignment_example(example_field, example_target):
     )
 
     expected = [["A1"], ["A1", "A2"], ["A1"], ["A1"]]
-    clusters_list = [
-        sorted(el.cluster_labels.values) for el in aligned_precursors
-    ]
+    clusters_list = [sorted(el.cluster_labels.values) for el in aligned_precursors]
 
     assert expected == clusters_list

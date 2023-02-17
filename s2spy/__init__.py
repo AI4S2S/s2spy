@@ -4,7 +4,6 @@ This package is a high-level python package integrating expert knowledge
 and artificial intelligence to boost (sub) seasonal forecasting.
 """
 import logging
-
 from .rgdr.rgdr import RGDR
 
 
