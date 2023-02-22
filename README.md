@@ -60,10 +60,10 @@ python3 -m pytest
 ![workflow](https://raw.githubusercontent.com/AI4S2S/s2spy/main/docs/assets/images/workflow.png)
 
 ### Datetime operations & Data processing
-In a typical ML-based S2S project, the first step is always data processing.  A calendar-based datetime module `time` is implemented for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `calendar` object is created using `AdventCalendar`:
+In a typical ML-based S2S project, the first step is always data processing.  Our calendar-based package, [`lilio`](https://github.com/AI4S2S/lilio), is used for time operations. For instance, a user is looking for predictors for winter climate at seasonal timescales (~180 days). First, a `Calendar` object is created using `daily_calendar`:
 
 ```py
->>> calendar = s2spy.time.AdventCalendar(anchor="11-30", freq='180d')
+>>> calendar = lilio.daily_calendar(anchor="11-30", length='180d')
 >>> calendar = calendar.map_years(2020, 2021)
 >>> calendar.show()
 i_interval                         -1                         1
@@ -76,7 +76,7 @@ Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and res
 
 ```py
 >>> calendar = calendar.map_to_data(input_data)
->>> bins = s2spy.time.resample(calendar, input_data)
+>>> bins = lilio.resample(calendar, input_data)
 >>> bins
   anchor_year  i_interval                  interval  mean_data  target
 0        2020          -1  [2020-06-03, 2020-11-30)      275.5    True
@@ -85,21 +85,21 @@ Now, the user can load the data `input_data` (e.g. `pandas` `DataFrame`) and res
 3        2021           1  [2021-11-30, 2022-05-29)      460.5   False
 ```
 
-Depending on data preparations, we can choose different types of calendars e.g. [`MonthlyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.MonthlyCalendar) and [`WeeklyCalendar`](https://ai4s2s.readthedocs.io/en/latest/autoapi/s2spy/time/index.html#s2spy.time.WeeklyCalendar).
+Depending on data preparations, we can choose different types of calendars. For more information, see [Lilio's documentation](https://lilio.readthedocs.io/en/latest/notebooks/calendar_shorthands.html).
 
 ### Cross-validation
-Using `s2spy`, we can generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
+Lilio can also generate train/test splits and perform cross-validation. To do that, a splitter is called from `sklearn.model_selection` e.g. `ShuffleSplit` and used to split the resampled data:
 
 ```py
 from sklearn.model_selection import ShuffleSplit
 splitter = ShuffleSplit(n_splits=3)
-s2spy.traintest.split_groups(splitter, bins)
+lilio.traintest.split_groups(splitter, bins)
 ```
 
 All splitter classes from `scikit-learn` are supported, a list is available [here](https://scikit-learn.org/stable/modules/classes.html#splitter-classes). Users should follow `scikit-learn` documentation on how to use a different splitter class.
 
 ### Dimensionality reduction
-In `s2spy`, we can perform dimensionality reduction on data. For instance, to perform the [Response Guided Dimensionality Reduction (RGDR)](https://www.nature.com/articles/s41612-022-00237-7), we configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
+With `s2spy`, we can perform dimensionality reduction on data. For instance, to perform the [Response Guided Dimensionality Reduction (RGDR)](https://www.nature.com/articles/s41612-022-00237-7), we configure the RGDR operator and fit it to a precursor field. Then, this cluster can be used to transform the data into the reduced clusters:
 ```py
 rgdr = RGDR(eps_km=600, alpha=0.05, min_area_km2=3000**2)
 rgdr.fit(precursor_field, target_timeseries)

@@ -31,7 +31,7 @@ The sections below outline the steps in each case.
 1. (**important**) announce your plan to the rest of the community *before you start working*. This announcement should be in the form of a (new) issue;
 1. (**important**) wait until some kind of consensus is reached about your idea being a good idea;
 1. if needed, fork the repository to your own Github profile and create your own feature branch off of the latest master commit. While working on your feature branch, make sure to stay up to date with the master branch by pulling in changes, possibly from the 'upstream' repository;
-1. make sure the existing tests still work by running ``pytest``;
+1. make sure the existing tests still work by running ``hatch run test``;
 1. add your own tests (if necessary);
 1. update or expand the documentation;
 1. update the `CHANGELOG.md` file with change;
@@ -61,8 +61,8 @@ This section is for maintainers of the package.
 
 9. Create a PyPI release.
 
-    1. Create distribution archives with `python3 -m build`.
-    2. Upload archives to PyPI with `twine upload dist/*` (use your
+    1. Create distribution archives with `hatch build`.
+    2. Upload archives to PyPI with `hatch publish` (use your
         personal PyPI account).
 
 10. Verify

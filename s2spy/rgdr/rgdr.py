@@ -1,14 +1,15 @@
 """Response Guided Dimensionality Reduction."""
 import warnings
+from os import linesep
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Type
 from typing import TypeVar
-import matplotlib as mpl
+from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.collections import QuadMesh
 from scipy.stats import pearsonr as _pearsonr
 from sklearn.cluster import DBSCAN
 from . import utils
@@ -21,6 +22,7 @@ XrType = TypeVar("XrType", xr.DataArray, xr.Dataset)
 
 def spherical_area(latitude: float, dlat: float, dlon: Optional[float] = None) -> float:
     """Approximate the area of a square grid cell on a spherical (!) earth.
+
     Returns the area in square kilometers of earth surface.
 
     Args:
@@ -44,8 +46,9 @@ def spherical_area(latitude: float, dlat: float, dlon: Optional[float] = None) -
 
 
 def cluster_area(ds: XrType, cluster_label: float) -> float:
-    """Determines the total area of a cluster. Requires the input dataset to have the
-    variables `area` and `cluster_labels`.
+    """Determine the total area of a cluster.
+
+    Requires the input dataset to have the variables `area` and `cluster_labels`.
 
     Args:
         ds (xr.Dataset or xr.DataArray): Dataset/DataArray containing the variables
@@ -65,7 +68,7 @@ def cluster_area(ds: XrType, cluster_label: float) -> float:
 
 
 def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
-    """Removes the clusters where the area is under the input threshold.
+    """Remove the clusters where the area is under the input threshold.
 
     Args:
         ds (xr.DataArray, xr.Dataset): Dataset containing `cluster_labels` and `area`.
@@ -80,14 +83,14 @@ def remove_small_area_clusters(ds: XrType, min_area_km2: float) -> XrType:
     valid_clusters = np.array([c for c, a in zip(clusters, areas) if a > min_area_km2])
 
     ds["cluster_labels"] = ds["cluster_labels"].where(
-        np.isin(ds["cluster_labels"], valid_clusters), "0"
+        np.isin(ds["cluster_labels"], valid_clusters), 0
     )
 
     return ds
 
 
 def add_gridcell_area(data: xr.DataArray):
-    """Adds the area of each gridcell (latitude) in km2.
+    """Add the area of each gridcell (latitude) in km2.
 
     Note: Assumes an even grid (in degrees)
 
@@ -104,44 +107,30 @@ def add_gridcell_area(data: xr.DataArray):
 
 
 def assert_clusters_present(data: xr.DataArray) -> None:
-    """Asserts that any (non-'0') clusters are present in the data."""
-
-    if "i_interval" in data.dims:
-        n_clusters = np.zeros(data["i_interval"].size)
-        for i, _ in enumerate(n_clusters):
-            n_clusters[i] = np.unique(data.sel(i_interval=data["i_interval"][i]).cluster_labels).size
-
-        if np.any(n_clusters == 1):  # A single cluster is the '0' (leftovers) cluster.
-            empty_lags = data["i_interval"].values[n_clusters == 1]
-            warnings.warn(
-                f"No significant clusters found in i_interval(s): i_interval={empty_lags}."
-            )
-
-    elif np.unique(data.cluster_labels).size == 1:
+    """Assert that any (non-'0') clusters are present in the data."""
+    if np.unique(data.cluster_labels).size == 1:
         warnings.warn("No significant clusters found in the input DataArray")
 
 
 def _get_dbscan_clusters(
-    data: xr.Dataset, coords: np.ndarray, i_interval: int, dbscan_params: dict
+    data: xr.Dataset, coords: np.ndarray, dbscan_params: dict
 ) -> np.ndarray:
-    """Generates the DBSCAN cluster labels based on the correlation and p-value.
+    """Generate the DBSCAN cluster labels based on the correlation and p-value.
 
-        Args:
-        data (xr.DataArray): DataArray of the precursor field, of only a single
+    Args:
+        data: DataArray of the precursor field, of only a single
              i_interval. Requires the 'latitude' and 'longitude' dimensions to be stacked
              into a "coords" dimension.
-        coords (np.ndarray): 2-D array containing the coordinates of each (lat, lon) grid
+        coords: 2-D array containing the coordinates of each (lat, lon) grid
             point, in radians.
-        i_interval (int): The i_interval value of the input data.
-        dbscan_params (dict): Dictionary containing the elements 'alpha', 'eps',
+        dbscan_params: Dictionary containing the elements 'alpha', 'eps',
             'min_area_km2'. See the documentation of RGDR for more information.
 
     Returns:
         np.ndarray: 1-D array of the same length as `coords`, containing cluster labels
-            for every coordinate."""
-
-    labels = np.zeros(len(coords), dtype="<U32")
-    labels[:] = "0"
+            for every coordinate.
+    """
+    labels = np.zeros(len(coords), dtype=int)
 
     for sign, sign_mask in zip([1, -1], [data["corr"] >= 0, data["corr"] < 0]):
         mask = np.logical_and(data["p_val"] < dbscan_params["alpha"], sign_mask)
@@ -154,8 +143,7 @@ def _get_dbscan_clusters(
                 metric="haversine",
             ).fit(coords[mask])
 
-            cluster_labels = sign * (db.labels_ + 1)
-            labels[mask] = [f"i_interval:{i_interval}_cluster:{int(lbl)}" for lbl in cluster_labels]
+            labels[mask] = sign * (db.labels_ + 1)
 
     return labels
 
@@ -166,7 +154,7 @@ def _find_clusters(
     p_val: xr.DataArray,
     dbscan_params: dict,
 ) -> xr.DataArray:
-    """Computes clusters and adds their labels to the precursor dataset.
+    """Compute clusters and adds their labels to the precursor dataset.
 
     For clustering the DBSCAN algorithm is used, with a Haversine distance metric.
 
@@ -187,28 +175,16 @@ def _find_clusters(
     data = precursor.to_dataset()
     data["corr"], data["p_val"] = corr, p_val  # Will require less tracking of indices
 
-    if "i_interval" not in data.dims:
-        data = data.expand_dims("i_interval")
-    i_intervals = data["i_interval"].values
-
     data = data.stack(coord=["latitude", "longitude"])
     coords = np.asarray(data["coord"].values.tolist())
     coords = np.radians(coords)
 
-    # Prepare labels, default value is 0 (not in cluster)
-    labels = np.zeros((len(i_intervals), len(coords)), dtype="<U32")
-
-    for i, i_interval in enumerate(i_intervals):
-        labels[i] = _get_dbscan_clusters(
-            data.sel(i_interval=i_interval), coords, i_interval, dbscan_params
-        )
+    labels = _get_dbscan_clusters(data, coords, dbscan_params)
 
     precursor = precursor.stack(coord=["latitude", "longitude"])
-    if "i_interval" not in precursor.dims:
-        precursor["cluster_labels"] = ("coord", labels[0])
-    else:
-        precursor["cluster_labels"] = (("i_interval", "coord"), labels)
-    precursor = precursor.unstack(("coord"))
+    precursor["cluster_labels"] = ("coord", labels)
+    precursor["cluster_labels"] = precursor["cluster_labels"].astype("int16")
+    precursor = precursor.unstack("coord")
 
     return precursor
 
@@ -219,12 +195,13 @@ def masked_spherical_dbscan(
     p_val: xr.DataArray,
     dbscan_params: dict,
 ) -> xr.DataArray:
+    """Determine the clusters based on sklearn's DBSCAN implementation.
 
-    """Determines the clusters based on sklearn's DBSCAN implementation. Alpha determines
-    the mask based on the minimum p_value. Grouping can be adjusted using the `eps_km`
-    parameter. Cluster labels are negative for areas with a negative correlation coefficient
-    and positive for areas with a positive correlation coefficient. Areas without any
-    significant correlation are put in the cluster labelled '0'.
+    Alpha determines the mask based on the minimum p_value. Grouping can be
+    adjusted using the `eps_km` parameter. Cluster labels are negative for
+    areas with a negative correlation coefficient and positive for areas with
+    a positive correlation coefficient. Areas without any significant correlation
+    are put in the cluster labelled '0'.
 
     Args:
         precursor (xr.DataArray): DataArray of the precursor field, containing
@@ -240,23 +217,22 @@ def masked_spherical_dbscan(
         xr.DataArray: Precursor data grouped by the DBSCAN clusters.
     """
     precursor = add_gridcell_area(precursor)
-
     precursor = _find_clusters(precursor, corr, p_val, dbscan_params)
 
     if dbscan_params["min_area"] is not None:
         precursor = remove_small_area_clusters(precursor, dbscan_params["min_area"])
 
-    # Make sure a cluster is present in each i_interval
     assert_clusters_present(precursor)
 
     return precursor
 
 
 def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
-    """NaN friendly implementation of scipy.stats.pearsonr. Calculates the correlation
-    coefficient between two arrays, as well as the p-value of this correlation. However,
-    instead of raising an error when encountering NaN values, this function will return
-    both the correlation coefficient and the p-value as NaN.
+    """NaN friendly implementation of scipy.stats.pearsonr.
+
+    Calculates the correlation coefficient between two arrays, as well as the p-value
+    of this correlation. However, instead of raising an error when encountering NaN
+    values, this function will return both the correlation coefficient and the p-value as NaN.
 
     Args:
         x: 1-D array
@@ -323,11 +299,31 @@ def regression(field, target):
     raise NotImplementedError
 
 
+def stack_input_data(precursor, target, precursor_intervals, target_intervals):
+    """Stack input data."""
+    target = target.sel(i_interval=target_intervals).stack(
+        anch_int=["anchor_year", "i_interval"]
+    )
+    precursor = precursor.sel(i_interval=precursor_intervals).stack(
+        anch_int=["anchor_year", "i_interval"]
+    )
+
+    precursor = precursor.drop_vars({"anchor_year", "anch_int", "i_interval"})
+    target = target.drop_vars({"anchor_year", "anch_int", "i_interval"})
+
+    precursor["anch_int"] = range(precursor["anch_int"].size)
+    target["anch_int"] = range(target["anch_int"].size)
+
+    return precursor, target
+
+
 class RGDR:
     """Response Guided Dimensionality Reduction."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 (too-many-arguments)
         self,
+        target_intervals: Union[int, List[int]],
+        lag: int,
         eps_km: float,
         alpha: float,
         min_area_km2: Optional[float] = None,
@@ -338,6 +334,13 @@ class RGDR:
         target timeseries.
 
         Args:
+            target_intervals: The target interval indices which should be correlated
+                with the precursors. Input in the form of "[1, 2, 3]" or "1"
+                The precursor intervals will be determined based on the `lag` kwarg.
+            lag: The lag between the precursor and target intervals to compute the
+                correlation, akin to lag in cross-correlation. E.g. if the target
+                intervals are [1, 2], and lag is 2, the precursor intervals will be
+                [-2, -1]
             alpha (float): p-value below which the correlation is considered significant
                 enough for a location to be included in a cluster.
             eps_km (float): The maximum distance (in km) between two grid cells for them
@@ -355,28 +358,77 @@ class RGDR:
                 smaller than this minimum area will be discarded.
 
         Attributes:
-            corr_map (float): correlation coefficient map of given precursor field and
+            corr_map: correlation coefficient map of given precursor field and
                 target series.
-            pval_map (float): p-values map of correlation
-            cluster_map (U32): cluster labels for precursor field masked by p-values
+            pval_map: p-values map of correlation
+            cluster_map: cluster labels for precursor field masked by p-values
         """
-        self.corr_map: xr.DataArray
-        self.pval_map: xr.DataArray
-        self.cluster_map = None
-        self._area = None
+        self._lag = lag
         self._dbscan_params = {"eps": eps_km, "alpha": alpha, "min_area": min_area_km2}
+
+        self._target_intervals = (
+            [target_intervals]
+            if isinstance(target_intervals, int)
+            else target_intervals
+        )
+        self._precursor_intervals = utils.intervals_subtract(
+            self._target_intervals, lag
+        )
+
+        self._corr_map: Union[None, xr.DataArray] = None
+        self._pval_map: Union[None, xr.DataArray] = None
+        self._cluster_map: Union[None, xr.DataArray] = None
+
+        self._area = None
+
+    @property
+    def target_intervals(self) -> List[int]:
+        """Return target intervals."""
+        return self._target_intervals
+
+    @property
+    def precursor_intervals(self) -> List[int]:
+        """Return precursor intervals."""
+        return self._precursor_intervals
+
+    @property
+    def cluster_map(self) -> xr.DataArray:
+        """Return cluster map."""
+        if self._cluster_map is None:
+            raise ValueError(
+                "No cluster map exists yet, .fit() has to be called first."
+            )
+        return self._cluster_map
+
+    @property
+    def pval_map(self) -> xr.DataArray:
+        """Return p-value map."""
+        if self._pval_map is None:
+            raise ValueError(
+                "No p-value map exists yet, .fit() has to be called first."
+            )
+        return self._pval_map
+
+    @property
+    def corr_map(self) -> xr.DataArray:
+        """Return correlation map."""
+        if self._corr_map is None:
+            raise ValueError(
+                "No correlation map exists yet, .fit() has to be called first."
+            )
+        return self._corr_map
 
     def get_correlation(
         self,
         precursor: xr.DataArray,
-        timeseries: xr.DataArray,
+        target: xr.DataArray,
     ) -> Tuple[xr.DataArray, xr.DataArray]:
-        """Calculates the correlation and p-value between input precursor and timeseries.
+        """Calculate the correlation and p-value between input precursor and target.
 
         Args:
             precursor: Precursor field data with the dimensions
                 'latitude', 'longitude', and 'anchor_year'
-            timeseries: Timeseries data with only the dimension 'anchor_year'
+            target: Timeseries data with only the dimension 'anchor_year'
 
         Returns:
             (correlation, p_value): DataArrays containing the correlation and p-value.
@@ -384,62 +436,60 @@ class RGDR:
         if not isinstance(precursor, xr.DataArray):
             raise ValueError("Please provide an xr.DataArray, not a dataset")
 
-        return correlation(precursor, timeseries, corr_dim="anchor_year")
+        p, t = stack_input_data(
+            precursor, target, self._precursor_intervals, self._target_intervals
+        )
+
+        return correlation(p, t, corr_dim="anch_int")
 
     def get_clusters(
         self,
         precursor: xr.DataArray,
-        timeseries: xr.DataArray,
+        target: xr.DataArray,
     ) -> xr.DataArray:
-        """Generates clusters for the precursor data.
+        """Generate clusters for the precursor data.
 
         Args:
             precursor: Precursor field data with the dimensions
-                'latitude', 'longitude', and 'anchor_year'
-            timeseries: Timeseries data with only the dimension 'anchor_year'
+                'latitude', 'longitude', 'anchor_year', and 'i_interval'
+            target: Target timeseries data with only the dimensions 'anchor_year' and
+                'i_interval'
 
         Returns:
             DataArray containing the clusters as masks.
         """
-        corr, p_val = self.get_correlation(precursor, timeseries)
+        corr, p_val = self.get_correlation(precursor, target)
         return masked_spherical_dbscan(precursor, corr, p_val, self._dbscan_params)
 
-    def preview_correlation(  # pylint: disable=too-many-arguments
+    def preview_correlation(  # noqa: PLR0913 (too-many-arguments)
         self,
         precursor: xr.DataArray,
-        timeseries: xr.DataArray,
-        i_interval: Optional[int] = None,
+        target: xr.DataArray,
+        add_alpha_hatch: bool = True,
         ax1: Optional[plt.Axes] = None,
         ax2: Optional[plt.Axes] = None,
-    ) -> List[Type[mpl.collections.QuadMesh]]:
-        """Generates a figure showing the correlation and p-value results with the
+    ) -> List[QuadMesh]:
+        """Preview correlation and p-value results with given inputs.
+
+        Generate a figure showing the correlation and p-value results with the
         initiated RGDR class and input precursor field.
 
         Args:
             precursor: Precursor field data with the dimensions
-                'latitude', 'longitude', and 'anchor_year'
-            timeseries: Timeseries data with only the dimension 'anchor_year'
-            i_interval: The i_interval which should be plotted. Required if the precursor
-                has the dimension "i_interval".
-            ax1: a matplotlib axis handle to plot
-                the correlation values into. If None, an axis handle will be created
-                instead.
-            ax2: a matplotlib axis handle to plot
-                the p-values into. If None, an axis handle will be created instead.
+                'latitude', 'longitude', 'anchor_year', and 'i_interval'
+            target: Target timeseries data with only the dimensions 'anchor_year' and
+                'i_interval'
+            add_alpha_hatch: Adds a red hatching when the p-value is lower than the
+                RGDR's 'alpha' value.
+            ax1: a matplotlib axis handle to plot the correlation values into.
+                If None, an axis handle will be created instead.
+            ax2: a matplotlib axis handle to plot the p-values into. If None, an axis
+                handle will be created instead.
 
         Returns:
-            List[mpl.collections.QuadMesh]: List of matplotlib artists.
+            List of matplotlib QuadMesh artists.
         """
-
-        if "i_interval" in precursor.dims:
-            if i_interval is None:
-                raise ValueError(
-                    "Precursor contains multiple intervals, please provide"
-                    " the i_interval which should be plotted."
-                )
-            precursor = precursor.sel(i_interval=i_interval)
-
-        corr, p_val = self.get_correlation(precursor, timeseries)
+        corr, p_val = self.get_correlation(precursor, target)
 
         if (ax1 is None) and (ax2 is None):
             _, (ax1, ax2) = plt.subplots(ncols=2)
@@ -448,8 +498,19 @@ class RGDR:
                 "Either pass axis handles for both ax1 and ax2, or pass neither."
             )
 
-        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="viridis")  # type: ignore
-        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis")  # type: ignore
+        plot1 = corr.plot.pcolormesh(ax=ax1, cmap="coolwarm")  # type: ignore
+        plot2 = p_val.plot.pcolormesh(ax=ax2, cmap="viridis_r", vmin=0, vmax=1)  # type: ignore
+
+        if add_alpha_hatch:
+            coords = plot2.get_coordinates()
+            plt.rcParams["hatch.color"] = "r"
+            plt.pcolor(
+                coords[:, :, 0],
+                coords[:, :, 1],
+                p_val.where(p_val < self._dbscan_params["alpha"]).values,
+                hatch="x",
+                alpha=0.0,
+            )
 
         ax1.set_title("correlation")
         ax2.set_title("p-value")
@@ -459,44 +520,36 @@ class RGDR:
     def preview_clusters(
         self,
         precursor: xr.DataArray,
-        timeseries: xr.DataArray,
-        i_interval: Optional[int] = None,
+        target: xr.DataArray,
         ax: Optional[plt.Axes] = None,
-    ) -> Type[mpl.collections.QuadMesh]:
-        """Generates a figure showing the clusters resulting from the initiated RGDR
+        **kwargs,
+    ) -> QuadMesh:
+        """Preview clusters.
+
+        Generates a figure showing the clusters resulting from the initiated RGDR
         class and input precursor field.
 
         Args:
             precursor: Precursor field data with the dimensions
-                'latitude', 'longitude', and 'anchor_year'
-            timeseries: Timeseries data with only the dimension 'anchor_year'
-            i_interval: The i_interval which should be plotted. Required if the precursor
-                has the dimension "i_interval".
+                'latitude', 'longitude', 'anchor_year', and 'i_interval'
+            target: Target timeseries data with only the dimensions 'anchor_year' and
+                'i_interval'
             ax (plt.Axes, optional): a matplotlib axis handle to plot the clusters
                 into. If None, an axis handle will be created instead.
+            **kwargs: Keyword arguments that should be passed to QuadMesh.
 
         Returns:
-            matplotlib.collections.QuadMesh: Matplotlib artist.
+            Matplotlib QuadMesh artist.
         """
         if ax is None:
             _, ax = plt.subplots()
 
-        clusters = self.get_clusters(precursor, timeseries)
+        clusters = self.get_clusters(precursor, target)
 
-        if "i_interval" in precursor.dims:
-            if i_interval is None:
-                raise ValueError(
-                    "Precursor contains multiple intervals, please provide"
-                    " the i_interval which should be plotted."
-                )
-            clusters = clusters.sel(i_interval=i_interval)
+        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax, **kwargs)  # type: ignore
 
-        clusters = utils.cluster_labels_to_ints(clusters)
-
-        return clusters["cluster_labels"].plot(cmap="viridis", ax=ax)
-
-    def fit(self, precursor: xr.DataArray, timeseries: xr.DataArray):
-        """Fits RGDR clusters to precursor data.
+    def fit(self, precursor: xr.DataArray, target: xr.DataArray):
+        """Fit RGDR clusters to precursor data.
 
         Performs DBSCAN clustering on a prepared DataArray, and then groups the data by
         their determined clusters, using an weighted mean. The weight is based on the
@@ -512,39 +565,37 @@ class RGDR:
         the label '0'.
 
         Args:
-            precursor: Precursor field data with the dimensions 'latitude', 'longitude',
-                and 'anchor_year'
-            timeseries: Timeseries data with only the dimension 'anchor_year', which
-                will be correlated with the precursor field.
+            precursor: Precursor field data with the dimensions
+                'latitude', 'longitude', 'anchor_year', and 'i_interval'
+            target: Target timeseries data with only the dimensions 'anchor_year' and
+                'i_interval', which will be correlated with the precursor field.
 
         Returns:
             xr.DataArray: The precursor data, with the latitute and longitude dimensions
                 reduced to clusters.
         """
-
-        corr, p_val = correlation(precursor, timeseries, corr_dim="anchor_year")
+        corr, p_val = self.get_correlation(precursor, target)
 
         masked_data = masked_spherical_dbscan(
             precursor, corr, p_val, self._dbscan_params
         )
-        self.corr_map = corr
-        self.pval_map = p_val
-        self.cluster_map = masked_data.cluster_labels
+        self._corr_map = corr
+        self._pval_map = p_val
+        self._cluster_map = masked_data.cluster_labels
         self._area = masked_data.area
-
-        return self
 
     def transform(self, data: xr.DataArray) -> xr.DataArray:
         """Apply RGDR on the input data, based on the previous fit.
 
         Transform will use the clusters previously generated when RGDR was fit, and use
         these clusters to reduce the latitude and longitude dimensions of the input
-        data."""
-
+        data.
+        """
         if self.cluster_map is None:
             raise ValueError(
                 "Transform requires the model to be fit on other data first"
             )
+        data = data.sel(i_interval=self._precursor_intervals)
         data["cluster_labels"] = self.cluster_map
         data["area"] = self._area
 
@@ -555,18 +606,22 @@ class RGDR:
         # Add the geographical centers for later alignment between, e.g., splits
         reduced_data = utils.geographical_cluster_center(data, reduced_data)
         # Include explanations about geographical centers as attributes
-        reduced_data.attrs['data'] = "Clustered data with Response Guided Dimensionality Reduction."
-        reduced_data.attrs['coordinates'] = "Latitudes and longitudes are geographical centers associated with clusters."
+        reduced_data.attrs[
+            "data"
+        ] = "Clustered data with Response Guided Dimensionality Reduction."
+        reduced_data.attrs[
+            "coordinates"
+        ] = "Latitudes and longitudes are geographical centers associated with clusters."
 
         # Remove the '0' cluster
-        reduced_data = reduced_data.where(reduced_data["cluster_labels"] != "0").dropna(
+        reduced_data = reduced_data.where(reduced_data["cluster_labels"] != 0).dropna(
             dim="cluster_labels"
         )
 
         return reduced_data.transpose(..., "cluster_labels")
 
     def fit_transform(self, precursor: xr.DataArray, timeseries: xr.DataArray):
-        """Fits RGDR clusters to precursor data, and applies RGDR on the input data.
+        """Fit RGDR clusters to precursor data, and applies RGDR on the input data.
 
         Args:
             precursor: Precursor field data with the dimensions 'latitude', 'longitude',
@@ -578,6 +633,20 @@ class RGDR:
             xr.DataArray: The precursor data, with the latitute and longitude dimensions
                 reduced to clusters.
         """
-
         self.fit(precursor, timeseries)
         return self.transform(precursor)
+
+    def __repr__(self) -> str:
+        """Represent the RGDR transformer with strings."""
+        props = [
+            ("target_intervals", repr(self.target_intervals)),
+            ("lag", repr(self._lag)),
+            ("eps_km", repr(self._dbscan_params["eps"])),
+            ("alpha", repr(self._dbscan_params["alpha"])),
+            ("min_area_km2", repr(self._dbscan_params["min_area"])),
+        ]
+
+        propstr = f"{linesep}\t" + f",{linesep}\t".join(
+            [f"{k}={v}" for k, v in props]
+        )  # sourcery skip: use-fstring-for-concatenation
+        return f"{self.__class__.__name__}({propstr}{linesep})".replace("\t", "    ")
