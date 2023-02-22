@@ -110,8 +110,8 @@ class Preprocessor:
 
         Args:
             rolling_window_size: The size of the rolling window that will be applied
-                before calculating the trend and climatology. Setting this to 1 will
-                effectively skip this step.
+                before calculating the trend and climatology. Setting this to None will
+                skip this step.
             rolling_min_periods: The minimum number of periods within a rolling window.
                 If higher than 1 (the default), NaN values will be present at the start
                 and end of the preprocessed data.
@@ -136,7 +136,7 @@ class Preprocessor:
             data
         """
         _check_input_data(data)
-        if self._window_size is not None:
+        if self._window_size not in [None, 1]:
             data_rolling = data.rolling(
                 dim={"time": self._window_size}, min_periods=self._min_periods, center=True
             ).mean()
