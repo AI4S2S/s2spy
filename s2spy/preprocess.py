@@ -1,3 +1,4 @@
+"""Preprocessor for s2spy workflow."""
 from typing import Tuple
 from typing import Union
 import numpy as np
@@ -89,6 +90,7 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
 
 class Preprocessor:
     """Preprocessor for s2s data."""
+
     def __init__(
         self,
         rolling_window_size: Union[int, None],
@@ -133,12 +135,14 @@ class Preprocessor:
         """Fit this Preprocessor to input data.
 
         Args:
-            data
+            data: Input data for fitting.
         """
         _check_input_data(data)
         if self._window_size not in [None, 1]:
             data_rolling = data.rolling(
-                dim={"time": self._window_size}, min_periods=self._min_periods, center=True
+                dim={"time": self._window_size},  # type: ignore
+                min_periods=self._min_periods,
+                center=True,
             ).mean()
         # TODO: give option to be a gaussian-like window, instead of a block.
         else:
@@ -149,11 +153,9 @@ class Preprocessor:
 
         if self._remove_climatology:
             self._climatology = _get_climatology(
-                (
-                    _apply_trend(data_rolling, self._detrend, self._trend)
-                    if self._detrend is not None
-                    else data_rolling
-                )
+                _apply_trend(data_rolling, self._detrend, self._trend)
+                if self._detrend is not None
+                else data_rolling
             )
         self._is_fit = True
 
@@ -163,14 +165,16 @@ class Preprocessor:
         """Apply the preprocessing steps to the input data.
 
         Args:
-            data
+            data: Input data to perform preprocessing.
 
         Returns:
             Preprocessed data.
         """
         if not self._is_fit:
-            raise ValueError("The preprocessor has to be fit to data before a transform"
-                             " can be applied")
+            raise ValueError(
+                "The preprocessor has to be fit to data before a transform"
+                " can be applied"
+            )
 
         if self._detrend is not None:
             d = _apply_trend(data, self._detrend, self.trend)
@@ -187,7 +191,7 @@ class Preprocessor:
         """Fit this Preprocessor to input data, and then apply the steps to the data.
 
         Args:
-            data
+            data: Input data for fit and transform.
 
         Returns:
             Preprocessed data.
@@ -199,8 +203,10 @@ class Preprocessor:
     def trend(self) -> dict:
         """Return the stored trend (dictionary)."""
         if not self._is_fit:
-            raise ValueError("The preprocessor has to be fit to data before the trend"
-                             " can be requested.")
+            raise ValueError(
+                "The preprocessor has to be fit to data before the trend"
+                " can be requested."
+            )
         if not self._detrend:
             raise ValueError("Detrending is set to `None`, so no trend is available")
         return self._trend
@@ -209,9 +215,13 @@ class Preprocessor:
     def climatology(self) -> Union[xr.DataArray, xr.Dataset]:
         """Return the stored climatology data."""
         if not self._is_fit:
-            raise ValueError("The preprocessor has to be fit to data before the"
-                             " climatology can be requested.")
+            raise ValueError(
+                "The preprocessor has to be fit to data before the"
+                " climatology can be requested."
+            )
         if not self._remove_climatology:
-            raise ValueError("`remove_climatology is set to `False`, so no climatology "
-                             "data is available")
+            raise ValueError(
+                "`remove_climatology is set to `False`, so no climatology "
+                "data is available"
+            )
         return self._climatology

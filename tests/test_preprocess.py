@@ -74,7 +74,7 @@ class TestPreprocessor:
         return xr.open_dataset(
             f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc"
         ).sel(
-            time=slice("2010-01-01", "2014-12-31"), #including leap year
+            time=slice("2010-01-01", "2014-12-31"),  # including leap year
             latitude=slice(40, 30),
             longitude=slice(180, 190),
         )
@@ -84,12 +84,14 @@ class TestPreprocessor:
             rolling_window_size=25,
             detrend="linear",
             remove_climatology=True,
-        )        
+        )
         assert isinstance(prep, Preprocessor)
 
     def test_fit(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
-        assert preprocessor.climatology is not None # climatology with leap years are counted
+        assert (
+            preprocessor.climatology is not None
+        )  # climatology with leap years are counted
 
     def test_transform(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
