@@ -217,14 +217,14 @@ class Preprocessor:
     @property
     def climatology(self) -> Union[xr.DataArray, xr.Dataset]:
         """Return the stored climatology data."""
-        if not self._is_fit:
-            raise ValueError(
-                "The preprocessor has to be fit to data before the"
-                " climatology can be requested."
-            )
         if not self._subtract_climatology:
             raise ValueError(
                 "`subtract_climatology is set to `False`, so no climatology "
                 "data is available"
+            )
+        if not self._is_fit:
+            raise ValueError(
+                "The preprocessor has to be fit to data before the"
+                " climatology can be requested."
             )
         return self._climatology

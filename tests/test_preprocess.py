@@ -185,9 +185,6 @@ class TestPreprocessor:
         with pytest.raises(ValueError, match="The preprocessor has to be fit"):
             preprocessor.climatology
 
-    def test_trend_property_no_climatology(
-        self, preprocessor_no_climatology, raw_field
-    ):
-        preprocessor_no_climatology.fit(raw_field)
+    def test_trend_property_no_climatology(self, preprocessor_no_climatology):
         with pytest.raises(ValueError, match="subtract_climatology is set to `False`"):
             preprocessor_no_climatology.climatology
