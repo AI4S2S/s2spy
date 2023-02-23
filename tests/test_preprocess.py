@@ -37,6 +37,10 @@ class TestPreprocessMethods:
         with pytest.raises(ValueError):
             preprocess._check_input_data(dummy_dataarray)
 
+    def test_unknown_method_get_trend(self, raw_field):
+        with pytest.raises(ValueError):
+            preprocess._get_trend(raw_field, "unknown")
+
     def test_get_and_subtract_linear_trend(self, raw_field):
         expected = xr.apply_ufunc(
             scipy.signal.detrend,
@@ -69,6 +73,33 @@ class TestPreprocessor:
         )
         return prep
 
+    @pytest.fixture(params=[None, 1])
+    def preprocessor_no_rolling(self, request):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=request.param,
+            detrend=None,
+            subtract_climatology=True,
+        )
+        return prep
+
+    @pytest.fixture
+    def preprocessor_no_climatology(self):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=25,
+            detrend="linear",
+            subtract_climatology=False,
+        )
+        return prep
+
+    @pytest.fixture
+    def preprocessor_no_detrend(self):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=25,
+            detrend=None,
+            subtract_climatology=True,
+        )
+        return prep
+
     @pytest.fixture
     def raw_field(self):
         return xr.open_dataset(
@@ -93,6 +124,12 @@ class TestPreprocessor:
             preprocessor.climatology is not None
         )  # climatology with leap years are counted
 
+    def test_fit_no_rolling(self, preprocessor_no_rolling, raw_field):
+        preprocessor_no_rolling.fit(raw_field)
+        assert preprocessor_no_rolling.climatology == preprocess._get_climatology(
+            raw_field
+        )
+
     def test_transform(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         preprocessed_data = preprocessor.transform(raw_field)
@@ -102,6 +139,55 @@ class TestPreprocessor:
         with pytest.raises(ValueError):
             preprocessor.transform(raw_field)
 
+    def test_fit_and_transform_no_climatology(
+        self, preprocessor_no_climatology, raw_field
+    ):
+        preprocessor_no_climatology.fit(raw_field)
+        results = preprocessor_no_climatology.transform(raw_field)
+        expected = preprocess._subtract_trend(
+            raw_field, "linear", preprocessor_no_climatology.trend
+        )
+        assert results == expected
+
+    def test_fit_and_transform_no_detrend(self, preprocessor_no_detrend, raw_field):
+        preprocessor_no_detrend.fit(raw_field)
+        results = preprocessor_no_detrend.transform(raw_field)
+        expected = (
+            raw_field.groupby("time.dayofyear") - preprocessor_no_detrend.climatology
+        )
+        assert results == expected
+
+    def test_fit_and_transform_no_climatology_and_detrend(self, raw_field):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=10,
+            detrend=None,
+            subtract_climatology=False,
+        )
+        prep.fit(raw_field)
+        results = prep.transform(raw_field)
+
+        assert results == raw_field
+
     def test_fit_transform(self, preprocessor, raw_field):
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
+
+    def test_trend_property_not_fit(self, preprocessor):
+        with pytest.raises(ValueError, match="The preprocessor has to be fit"):
+            preprocessor.trend
+
+    def test_trend_property_no_detrend(self, preprocessor_no_detrend, raw_field):
+        preprocessor_no_detrend.fit(raw_field)
+        with pytest.raises(ValueError, match="Detrending is set to `None`"):
+            preprocessor_no_detrend.trend
+
+    def test_climatology_property_not_fit(self, preprocessor):
+        with pytest.raises(ValueError, match="The preprocessor has to be fit"):
+            preprocessor.climatology
+
+    def test_trend_property_no_climatology(
+        self, preprocessor_no_climatology, raw_field
+    ):
+        preprocessor_no_climatology.fit(raw_field)
+        with pytest.raises(ValueError, match="subtract_climatology is set to `False`"):
+            preprocessor_no_climatology.climatology

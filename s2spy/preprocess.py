@@ -205,13 +205,13 @@ class Preprocessor:
     @property
     def trend(self) -> dict:
         """Return the stored trend (dictionary)."""
+        if not self._detrend:
+            raise ValueError("Detrending is set to `None`, so no trend is available")
         if not self._is_fit:
             raise ValueError(
                 "The preprocessor has to be fit to data before the trend"
                 " can be requested."
             )
-        if not self._detrend:
-            raise ValueError("Detrending is set to `None`, so no trend is available")
         return self._trend
 
     @property

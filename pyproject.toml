@@ -95,7 +95,7 @@ lint = [
   "black --check --diff .",
   "isort --check-only --diff .",
 ]
-format = ["isort .", "black .", "check",]
+format = ["isort .", "black .", "lint",]
 test = ["pytest ./s2spy/ ./tests/ --doctest-modules",]
 coverage = [
   "pytest --cov --cov-report term --cov-report xml --junitxml=xunit-result.xml tests/",
