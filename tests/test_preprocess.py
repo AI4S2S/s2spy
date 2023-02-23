@@ -37,7 +37,7 @@ class TestPreprocessMethods:
         with pytest.raises(ValueError):
             preprocess._check_input_data(dummy_dataarray)
 
-    def test_get_and_apply_linear_trend(self, raw_field):
+    def test_get_and_subtract_linear_trend(self, raw_field):
         expected = xr.apply_ufunc(
             scipy.signal.detrend,
             raw_field,
@@ -45,7 +45,7 @@ class TestPreprocessMethods:
             output_core_dims=[["time"]],
         ).transpose("time", ...)
         trend = preprocess._get_trend(raw_field, "linear")
-        result = preprocess._apply_trend(raw_field, "linear", trend)
+        result = preprocess._subtract_trend(raw_field, "linear", trend)
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
     def test_get_climatology(self, raw_field):
@@ -65,7 +65,7 @@ class TestPreprocessor:
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
             detrend="linear",
-            remove_climatology=True,
+            subtract_climatology=True,
         )
         return prep
 
@@ -83,7 +83,7 @@ class TestPreprocessor:
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
             detrend="linear",
-            remove_climatology=True,
+            subtract_climatology=True,
         )
         assert isinstance(prep, Preprocessor)
 

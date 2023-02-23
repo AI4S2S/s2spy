@@ -42,8 +42,8 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
     return {"slope": slope, "intercept": intercept}
 
 
-def _apply_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
-    """Apply a previously calclulated linear trend to (new) data."""
+def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
+    """Subtract a previously calclulated linear trend from (new) data."""
     return data - trend["intercept"] - trend["slope"] * (data["time"].astype(float))
 
 
@@ -54,10 +54,10 @@ def _get_trend(data: Union[xr.DataArray, xr.Dataset], method: str):
     raise ValueError(f"Unkown detrending method '{method}'")
 
 
-def _apply_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: dict):
-    """Apply a previously calculated trend to (new) data. Only linear is implemented."""
+def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: dict):
+    """Subtract the previously calculated trend from (new) data. Only linear is implemented."""
     if method == "linear":
-        return _apply_linear_trend(data, trend)
+        return _subtract_linear_trend(data, trend)
     raise NotImplementedError
 
 
@@ -95,19 +95,19 @@ class Preprocessor:
         self,
         rolling_window_size: Union[int, None],
         rolling_min_periods: int = 1,
+        subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
-        remove_climatology: bool = True,
     ):
         """Preprocessor for s2s data. Can detrend as well as deseasonalize.
 
         On calling `.fit(data)`, the preprocessor will:
          - Calculate the rolling mean of the input data.
-         - Calculate and store the trend of the rolling mean.
          - Calculate and store the climatology of the rolling mean.
+         - Calculate and store the trend of the rolling mean.
 
         When calling `.transform(data)`, the preprocessor will:
-         - Remove the (stored) trend from a copy of the data.
-         - Remove the climatology from this detrended data.
+         - Remove the climatology from a copy of the data.
+         - Remove the (stored) trend from this deseasonalized data.
          - Return the detrended and deseasonalized data.
 
         Args:
@@ -117,15 +117,15 @@ class Preprocessor:
             rolling_min_periods: The minimum number of periods within a rolling window.
                 If higher than 1 (the default), NaN values will be present at the start
                 and end of the preprocessed data.
-            detrend: Which method to use for detrending. Currently the only method
-                supported is "linear". If you want to skip detrending, set this to None.
-            remove_climatology (optional): If you want to calculate and remove the
+            subtract_climatology (optional): If you want to calculate and remove the
                 climatology of the data. Defaults to True.
+            detrend (optional): Which method to use for detrending. Currently the only method
+                supported is "linear". If you want to skip detrending, set this to None.
         """
         self._window_size = rolling_window_size
         self._min_periods = rolling_min_periods
         self._detrend = detrend
-        self._remove_climatology = remove_climatology
+        self._subtract_climatology = subtract_climatology
 
         self._climatology: Union[xr.DataArray, xr.Dataset]
         self._trend: dict
@@ -148,15 +148,17 @@ class Preprocessor:
         else:
             data_rolling = data
 
-        if self._detrend is not None:
-            self._trend = _get_trend(data_rolling, self._detrend)
+        if self._subtract_climatology:
+            self._climatology = _get_climatology(data_rolling)
 
-        if self._remove_climatology:
-            self._climatology = _get_climatology(
-                _apply_trend(data_rolling, self._detrend, self._trend)
-                if self._detrend is not None
-                else data_rolling
+        if self._detrend is not None:
+            self._trend = _get_trend(
+                data_rolling.groupby("time.dayofyear") - self._climatology
+                if self._subtract_climatology
+                else data_rolling,
+                self._detrend,
             )
+
         self._is_fit = True
 
     def transform(
@@ -176,13 +178,14 @@ class Preprocessor:
                 " can be applied"
             )
 
-        if self._detrend is not None:
-            d = _apply_trend(data, self._detrend, self.trend)
+        if self._subtract_climatology:
+            d = data.groupby("time.dayofyear") - self._climatology
         else:
             d = data
 
-        if self._remove_climatology:
-            return d.groupby("time.dayofyear") - self.climatology
+        if self._detrend is not None:
+            return _subtract_trend(d, self._detrend, self.trend)
+
         return d
 
     def fit_transform(
@@ -219,9 +222,9 @@ class Preprocessor:
                 "The preprocessor has to be fit to data before the"
                 " climatology can be requested."
             )
-        if not self._remove_climatology:
+        if not self._subtract_climatology:
             raise ValueError(
-                "`remove_climatology is set to `False`, so no climatology "
+                "`subtract_climatology is set to `False`, so no climatology "
                 "data is available"
             )
         return self._climatology
