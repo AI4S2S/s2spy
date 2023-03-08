@@ -22,6 +22,12 @@ authors:
     affiliation: "Netherlands eScience Center"
 
   -
+    affiliation: "Netherlands eScience Center"
+    family-names: Alidoost
+    given-names: Fakhereh
+    orcid: https://orcid.org/0000-0001-8407-6472
+
+  -
     family-names: Vijverberg
     given-names: Sem
     orcid: "https://orcid.org/0000-0002-1839-2618"
