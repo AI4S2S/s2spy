@@ -6,13 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Dev changes
-- Use `hatch` as the project manager.
-- Use `ruff` as the linter.
-- Notebooks have been moved to the docs folder, to be included in ReadtheDocs in the future.
+## 0.3.0 (2023-03-08)
+
+### Added
+- "Label alignment" functionality for RGDR, to align labels over multiple train-test splits ([#144](https://github.com/AI4S2S/s2spy/pull/144)).
+- A preprocessing module, which can be used to calculate climatology/anomalies and to detrend data ([#152](https://github.com/AI4S2S/s2spy/pull/152)).
+- Support for specifying multiple target and precursor intervals in RGDR ([#153](https://github.com/AI4S2S/s2spy/pull/153)).
+
+### Changed
+- A bug in the spherical area calculation of RGDR has been fixed ([#133](https://github.com/AI4S2S/s2spy/pull/133)).
+- Default settings for RGDR have been removed. Users now need to fully specify their RGDR setup ([#133](https://github.com/AI4S2S/s2spy/pull/133)).
+- The RGDR visualization plots are now called using `RGDR.preview_correlation` and `RGDR.preview_clusters` ([#106](https://github.com/AI4S2S/s2spy/pull/106)).
 
 ### Removed
-- Calendar/resample and traintest modules have been moved to [Lilio](https://github.com/AI4S2S/lilio).
+- Calendar, resampling, and traintest modules have been moved to a separate package named [Lilio](https://github.com/AI4S2S/lilio) ([#158](https://github.com/AI4S2S/s2spy/pull/158)).
+
+### Dev changes
+- Use `hatch` as the project manager, and `ruff` as the linter ([#159](https://github.com/AI4S2S/s2spy/pull/159)).
+- Notebooks have been moved to the docs folder, to be included in ReadtheDocs in the future ([#159](https://github.com/AI4S2S/s2spy/pull/159)).
 
 ## 0.2.1 (2022-09-02)
 
