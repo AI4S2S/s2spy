@@ -5,6 +5,7 @@
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
 [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7708338.svg)](https://doi.org/10.5281/zenodo.7708338)
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml)
 [![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
@@ -133,10 +134,9 @@ have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 ## How to cite us
 [![RSD](https://img.shields.io/badge/rsd-s2spy-00a3e3.svg)](https://research-software-directory.org/software/s2spy)
-<!-- [![DOI](https://zenodo.org/badge/DOI/<replace-with-created-DOI>.svg)](https://doi.org/<replace-with-created-DOI>) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7708338.svg)](https://doi.org/10.5281/zenodo.7708338)
 
-<!--TODO: add links to zenodo and rsd. -->
-More information will follow soon.
+Please use the Zenodo DOI to cite this package if you used it in your research.
 
 ## Credits
 
