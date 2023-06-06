@@ -22,7 +22,9 @@ def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     return slope, intercept
 
 
-def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
+def _trend_linear(
+    data: Union[xr.DataArray, xr.Dataset], time_dim: str = "time"
+) -> dict:
     """Calculate the linear trend over time.
 
     Args:
@@ -42,9 +44,15 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
     return {"slope": slope, "intercept": intercept}
 
 
-def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
+def _subtract_linear_trend(
+    data: Union[xr.DataArray, xr.Dataset], trend: dict, time_dim: str = "time"
+):
     """Subtract a previously calclulated linear trend from (new) data."""
-    return data - trend["intercept"] - trend["slope"] * (data["time"].astype(float))
+    return (
+        data
+        - trend["intercept"]
+        - trend["slope"] * (data[time_dim].astype(float))
+    )
 
 
 def _get_trend(data: Union[xr.DataArray, xr.Dataset], method: str):
@@ -54,16 +62,23 @@ def _get_trend(data: Union[xr.DataArray, xr.Dataset], method: str):
     raise ValueError(f"Unkown detrending method '{method}'")
 
 
-def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: dict):
+def _subtract_trend(
+    data: Union[xr.DataArray, xr.Dataset],
+    method: str,
+    trend: dict,
+    time_dim: str = "time",
+):
     """Subtract the previously calculated trend from (new) data. Only linear is implemented."""
     if method == "linear":
-        return _subtract_linear_trend(data, trend)
+        return _subtract_linear_trend(data, trend, time_dim)
     raise NotImplementedError
 
 
-def _get_climatology(data: Union[xr.Dataset, xr.DataArray]):
+def _get_climatology(
+    data: Union[xr.Dataset, xr.DataArray], time_dim: str = "time"
+):
     """Calculate the climatology of timeseries data."""
-    return data.groupby("time.dayofyear").mean("time")
+    return data.groupby(f"{time_dim}.dayofyear").mean(time_dim)
 
 
 def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
@@ -76,7 +91,9 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         ValueError: If the input data is of the wrong type.
         ValueError: If the input data does not have a 'time' dimension.
     """
-    if not any(isinstance(data, dtype) for dtype in (xr.DataArray, xr.Dataset)):
+    if not any(
+        isinstance(data, dtype) for dtype in (xr.DataArray, xr.Dataset)
+    ):
         raise ValueError(
             "Input data has to be an xarray-DataArray or xarray-Dataset, "
             f"not {type(data)}"
@@ -97,6 +114,7 @@ class Preprocessor:
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
+        time_dim: str = "time",
     ):
         """Preprocessor for s2s data. Can detrend as well as deseasonalize.
 
@@ -131,16 +149,19 @@ class Preprocessor:
         self._trend: dict
         self._is_fit = False
 
+        self.time_dim = time_dim
+
     def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
         """Fit this Preprocessor to input data.
 
         Args:
             data: Input data for fitting.
         """
+
         _check_input_data(data)
         if self._window_size not in [None, 1]:
             data_rolling = data.rolling(
-                dim={"time": self._window_size},  # type: ignore
+                dim={self.time_dim: self._window_size},  # type: ignore
                 min_periods=self._min_periods,
                 center=True,
             ).mean()
@@ -149,11 +170,14 @@ class Preprocessor:
             data_rolling = data
 
         if self._subtract_climatology:
+
             self._climatology = _get_climatology(data_rolling)
+            # breakpoint()
 
         if self._detrend is not None:
             self._trend = _get_trend(
-                data_rolling.groupby("time.dayofyear") - self._climatology
+                data_rolling.groupby(f"{self.time_dim}.dayofyear")
+                - self._climatology
                 if self._subtract_climatology
                 else data_rolling,
                 self._detrend,
@@ -179,12 +203,14 @@ class Preprocessor:
             )
 
         if self._subtract_climatology:
-            d = data.groupby("time.dayofyear") - self._climatology
+            d = data.groupby(f"{self.time_dim}.dayofyear") - self._climatology
         else:
             d = data
 
         if self._detrend is not None:
-            return _subtract_trend(d, self._detrend, self.trend)
+            return _subtract_trend(
+                d, self._detrend, self.trend, time_dim=self.time_dim
+            )
 
         return d
 
@@ -206,7 +232,9 @@ class Preprocessor:
     def trend(self) -> dict:
         """Return the stored trend (dictionary)."""
         if not self._detrend:
-            raise ValueError("Detrending is set to `None`, so no trend is available")
+            raise ValueError(
+                "Detrending is set to `None`, so no trend is available"
+            )
         if not self._is_fit:
             raise ValueError(
                 "The preprocessor has to be fit to data before the trend"
