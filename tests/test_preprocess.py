@@ -11,7 +11,6 @@ from s2spy.preprocess import Preprocessor
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
 
 # pylint: disable=protected-access
-# noqa: B018 (UselessExpression)
 
 
 class TestPreprocessMethods:
