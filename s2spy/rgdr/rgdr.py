@@ -109,7 +109,9 @@ def add_gridcell_area(data: xr.DataArray):
 def assert_clusters_present(data: xr.DataArray) -> None:
     """Assert that any (non-'0') clusters are present in the data."""
     if np.unique(data.cluster_labels).size == 1:
-        warnings.warn("No significant clusters found in the input DataArray")
+        warnings.warn(
+            "No significant clusters found in the input DataArray", stacklevel=2
+        )
 
 
 def _get_dbscan_clusters(
