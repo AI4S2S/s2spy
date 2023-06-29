@@ -111,16 +111,13 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 
 (for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/docs/notebooks/tutorial_RGDR.ipynb).)
 
-Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`.
-
-### Train a model
-More information will follow soon.
-
-### eXplainable AI (XAI) analysis
-More information will follow soon.
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
 
 ## Tutorials
 `s2spy` supports operations that are common in a machine learning pipeline of sub-seasonal to seasonal forecasting research. Tutorials covering supported methods and functionalities are listed in [notebooks](https://github.com/AI4S2S/s2spy/tree/main/docs/notebooks). To check these notebooks, users need to install [`Jupyter lab`](https://jupyter.org/). More details about each method can be found in this [API reference documentation](https://ai4s2s.readthedocs.io/en/latest/autoapi/index.html).
+
+## Advanced usecases
+You can achieve more by integrating `s2spy` and `lilio` into your data-driven S2S forecast workflow! We have a magic [cookbook](https://github.com/AI4S2S/cookbook), which includes recipes for complex machine learning based forecasting usecases. These examples will show you how `s2spy` and `lilio` can facilitate your workflow.
 
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
