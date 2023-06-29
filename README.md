@@ -1,6 +1,6 @@
-<img width="300" alt="Logo" src="https://raw.githubusercontent.com/AI4S2S/s2spy/main/docs/assets/images/ai4s2s_logo.png">
+# s2spy: Boost (sub) seasonal forecasting with AI
 
-# s2spy
+<img align="right" width="150" alt="Logo" src="https://raw.githubusercontent.com/AI4S2S/s2spy/main/docs/assets/images/ai4s2s_logo.png">
 
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
@@ -138,6 +138,8 @@ have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 Please use the Zenodo DOI to cite this package if you used it in your research.
 
-## Credits
+## Acknowledgements
+
+This package was developed by the Netherlands eScience Center and Vrije Universiteit Amsterdam. It was supported by the Netherlands eScience Center under grant number NLESC.OEC.2021.005.
 
 This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [NLeSC/python-template](https://github.com/NLeSC/python-template).
