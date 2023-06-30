@@ -1,6 +1,6 @@
-<img width="300" alt="Logo" src="https://raw.githubusercontent.com/AI4S2S/s2spy/main/docs/assets/images/ai4s2s_logo.png">
+# s2spy: Boost (sub) seasonal forecasting with AI
 
-# s2spy
+<img align="right" width="150" alt="Logo" src="https://raw.githubusercontent.com/AI4S2S/s2spy/main/docs/assets/images/ai4s2s_logo.png">
 
 [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/AI4S2S/ai4s2s)
 [![github license badge](https://img.shields.io/github/license/AI4S2S/s2spy)](https://github.com/AI4S2S/s2spy)
@@ -111,16 +111,13 @@ _ = rgdr.plot_clusters(precursor_field, target_timeseries, lag=1)
 
 (for more information about `precursor_field` and `target_timeseries`, check the complete example in [this notebook](https://github.com/AI4S2S/s2spy/blob/main/docs/notebooks/tutorial_RGDR.ipynb).)
 
-Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`.
-
-### Train a model
-More information will follow soon.
-
-### eXplainable AI (XAI) analysis
-More information will follow soon.
+Currently, `s2spy` supports [dimensionality reduction approaches](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster) from `scikit-learn`. 
 
 ## Tutorials
 `s2spy` supports operations that are common in a machine learning pipeline of sub-seasonal to seasonal forecasting research. Tutorials covering supported methods and functionalities are listed in [notebooks](https://github.com/AI4S2S/s2spy/tree/main/docs/notebooks). To check these notebooks, users need to install [`Jupyter lab`](https://jupyter.org/). More details about each method can be found in this [API reference documentation](https://ai4s2s.readthedocs.io/en/latest/autoapi/index.html).
+
+## Advanced usecases
+You can achieve more by integrating `s2spy` and `lilio` into your data-driven S2S forecast workflow! We have a magic [cookbook](https://github.com/AI4S2S/cookbook), which includes recipes for complex machine learning based forecasting usecases. These examples will show you how `s2spy` and `lilio` can facilitate your workflow.
 
 ## Documentation
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
@@ -138,6 +135,8 @@ have a look at the [contribution guidelines](docs/CONTRIBUTING.md).
 
 Please use the Zenodo DOI to cite this package if you used it in your research.
 
-## Credits
+## Acknowledgements
+
+This package was developed by the Netherlands eScience Center and Vrije Universiteit Amsterdam. Development was supported by the Netherlands eScience Center under grant number NLESC.OEC.2021.005.
 
 This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [NLeSC/python-template](https://github.com/NLeSC/python-template).

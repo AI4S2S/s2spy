@@ -11,6 +11,9 @@ from s2spy.preprocess import Preprocessor
 TEST_FILE_PATH = "./tests/test_rgdr/test_data"
 
 # pylint: disable=protected-access
+# ruff: noqa: B018
+# functions are called without variable assignment for testing the error message
+# therefore need to suppress flake-burger B018
 
 
 class TestPreprocessMethods:
