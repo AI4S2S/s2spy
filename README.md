@@ -137,6 +137,6 @@ Please use the Zenodo DOI to cite this package if you used it in your research.
 
 ## Acknowledgements
 
-This package was developed by the Netherlands eScience Center and Vrije Universiteit Amsterdam. It was supported by the Netherlands eScience Center under grant number NLESC.OEC.2021.005.
+This package was developed by the Netherlands eScience Center and Vrije Universiteit Amsterdam. Development was supported by the Netherlands eScience Center under grant number NLESC.OEC.2021.005.
 
 This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [NLeSC/python-template](https://github.com/NLeSC/python-template).
