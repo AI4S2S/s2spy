@@ -61,9 +61,36 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     raise NotImplementedError
 
 
-def _get_climatology(data: Union[xr.Dataset, xr.DataArray]):
+def _get_climatology(data: Union[xr.Dataset, xr.DataArray], timescale: str):
     """Calculate the climatology of timeseries data."""
-    return data.groupby("time.dayofyear").mean("time")
+    # check temporal resolution matching
+    if timescale == "monthly":
+        climatology = data.groupby("time.month").mean("time")
+    elif timescale == "weekly":
+        pass
+    elif timescale == "daily" or "hourly":
+        climatology = data.groupby("time.dayofyear").mean("time")
+    else:
+        raise ValueError("Given timescale is not supported.")
+
+    return climatology
+
+
+def _subtract_climatology(
+    data: Union[xr.Dataset, xr.DataArray],
+    timescale: str,
+    climatology: Union[xr.Dataset, xr.DataArray],
+):
+    if timescale == "monthly":
+        deseasonalized = data.groupby("time.month") - climatology
+    elif timescale == "weekly":
+        pass
+    elif timescale == "daily" or "hourly":
+        deseasonalized = data.groupby("time.dayofyear") - climatology
+    else:
+        raise ValueError("Given timescale is not supported.")
+
+    return deseasonalized
 
 
 def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
@@ -88,12 +115,23 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
+def _check_temporal_resoltuion(timescale: str) -> str:
+    support_temporal_resolution = ["monthly", "weekly", "daily", "hourly"]
+    if timescale not in support_temporal_resolution:
+        raise ValueError(
+            "Given temporal resoltuion is not supported."
+            "Please choose from 'monthly', 'weekly', 'daily', 'hourly'."
+        )
+    return timescale
+
+
 class Preprocessor:
     """Preprocessor for s2s data."""
 
     def __init__(
         self,
         rolling_window_size: Union[int, None],
+        timescale: str,
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
@@ -121,11 +159,14 @@ class Preprocessor:
                 climatology of the data. Defaults to True.
             detrend (optional): Which method to use for detrending. Currently the only method
                 supported is "linear". If you want to skip detrending, set this to None.
+            timescale: Temporal resolution of input data.
         """
         self._window_size = rolling_window_size
         self._min_periods = rolling_min_periods
         self._detrend = detrend
         self._subtract_climatology = subtract_climatology
+        if subtract_climatology:
+            self._timescale = _check_temporal_resoltuion(timescale)
 
         self._climatology: Union[xr.DataArray, xr.Dataset]
         self._trend: dict
@@ -149,15 +190,16 @@ class Preprocessor:
             data_rolling = data
 
         if self._subtract_climatology:
-            self._climatology = _get_climatology(data_rolling)
+            self._climatology = _get_climatology(data_rolling, self._timescale)
 
         if self._detrend is not None:
-            self._trend = _get_trend(
-                data_rolling.groupby("time.dayofyear") - self._climatology
-                if self._subtract_climatology
-                else data_rolling,
-                self._detrend,
-            )
+            if self._subtract_climatology:
+                deseasonalized = _subtract_climatology(
+                    data_rolling, self._timescale, self._climatology
+                )
+                self._trend = _get_trend(deseasonalized, self._detrend)
+            else:
+                self._trend = _get_trend(data_rolling, self._detrend)
 
         self._is_fit = True
 
@@ -179,7 +221,7 @@ class Preprocessor:
             )
 
         if self._subtract_climatology:
-            d = data.groupby("time.dayofyear") - self._climatology
+            d = _subtract_climatology(d, self._timescale, self._climatology)
         else:
             d = data
 
