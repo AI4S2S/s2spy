@@ -128,7 +128,7 @@ def _check_temporal_resoltuion(timescale: str) -> str:
 class Preprocessor:
     """Preprocessor for s2s data."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         rolling_window_size: Union[int, None],
         timescale: str,
@@ -221,7 +221,7 @@ class Preprocessor:
             )
 
         if self._subtract_climatology:
-            d = _subtract_climatology(d, self._timescale, self._climatology)
+            d = _subtract_climatology(data, self._timescale, self._climatology)
         else:
             d = data
 

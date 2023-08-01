@@ -56,7 +56,7 @@ class TestPreprocessMethods:
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
     def test_get_climatology(self, raw_field):
-        result = preprocess._get_climatology(raw_field)
+        result = preprocess._get_climatology(raw_field, timescale="daily")
         expected = (
             raw_field["sst"].sel(time=slice("2010-01-01", "2010-12-31")).data
             + raw_field["sst"].sel(time=slice("2011-01-01", "2011-12-31")).data
@@ -71,6 +71,7 @@ class TestPreprocessor:
     def preprocessor(self):
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
+            timescale="daily",
             detrend="linear",
             subtract_climatology=True,
         )
@@ -80,6 +81,7 @@ class TestPreprocessor:
     def preprocessor_no_rolling(self, request):
         prep = preprocess.Preprocessor(
             rolling_window_size=request.param,
+            timescale="daily",
             detrend=None,
             subtract_climatology=True,
         )
@@ -89,6 +91,7 @@ class TestPreprocessor:
     def preprocessor_no_climatology(self):
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
+            timescale="daily",
             detrend="linear",
             subtract_climatology=False,
         )
@@ -98,6 +101,7 @@ class TestPreprocessor:
     def preprocessor_no_detrend(self):
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
+            timescale="daily",
             detrend=None,
             subtract_climatology=True,
         )
@@ -116,6 +120,7 @@ class TestPreprocessor:
     def test_init(self):
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
+            timescale="daily",
             detrend="linear",
             subtract_climatology=True,
         )
@@ -130,7 +135,7 @@ class TestPreprocessor:
     def test_fit_no_rolling(self, preprocessor_no_rolling, raw_field):
         preprocessor_no_rolling.fit(raw_field)
         assert preprocessor_no_rolling.climatology == preprocess._get_climatology(
-            raw_field
+            raw_field,  timescale="daily"
         )
 
     def test_transform(self, preprocessor, raw_field):
@@ -163,6 +168,7 @@ class TestPreprocessor:
     def test_fit_and_transform_no_climatology_and_detrend(self, raw_field):
         prep = preprocess.Preprocessor(
             rolling_window_size=10,
+            timescale="daily",
             detrend=None,
             subtract_climatology=False,
         )
