@@ -135,7 +135,7 @@ class TestPreprocessor:
     def test_fit_no_rolling(self, preprocessor_no_rolling, raw_field):
         preprocessor_no_rolling.fit(raw_field)
         assert preprocessor_no_rolling.climatology == preprocess._get_climatology(
-            raw_field,  timescale="daily"
+            raw_field, timescale="daily"
         )
 
     def test_transform(self, preprocessor, raw_field):

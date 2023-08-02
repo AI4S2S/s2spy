@@ -63,11 +63,11 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
 
 def _get_climatology(data: Union[xr.Dataset, xr.DataArray], timescale: str):
     """Calculate the climatology of timeseries data."""
-    # check temporal resolution matching
+    # check given temporal resolution matches with data
     if timescale == "monthly":
         climatology = data.groupby("time.month").mean("time")
     elif timescale == "weekly":
-        pass
+        climatology = data.groupby(data["time"].dt.isocalendar().week).mean("time")
     elif timescale == "daily" or "hourly":
         climatology = data.groupby("time.dayofyear").mean("time")
     else:
@@ -84,7 +84,7 @@ def _subtract_climatology(
     if timescale == "monthly":
         deseasonalized = data.groupby("time.month") - climatology
     elif timescale == "weekly":
-        pass
+        deseasonalized = data.groupby(data["time"].dt.isocalendar().week) - climatology
     elif timescale == "daily" or "hourly":
         deseasonalized = data.groupby("time.dayofyear") - climatology
     else:
