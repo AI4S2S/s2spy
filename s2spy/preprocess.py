@@ -1,9 +1,13 @@
 """Preprocessor for s2spy workflow."""
+from typing import Literal
 from typing import Tuple
 from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
+
+
+TIMESCALE_TYPE = Literal["monthly", "weekly", "daily", "hourly"]
 
 
 def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
@@ -61,7 +65,10 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     raise NotImplementedError
 
 
-def _get_climatology(data: Union[xr.Dataset, xr.DataArray], timescale: str):
+def _get_climatology(
+    data: Union[xr.Dataset, xr.DataArray],
+    timescale: TIMESCALE_TYPE,
+):
     """Calculate the climatology of timeseries data."""
     # check given temporal resolution matches with data
     if timescale == "monthly":
@@ -78,7 +85,7 @@ def _get_climatology(data: Union[xr.Dataset, xr.DataArray], timescale: str):
 
 def _subtract_climatology(
     data: Union[xr.Dataset, xr.DataArray],
-    timescale: str,
+    timescale: TIMESCALE_TYPE,
     climatology: Union[xr.Dataset, xr.DataArray],
 ):
     if timescale == "monthly":
@@ -115,7 +122,7 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
-def _check_temporal_resoltuion(timescale: str) -> str:
+def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> str:
     support_temporal_resolution = ["monthly", "weekly", "daily", "hourly"]
     if timescale not in support_temporal_resolution:
         raise ValueError(
@@ -131,7 +138,7 @@ class Preprocessor:
     def __init__(  # noqa: PLR0913
         self,
         rolling_window_size: Union[int, None],
-        timescale: str,
+        timescale: TIMESCALE_TYPE,
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",

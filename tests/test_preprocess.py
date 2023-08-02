@@ -55,11 +55,28 @@ class TestPreprocessMethods:
         result = preprocess._subtract_trend(raw_field, "linear", trend)
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
-    def test_get_climatology(self, raw_field):
+    def test_get_climatology_daily(self, raw_field):
         result = preprocess._get_climatology(raw_field, timescale="daily")
         expected = (
             raw_field["sst"].sel(time=slice("2010-01-01", "2010-12-31")).data
             + raw_field["sst"].sel(time=slice("2011-01-01", "2011-12-31")).data
+        ) / 2
+        np.testing.assert_array_almost_equal(result["sst"], expected)
+
+    def test_get_climatology_weekly(self, raw_field):
+        raw_field_weekly = raw_field.resample(time="W").mean()
+        result = preprocess._get_climatology(raw_field_weekly, timescale="weekly")
+        # need to consider the actual calendar week number for the expected climatology
+        raw_field_weekly["time"] = raw_field_weekly["time"].dt.isocalendar().week
+        expected = raw_field_weekly.groupby("time").mean()
+        np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
+
+    def test_get_climatology_monthly(self, raw_field):
+        raw_field_monthly = raw_field.resample(time="M").mean()
+        result = preprocess._get_climatology(raw_field_monthly, timescale="monthly")
+        expected = (
+            raw_field_monthly["sst"].sel(time=slice("2010-01-01", "2010-12-31")).data
+            + raw_field_monthly["sst"].sel(time=slice("2011-01-01", "2011-12-31")).data
         ) / 2
         np.testing.assert_array_almost_equal(result["sst"], expected)
 
