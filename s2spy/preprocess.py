@@ -7,7 +7,7 @@ import scipy.stats
 import xarray as xr
 
 
-TIMESCALE_TYPE = Literal["monthly", "weekly", "daily", "hourly"]
+TIMESCALE_TYPE = Literal["monthly", "weekly", "daily"]
 
 
 def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
@@ -75,7 +75,7 @@ def _get_climatology(
         climatology = data.groupby("time.month").mean("time")
     elif timescale == "weekly":
         climatology = data.groupby(data["time"].dt.isocalendar().week).mean("time")
-    elif timescale == "daily" or "hourly":
+    elif timescale == "daily":
         climatology = data.groupby("time.dayofyear").mean("time")
     else:
         raise ValueError("Given timescale is not supported.")
@@ -92,7 +92,7 @@ def _subtract_climatology(
         deseasonalized = data.groupby("time.month") - climatology
     elif timescale == "weekly":
         deseasonalized = data.groupby(data["time"].dt.isocalendar().week) - climatology
-    elif timescale == "daily" or "hourly":
+    elif timescale == "daily":
         deseasonalized = data.groupby("time.dayofyear") - climatology
     else:
         raise ValueError("Given timescale is not supported.")
@@ -122,12 +122,12 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
-def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> str:
-    support_temporal_resolution = ["monthly", "weekly", "daily", "hourly"]
+def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
+    support_temporal_resolution = ["monthly", "weekly", "daily"]
     if timescale not in support_temporal_resolution:
         raise ValueError(
             "Given temporal resoltuion is not supported."
-            "Please choose from 'monthly', 'weekly', 'daily', 'hourly'."
+            "Please choose from 'monthly', 'weekly', 'daily'."
         )
     return timescale
 

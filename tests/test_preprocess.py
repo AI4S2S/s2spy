@@ -55,6 +55,10 @@ class TestPreprocessMethods:
         result = preprocess._subtract_trend(raw_field, "linear", trend)
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
+    def test_check_temporal_resolution(self):
+        with pytest.raises(ValueError):
+            preprocess._check_temporal_resoltuion("hourly")  # type: ignore
+
     def test_get_climatology_daily(self, raw_field):
         result = preprocess._get_climatology(raw_field, timescale="daily")
         expected = (
@@ -98,7 +102,7 @@ class TestPreprocessor:
     def preprocessor_no_rolling(self, request):
         prep = preprocess.Preprocessor(
             rolling_window_size=request.param,
-            timescale="daily",
+            timescale="monthly",
             detrend=None,
             subtract_climatology=True,
         )
@@ -137,7 +141,7 @@ class TestPreprocessor:
     def test_init(self):
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
-            timescale="daily",
+            timescale="weekly",
             detrend="linear",
             subtract_climatology=True,
         )
