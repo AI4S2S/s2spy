@@ -142,7 +142,7 @@ def _check_data_resolution_match(
         "weekly": np.timedelta64(1, "W"),
         "daily": np.timedelta64(1, "D"),
     }
-    time_intervals = np.diff(data["time"].values)
+    time_intervals = np.diff(data["time"].to_numpy())
     temporal_resolution = np.median(time_intervals).astype("timedelta64[D]")
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
