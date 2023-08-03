@@ -4,6 +4,7 @@ from typing import Tuple
 from typing import Union
 import numpy as np
 import scipy.stats
+import warnings
 import xarray as xr
 
 
@@ -70,7 +71,7 @@ def _get_climatology(
     timescale: TIMESCALE_TYPE,
 ):
     """Calculate the climatology of timeseries data."""
-    # check given temporal resolution matches with data
+    _check_data_resolution_match(data, timescale)
     if timescale == "monthly":
         climatology = data.groupby("time.month").mean("time")
     elif timescale == "weekly":
@@ -130,6 +131,39 @@ def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
             "Please choose from 'monthly', 'weekly', 'daily'."
         )
     return timescale
+
+
+def _check_data_resolution_match(
+    data: Union[xr.DataArray, xr.Dataset], timescale: TIMESCALE_TYPE
+):
+    """Check if the temporal resoltuion of input is the same as given timescale."""
+    timescale_dict = {
+        "monthly": np.timedelta64(1, "M"),
+        "weekly": np.timedelta64(1, "W"),
+        "daily": np.timedelta64(1, "D"),
+    }
+    time_intervals = np.diff(data["time"].values)
+    temporal_resolution = np.median(time_intervals).astype("timedelta64[D]")
+    if timescale == "monthly":
+        temporal_resolution = temporal_resolution.astype(int)
+        if temporal_resolution <= 31 and temporal_resolution >= 28:
+            pass
+        else:
+            warnings.warn(
+                "The temporal resolution of data does not completely match "
+                "the target timescale. Please check your input data.",
+                stacklevel=1,
+            )
+
+    elif timescale in timescale_dict:
+        if timescale_dict[timescale].astype("timedelta64[D]") == temporal_resolution:
+            pass
+        else:
+            warnings.warn(
+                "The temporal resolution of data does not completely match "
+                "the target timescale. Please check your input data.",
+                stacklevel=1,
+            )
 
 
 class Preprocessor:

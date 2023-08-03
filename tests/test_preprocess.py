@@ -2,6 +2,7 @@
 """
 import numpy as np
 import pytest
+import sys
 import scipy.signal
 import xarray as xr
 from s2spy import preprocess
@@ -67,6 +68,10 @@ class TestPreprocessMethods:
         ) / 2
         np.testing.assert_array_almost_equal(result["sst"], expected)
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9),
+        reason="Resample fails due to version conflict of xarray and pandas.",
+    )
     def test_get_climatology_weekly(self, raw_field):
         raw_field_weekly = raw_field.resample(time="W").mean()
         result = preprocess._get_climatology(raw_field_weekly, timescale="weekly")
@@ -75,6 +80,10 @@ class TestPreprocessMethods:
         expected = raw_field_weekly.groupby("time").mean()
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9),
+        reason="Resample fails due to version conflict of xarray and pandas.",
+    )
     def test_get_climatology_monthly(self, raw_field):
         raw_field_monthly = raw_field.resample(time="M").mean()
         result = preprocess._get_climatology(raw_field_monthly, timescale="monthly")
@@ -83,6 +92,18 @@ class TestPreprocessMethods:
             + raw_field_monthly["sst"].sel(time=slice("2011-01-01", "2011-12-31")).data
         ) / 2
         np.testing.assert_array_almost_equal(result["sst"], expected)
+
+    def test_get_climatology_wrong_timescale(self, raw_field):
+        with pytest.raises(ValueError):
+            preprocess._get_climatology(raw_field, timescale="hourly")  # type: ignore
+
+    @pytest.mark.parametrize("timescale", ("weekly", "monthly"))
+    def test_check_data_resolution_mismatch(self, raw_field, timescale):
+        with pytest.warns(UserWarning):
+            preprocess._check_data_resolution_match(raw_field, timescale)
+
+    def test_check_data_resolution_match(self, raw_field):
+        preprocess._check_data_resolution_match(raw_field, "daily")
 
 
 class TestPreprocessor:
