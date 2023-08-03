@@ -1,10 +1,10 @@
 """Preprocessor for s2spy workflow."""
+import warnings
 from typing import Literal
 from typing import Tuple
 from typing import Union
 import numpy as np
 import scipy.stats
-import warnings
 import xarray as xr
 
 

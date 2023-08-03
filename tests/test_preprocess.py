@@ -1,8 +1,8 @@
 """Tests for the s2spy.preprocess module.
 """
+import sys
 import numpy as np
 import pytest
-import sys
 import scipy.signal
 import xarray as xr
 from s2spy import preprocess
