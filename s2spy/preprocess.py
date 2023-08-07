@@ -147,7 +147,7 @@ def _check_data_resolution_match(
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
         min_days, max_days = (28, 31)
-        if min_days > temporal_resolution > max_days:
+        if not max_days > temporal_resolution > min_days:
             warnings.warn(
                 "The temporal resolution of data does not completely match "
                 "the target timescale. Please check your input data.",
@@ -204,7 +204,7 @@ class Preprocessor:
         self._detrend = detrend
         self._subtract_climatology = subtract_climatology
         if subtract_climatology:
-            self._timescale = _check_temporal_resoltuion(timescale)
+            self._timescale = _check_temporal_resolution(timescale)
 
         self._climatology: Union[xr.DataArray, xr.Dataset]
         self._trend: dict

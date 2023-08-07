@@ -58,7 +58,7 @@ class TestPreprocessMethods:
 
     def test_check_temporal_resolution(self):
         with pytest.raises(ValueError):
-            preprocess._check_temporal_resoltuion("hourly")  # type: ignore
+            preprocess._check_temporal_resolution("hourly")  # type: ignore
 
     def test_get_climatology_daily(self, raw_field):
         result = preprocess._get_climatology(raw_field, timescale="daily")
@@ -68,10 +68,6 @@ class TestPreprocessMethods:
         ) / 2
         np.testing.assert_array_almost_equal(result["sst"], expected)
 
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9),
-        reason="Resample fails due to version conflict of xarray and pandas.",
-    )
     def test_get_climatology_weekly(self, raw_field):
         raw_field_weekly = raw_field.resample(time="W").mean()
         result = preprocess._get_climatology(raw_field_weekly, timescale="weekly")
@@ -80,10 +76,6 @@ class TestPreprocessMethods:
         expected = raw_field_weekly.groupby("time").mean()
         np.testing.assert_array_almost_equal(result["sst"], expected["sst"])
 
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9),
-        reason="Resample fails due to version conflict of xarray and pandas.",
-    )
     def test_get_climatology_monthly(self, raw_field):
         raw_field_monthly = raw_field.resample(time="M").mean()
         result = preprocess._get_climatology(raw_field_monthly, timescale="monthly")
