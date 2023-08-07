@@ -1,6 +1,4 @@
-"""Tests for the s2spy.preprocess module.
-"""
-import sys
+"""Tests for the s2spy.preprocess module."""
 import numpy as np
 import pytest
 import scipy.signal

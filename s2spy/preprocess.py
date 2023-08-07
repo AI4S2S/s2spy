@@ -1,5 +1,6 @@
 """Preprocessor for s2spy workflow."""
 import warnings
+from typing import TypeAlias
 from typing import Literal
 from typing import Tuple
 from typing import Union
@@ -8,7 +9,7 @@ import scipy.stats
 import xarray as xr
 
 
-TIMESCALE_TYPE = Literal["monthly", "weekly", "daily"]
+Timescale: TypeAlias = Literal["monthly", "weekly", "daily"]
 
 
 def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
@@ -68,7 +69,7 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
 
 def _get_climatology(
     data: Union[xr.Dataset, xr.DataArray],
-    timescale: TIMESCALE_TYPE,
+    timescale: Timescale,
 ):
     """Calculate the climatology of timeseries data."""
     _check_data_resolution_match(data, timescale)
@@ -86,7 +87,7 @@ def _get_climatology(
 
 def _subtract_climatology(
     data: Union[xr.Dataset, xr.DataArray],
-    timescale: TIMESCALE_TYPE,
+    timescale: Timescale,
     climatology: Union[xr.Dataset, xr.DataArray],
 ):
     if timescale == "monthly":
@@ -123,7 +124,7 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
-def _check_temporal_resolution(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
+def _check_temporal_resolution(timescale: Timescale) -> Timescale:
     support_temporal_resolution = ["monthly", "weekly", "daily"]
     if timescale not in support_temporal_resolution:
         raise ValueError(
@@ -134,7 +135,7 @@ def _check_temporal_resolution(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
 
 
 def _check_data_resolution_match(
-    data: Union[xr.DataArray, xr.Dataset], timescale: TIMESCALE_TYPE
+    data: Union[xr.DataArray, xr.Dataset], timescale: Timescale
 ):
     """Check if the temporal resolution of input is the same as given timescale."""
     timescale_dict = {
@@ -169,7 +170,7 @@ class Preprocessor:
     def __init__(  # noqa: PLR0913
         self,
         rolling_window_size: Union[int, None],
-        timescale: TIMESCALE_TYPE,
+        timescale: Timescale,
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
