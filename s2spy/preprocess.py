@@ -123,7 +123,7 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
-def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
+def _check_temporal_resolution(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
     support_temporal_resolution = ["monthly", "weekly", "daily"]
     if timescale not in support_temporal_resolution:
         raise ValueError(
@@ -136,7 +136,7 @@ def _check_temporal_resoltuion(timescale: TIMESCALE_TYPE) -> TIMESCALE_TYPE:
 def _check_data_resolution_match(
     data: Union[xr.DataArray, xr.Dataset], timescale: TIMESCALE_TYPE
 ):
-    """Check if the temporal resoltuion of input is the same as given timescale."""
+    """Check if the temporal resolution of input is the same as given timescale."""
     timescale_dict = {
         "monthly": np.timedelta64(1, "M"),
         "weekly": np.timedelta64(1, "W"),
@@ -146,9 +146,8 @@ def _check_data_resolution_match(
     temporal_resolution = np.median(time_intervals).astype("timedelta64[D]")
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
-        if temporal_resolution <= 31 and temporal_resolution >= 28:
-            pass
-        else:
+        min_days, max_days = (28, 31)
+        if min_days > temporal_resolution > max_days:
             warnings.warn(
                 "The temporal resolution of data does not completely match "
                 "the target timescale. Please check your input data.",
@@ -156,9 +155,7 @@ def _check_data_resolution_match(
             )
 
     elif timescale in timescale_dict:
-        if timescale_dict[timescale].astype("timedelta64[D]") == temporal_resolution:
-            pass
-        else:
+        if timescale_dict[timescale].astype("timedelta64[D]") != temporal_resolution:
             warnings.warn(
                 "The temporal resolution of data does not completely match "
                 "the target timescale. Please check your input data.",
