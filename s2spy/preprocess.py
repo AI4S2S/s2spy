@@ -1,14 +1,17 @@
 """Preprocessor for s2spy workflow."""
-from __future__ import annotations
 import warnings
 from typing import Literal
 from typing import Tuple
-from typing import TypeAlias
 from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
 
+
+try:
+    from typing import TypeAlias
+except ImportError:
+    from typing_extensions import TypeAlias
 
 Timescale: TypeAlias = Literal["monthly", "weekly", "daily"]
 

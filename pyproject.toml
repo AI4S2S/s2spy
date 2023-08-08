@@ -142,8 +142,6 @@ extend-select = [
 ignore = [
   "E501",  # Line length: fails on many docstrings (needs fixing).
   "PLR2004",  # magic value used in comparsion (i.e. `if ndays == 28: month_is_feb`).
-  "UP006", # Use `tuple` instead of `Tuple` for type annotations
-  "UP007", # Use `X | Y` for type annotations
 ]
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["A", "B", "C", "D", "E", "F"]
