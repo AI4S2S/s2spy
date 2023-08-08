@@ -1,8 +1,9 @@
 """Preprocessor for s2spy workflow."""
+from __future__ import annotations
 import warnings
-from typing import TypeAlias
 from typing import Literal
 from typing import Tuple
+from typing import TypeAlias
 from typing import Union
 import numpy as np
 import scipy.stats
