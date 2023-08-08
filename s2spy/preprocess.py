@@ -148,7 +148,7 @@ def _check_data_resolution_match(
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
         min_days, max_days = (28, 31)
-        if not max_days > temporal_resolution > min_days:
+        if not max_days >= temporal_resolution >= min_days:
             warnings.warn(
                 "The temporal resolution of data does not completely match "
                 "the target timescale. Please check your input data.",
