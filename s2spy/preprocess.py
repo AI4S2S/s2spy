@@ -8,14 +8,6 @@ import scipy.stats
 import xarray as xr
 
 
-try:
-    from typing import TypeAlias
-except ImportError:
-    from typing_extensions import TypeAlias
-
-Timescale: TypeAlias = Literal["monthly", "weekly", "daily"]
-
-
 def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     """Calculate the slope and intercept between two arrays using scipy's linregress.
 
@@ -73,7 +65,7 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
 
 def _get_climatology(
     data: Union[xr.Dataset, xr.DataArray],
-    timescale: Timescale,
+    timescale: Literal["monthly", "weekly", "daily"],
 ):
     """Calculate the climatology of timeseries data."""
     _check_data_resolution_match(data, timescale)
@@ -91,7 +83,7 @@ def _get_climatology(
 
 def _subtract_climatology(
     data: Union[xr.Dataset, xr.DataArray],
-    timescale: Timescale,
+    timescale: Literal["monthly", "weekly", "daily"],
     climatology: Union[xr.Dataset, xr.DataArray],
 ):
     if timescale == "monthly":
@@ -128,7 +120,9 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
-def _check_temporal_resolution(timescale: Timescale) -> Timescale:
+def _check_temporal_resolution(
+    timescale: Literal["monthly", "weekly", "daily"]
+) -> Literal["monthly", "weekly", "daily"]:
     support_temporal_resolution = ["monthly", "weekly", "daily"]
     if timescale not in support_temporal_resolution:
         raise ValueError(
@@ -139,7 +133,8 @@ def _check_temporal_resolution(timescale: Timescale) -> Timescale:
 
 
 def _check_data_resolution_match(
-    data: Union[xr.DataArray, xr.Dataset], timescale: Timescale
+    data: Union[xr.DataArray, xr.Dataset],
+    timescale: Literal["monthly", "weekly", "daily"],
 ):
     """Check if the temporal resolution of input is the same as given timescale."""
     timescale_dict = {
@@ -174,7 +169,7 @@ class Preprocessor:
     def __init__(  # noqa: PLR0913
         self,
         rolling_window_size: Union[int, None],
-        timescale: Timescale,
+        timescale: Literal["monthly", "weekly", "daily"],
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
