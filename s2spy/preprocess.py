@@ -1,4 +1,6 @@
 """Preprocessor for s2spy workflow."""
+import warnings
+from typing import Literal
 from typing import Tuple
 from typing import Union
 import numpy as np
@@ -61,9 +63,39 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     raise NotImplementedError
 
 
-def _get_climatology(data: Union[xr.Dataset, xr.DataArray]):
+def _get_climatology(
+    data: Union[xr.Dataset, xr.DataArray],
+    timescale: Literal["monthly", "weekly", "daily"],
+):
     """Calculate the climatology of timeseries data."""
-    return data.groupby("time.dayofyear").mean("time")
+    _check_data_resolution_match(data, timescale)
+    if timescale == "monthly":
+        climatology = data.groupby("time.month").mean("time")
+    elif timescale == "weekly":
+        climatology = data.groupby(data["time"].dt.isocalendar().week).mean("time")
+    elif timescale == "daily":
+        climatology = data.groupby("time.dayofyear").mean("time")
+    else:
+        raise ValueError("Given timescale is not supported.")
+
+    return climatology
+
+
+def _subtract_climatology(
+    data: Union[xr.Dataset, xr.DataArray],
+    timescale: Literal["monthly", "weekly", "daily"],
+    climatology: Union[xr.Dataset, xr.DataArray],
+):
+    if timescale == "monthly":
+        deseasonalized = data.groupby("time.month") - climatology
+    elif timescale == "weekly":
+        deseasonalized = data.groupby(data["time"].dt.isocalendar().week) - climatology
+    elif timescale == "daily":
+        deseasonalized = data.groupby("time.dayofyear") - climatology
+    else:
+        raise ValueError("Given timescale is not supported.")
+
+    return deseasonalized
 
 
 def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
@@ -88,12 +120,56 @@ def _check_input_data(data: Union[xr.DataArray, xr.Dataset]):
         )
 
 
+def _check_temporal_resolution(
+    timescale: Literal["monthly", "weekly", "daily"]
+) -> Literal["monthly", "weekly", "daily"]:
+    support_temporal_resolution = ["monthly", "weekly", "daily"]
+    if timescale not in support_temporal_resolution:
+        raise ValueError(
+            "Given temporal resoltuion is not supported."
+            "Please choose from 'monthly', 'weekly', 'daily'."
+        )
+    return timescale
+
+
+def _check_data_resolution_match(
+    data: Union[xr.DataArray, xr.Dataset],
+    timescale: Literal["monthly", "weekly", "daily"],
+):
+    """Check if the temporal resolution of input is the same as given timescale."""
+    timescale_dict = {
+        "monthly": np.timedelta64(1, "M"),
+        "weekly": np.timedelta64(1, "W"),
+        "daily": np.timedelta64(1, "D"),
+    }
+    time_intervals = np.diff(data["time"].to_numpy())
+    temporal_resolution = np.median(time_intervals).astype("timedelta64[D]")
+    if timescale == "monthly":
+        temporal_resolution = temporal_resolution.astype(int)
+        min_days, max_days = (28, 31)
+        if not max_days >= temporal_resolution >= min_days:
+            warnings.warn(
+                "The temporal resolution of data does not completely match "
+                "the target timescale. Please check your input data.",
+                stacklevel=1,
+            )
+
+    elif timescale in timescale_dict:
+        if timescale_dict[timescale].astype("timedelta64[D]") != temporal_resolution:
+            warnings.warn(
+                "The temporal resolution of data does not completely match "
+                "the target timescale. Please check your input data.",
+                stacklevel=1,
+            )
+
+
 class Preprocessor:
     """Preprocessor for s2s data."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         rolling_window_size: Union[int, None],
+        timescale: Literal["monthly", "weekly", "daily"],
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
@@ -121,11 +197,14 @@ class Preprocessor:
                 climatology of the data. Defaults to True.
             detrend (optional): Which method to use for detrending. Currently the only method
                 supported is "linear". If you want to skip detrending, set this to None.
+            timescale: Temporal resolution of input data.
         """
         self._window_size = rolling_window_size
         self._min_periods = rolling_min_periods
         self._detrend = detrend
         self._subtract_climatology = subtract_climatology
+        if subtract_climatology:
+            self._timescale = _check_temporal_resolution(timescale)
 
         self._climatology: Union[xr.DataArray, xr.Dataset]
         self._trend: dict
@@ -149,15 +228,16 @@ class Preprocessor:
             data_rolling = data
 
         if self._subtract_climatology:
-            self._climatology = _get_climatology(data_rolling)
+            self._climatology = _get_climatology(data_rolling, self._timescale)
 
         if self._detrend is not None:
-            self._trend = _get_trend(
-                data_rolling.groupby("time.dayofyear") - self._climatology
-                if self._subtract_climatology
-                else data_rolling,
-                self._detrend,
-            )
+            if self._subtract_climatology:
+                deseasonalized = _subtract_climatology(
+                    data_rolling, self._timescale, self._climatology
+                )
+                self._trend = _get_trend(deseasonalized, self._detrend)
+            else:
+                self._trend = _get_trend(data_rolling, self._detrend)
 
         self._is_fit = True
 
@@ -179,7 +259,7 @@ class Preprocessor:
             )
 
         if self._subtract_climatology:
-            d = data.groupby("time.dayofyear") - self._climatology
+            d = _subtract_climatology(data, self._timescale, self._climatology)
         else:
             d = data
 

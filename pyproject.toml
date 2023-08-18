@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "python package for s2s forecasts with ai"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.8,<3.11"
+requires-python = ">3.8,<3.11"
 authors = [
   {email = "y.liu@esciencecenter.nl"},
   {name = "Yang Liu, Bart Schilperoort, Peter Kalverla, Jannes van Ingen, Sem Vijverberg"}
@@ -30,7 +30,6 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
 ]
