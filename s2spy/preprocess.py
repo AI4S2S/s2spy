@@ -1,14 +1,13 @@
 """Preprocessor for s2spy workflow."""
 import warnings
 from typing import Literal
-from typing import Tuple
 from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
 
 
-def _linregress(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """Calculate the slope and intercept between two arrays using scipy's linregress.
 
     Used to make linregress more ufunc-friendly.
