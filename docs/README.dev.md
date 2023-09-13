@@ -84,55 +84,28 @@ bumpversion patch
 
 ## Making a release
 
-This section describes how to make a release in 3 parts:
+This section describes how to make a release in 3 parts: preparation, release and validation.
 
-1. preparation
-1. making a release on PyPI
-1. making a release on GitHub
-
-### (1/3) Preparation
+### Preparation
 
 1. Update the <CHANGELOG.md> (don't forget to update links at bottom of page)
 2. Verify that the information in `CITATION.cff` is correct, and that `.zenodo.json` contains equivalent data
 3. Make sure the [version has been updated](#versioning).
 4. Run the unit tests with `hatch run test`
 
-### (2/3) PyPI
+### Making the GitHub release
 
-First prepare a new directory, for example:
+Make a release and tag on GitHub.com. This will:
 
-```shell
-# prepare a new directory
-cd $(mktemp -d s2spy.XXXXXX)
-```
+ - trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.
+ - start a GitHub action that builds and uploads the new version to [PyPI](https://pypi.org/project/lilio/).
+    - Which should trigger [conda-forge](https://anaconda.org/conda-forge/lilio) to update the package as well.
 
-A fresh git clone ensures the release has the state of origin/main branch
 
-```shell
-git clone https://github.com/AI4S2S/s2spy .
-```
+### Validation
 
-In a your terminal, with an activated environment which has [`hatch`](https://hatch.pypa.io/latest/) installed do:
+After making the release, you should check that:
 
-```shell
-pip install hatch --upgrade
-hatch build
-```
-
-If the build was succesfull, publish it to [PyPI's test servers](https://test.pypi.org/). Note that your credentials are different between test.pypi.org and pypy.org.
-```shell
-hatch publish --repo test
-```
-
-Visit
-[https://test.pypi.org/project/s2spy](https://test.pypi.org/project/s2spy)
-and verify that your package was uploaded successfully. Keep the terminal open, we'll need it later.
-
-Now we can publish to PyPI:
-```shell
-hatch publish
-```
-
-### (3/3) GitHub
-
-Don't forget to also make a [release on GitHub](https://github.com/AI4S2S/s2spy/releases/new). If your repository uses the GitHub-Zenodo integration this will also trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.
+1. The [Zenodo page](https://doi.org/10.5281/zenodo.7620212) is updated
+1. The [publishing action](https://github.com/AI4S2S/lilio/actions/workflows/python-publish.yml) ran successfully, and that `pip install lilio` installs the new version.
+1. The [conda-forge package](https://anaconda.org/conda-forge/lilio) is updated, and can be installed using conda.
