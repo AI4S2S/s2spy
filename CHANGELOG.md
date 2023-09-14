@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## 0.4.0 (2023-09-13)
+
+### Added
+- Python 3.11 support ([#175](https://github.com/AI4S2S/s2spy/pull/175)).
+- Support monthly and weekly data for preprocess module ([#173](https://github.com/AI4S2S/s2spy/pull/173)).
+
+### Changed
+- Example data used in the tutorial notebooks is now downloaded from Zenodo ([#172](https://github.com/AI4S2S/s2spy/pull/172)).
+
 ## 0.3.0 (2023-03-08)
 
 ### Added

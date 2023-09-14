@@ -1,5 +1,4 @@
 """Commonly used utility functions for s2spy."""
-from typing import List
 from typing import TypeVar
 import numpy as np
 import xarray as xr
@@ -89,7 +88,7 @@ def geographical_cluster_center(
     return reduced_data
 
 
-def intervals_subtract(intervals: List[int], n: int) -> List[int]:
+def intervals_subtract(intervals: list[int], n: int) -> list[int]:
     """Subtracts n from the interval indices, skipping 0."""
     if n < 0:
         raise ValueError("Lag values below 0 are not supported")

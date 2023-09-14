@@ -1,9 +1,7 @@
 """Response Guided Dimensionality Reduction."""
 import warnings
 from os import linesep
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import TypeVar
 from typing import Union
 import matplotlib.pyplot as plt
@@ -229,7 +227,7 @@ def masked_spherical_dbscan(
     return precursor
 
 
-def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """NaN friendly implementation of scipy.stats.pearsonr.
 
     Calculates the correlation coefficient between two arrays, as well as the p-value
@@ -251,7 +249,7 @@ def _pearsonr_nan(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
 
 def correlation(
     field: xr.DataArray, target: xr.DataArray, corr_dim: str = "time"
-) -> Tuple[xr.DataArray, xr.DataArray]:
+) -> tuple[xr.DataArray, xr.DataArray]:
     """Calculate correlation maps.
 
     Args:
@@ -324,7 +322,7 @@ class RGDR:
 
     def __init__(  # noqa: PLR0913 (too-many-arguments)
         self,
-        target_intervals: Union[int, List[int]],
+        target_intervals: Union[int, list[int]],
         lag: int,
         eps_km: float,
         alpha: float,
@@ -384,12 +382,12 @@ class RGDR:
         self._area = None
 
     @property
-    def target_intervals(self) -> List[int]:
+    def target_intervals(self) -> list[int]:
         """Return target intervals."""
         return self._target_intervals
 
     @property
-    def precursor_intervals(self) -> List[int]:
+    def precursor_intervals(self) -> list[int]:
         """Return precursor intervals."""
         return self._precursor_intervals
 
@@ -424,7 +422,7 @@ class RGDR:
         self,
         precursor: xr.DataArray,
         target: xr.DataArray,
-    ) -> Tuple[xr.DataArray, xr.DataArray]:
+    ) -> tuple[xr.DataArray, xr.DataArray]:
         """Calculate the correlation and p-value between input precursor and target.
 
         Args:
@@ -470,7 +468,7 @@ class RGDR:
         add_alpha_hatch: bool = True,
         ax1: Optional[plt.Axes] = None,
         ax2: Optional[plt.Axes] = None,
-    ) -> List[QuadMesh]:
+    ) -> list[QuadMesh]:
         """Preview correlation and p-value results with given inputs.
 
         Generate a figure showing the correlation and p-value results with the

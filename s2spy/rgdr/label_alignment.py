@@ -4,10 +4,6 @@ import string
 from copy import copy
 from copy import deepcopy
 from typing import TYPE_CHECKING
-from typing import Dict
-from typing import List
-from typing import Set
-from typing import Tuple
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -33,7 +29,7 @@ def _get_split_cluster_dict(cluster_labels: xr.DataArray) -> dict:
     }
 
 
-def _flatten_cluster_dict(cluster_dict: dict) -> List[Tuple[int, int]]:
+def _flatten_cluster_dict(cluster_dict: dict) -> list[tuple[int, int]]:
     """Flattens a cluster dictionary to a list with (split, cluster) as values.
 
     For example, if the input is {0: [-1, -2, 1], 1: [-1, 1]}, this function will return
@@ -45,7 +41,7 @@ def _flatten_cluster_dict(cluster_dict: dict) -> List[Tuple[int, int]]:
     Returns:
         A list of the clusters and their splits
     """
-    flat_clusters: List[Tuple[int, int]] = []
+    flat_clusters: list[tuple[int, int]] = []
     for split in cluster_dict:
         flat_clusters.extend((split, cluster) for cluster in cluster_dict[split])
     return flat_clusters
@@ -152,7 +148,7 @@ def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
 
 def get_overlapping_clusters(
     cluster_labels: xr.DataArray, min_overlap: float = 0.1
-) -> Set:
+) -> set:
     """Create sets of overlapping clusters.
 
     Clusters will be considered to have sufficient overlap if they overlap at least by
@@ -202,7 +198,7 @@ def get_overlapping_clusters(
     return clusters
 
 
-def remove_subsets(clusters: Set) -> Set:
+def remove_subsets(clusters: set) -> set:
     """Remove subsets from the clusters.
 
     For example: {{"A"}, {"A", "B"}} will become {{"A", "B"}}, as "A" is a subset of the
@@ -216,7 +212,7 @@ def remove_subsets(clusters: Set) -> Set:
     return no_subsets
 
 
-def remove_overlapping_clusters(clusters: Set) -> Set:
+def remove_overlapping_clusters(clusters: set) -> set:
     """Remove clusters shared between two different groups of clusters.
 
     Largest cluster gets priority.
@@ -234,7 +230,7 @@ def remove_overlapping_clusters(clusters: Set) -> Set:
     return {frozenset(cluster) for cluster in sanitised_clusters}
 
 
-def name_clusters(clusters: Set) -> Dict:
+def name_clusters(clusters: set) -> dict:
     """Give each cluster a unique name.
 
     Note: the first 26 names will be from A - Z. If more than 26 clusters are present,
@@ -265,7 +261,7 @@ def name_clusters(clusters: Set) -> Dict:
     return named_clusters
 
 
-def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, str]]]:
+def create_renaming_dict(aligned_clusters: dict) -> dict[int, list[tuple[int, str]]]:
     """Create a dictionary that can be used to rename the clusters to the aligned names.
 
     Args:
@@ -281,7 +277,7 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, st
         for el in aligned_clusters[key]:
             inversed_names[el] = key
 
-    renaming_dict: Dict[int, List[Tuple[int, str]]] = {}
+    renaming_dict: dict[int, list[tuple[int, str]]] = {}
     for key in inversed_names:  # pylint: disable=consider-using-dict-items
         ky = key.split("_")
         split = int(ky[0])
@@ -294,7 +290,7 @@ def create_renaming_dict(aligned_clusters: Dict) -> Dict[int, List[Tuple[int, st
     return renaming_dict
 
 
-def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict:
+def ensure_unique_names(renaming_dict: dict[int, list[tuple[int, str]]]) -> dict:
     """Ensure that in every split, every cluster has a unique name.
 
     The function finds the non-unqiue names within each split, and will rename these by
@@ -314,7 +310,7 @@ def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict
     """
     renamed_dict = deepcopy(renaming_dict)
 
-    double_names_any: Set[str] = set()
+    double_names_any: set[str] = set()
     for split in renamed_dict:
         cluster_old_names = [cl for cl, _ in renamed_dict[split]]
         cluster_new_names = [cl for _, cl in renamed_dict[split]]
@@ -342,8 +338,8 @@ def ensure_unique_names(renaming_dict: Dict[int, List[Tuple[int, str]]]) -> Dict
 
 
 def _rename_datasets(
-    rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray], renaming_dict: Dict
-) -> List[xr.DataArray]:
+    rgdr_list: list["RGDR"], clustered_data: list[xr.DataArray], renaming_dict: dict
+) -> list[xr.DataArray]:
     """Apply the renaming dictionary to the labels of the clustered data.
 
     Args:
@@ -370,8 +366,8 @@ def _rename_datasets(
 
 
 def rename_labels(
-    rgdr_list: List["RGDR"], clustered_data: List[xr.DataArray]
-) -> List[xr.DataArray]:
+    rgdr_list: list["RGDR"], clustered_data: list[xr.DataArray]
+) -> list[xr.DataArray]:
     """Return a new object with renamed cluster labels aligned over different splits.
 
     To aid in users comparing the clustering over different splits, this function tries
