@@ -141,16 +141,16 @@ class TestCorrelation:
     def test_correlation(self, dummy_dataarray, dummy_timeseries):
         c_val, p_val = rgdr.correlation(dummy_dataarray, dummy_timeseries)
 
-        np.testing.almost_equal(c_val.values, 1, decimal=5)
-        np.testing.almost_equal(p_val.values, 0, decimal=5)
+        np.testing.assert_almost_equal(c_val.values, 1, decimal=5)
+        np.testing.assert_almost_equal(p_val.values, 0, decimal=5)
 
     def test_correlation_dim_name(self, dummy_dataarray, dummy_timeseries):
         da = dummy_dataarray.rename({"time": "i_interval"})
         ts = dummy_timeseries.rename({"time": "i_interval"})
         c_val, p_val = rgdr.correlation(da, ts, corr_dim="i_interval")
 
-        np.testing.almost_equal(c_val.values, 1, decimal=5)
-        np.testing.almost_equal(p_val.values, 0, decimal=5)
+        np.testing.assert_almost_equal(c_val.values, 1, decimal=5)
+        np.testing.assert_almost_equal(p_val.values, 0, decimal=5)
 
     def test_correlation_wrong_target_dim_name(self, dummy_dataarray, dummy_timeseries):
         ts = dummy_timeseries.rename({"time": "dummy"})
