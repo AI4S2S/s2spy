@@ -40,7 +40,7 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
         output_core_dims=[[], []],
         vectorize=True,
         dask="allowed",
-        dask_gufunc_kwargs={"allow_rechunk": True},  # Same as above
+        # dask_gufunc_kwargs={"allow_rechunk": True},  # Same as above
     )
     return {"slope": slope, "intercept": intercept}
 
