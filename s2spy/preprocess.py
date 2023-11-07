@@ -38,6 +38,7 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
         data,
         input_core_dims=[["time"], ["time"]],
         output_core_dims=[[], []],
+        dask="allowed",
         vectorize=True,
     )
     return {"slope": slope, "intercept": intercept}
