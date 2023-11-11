@@ -2,8 +2,8 @@
 import warnings
 from typing import Literal
 from typing import Union
+import scipy
 import numpy as np
-import scipy.stats
 import xarray as xr
 
 
@@ -21,6 +21,21 @@ def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """
     slope, intercept, _, _, _ = scipy.stats.linregress(x, y)
     return slope, intercept
+
+
+# def _linregress(da: xr.DataArray) -> xr.Dataset:
+#     """Calculate the slope and intercept between two arrays using scipy's linregress.
+
+#     Used to make linregress more ufunc-friendly.
+
+#     Args:
+#         da: xr.DataArray
+
+#     Returns:
+#         slope, intercept
+#     """
+#     sst_polyfit_coef = da.polyfit(dim="time", deg=1, skipna=True)
+#     return sst_polyfit_coef
 
 
 def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
@@ -42,6 +57,7 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
         dask="allowed",
         # dask_gufunc_kwargs={"allow_rechunk": True},  # Same as above
     )
+
     return {"slope": slope, "intercept": intercept}
 
 

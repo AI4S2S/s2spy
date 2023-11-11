@@ -21,13 +21,14 @@ class TestPreprocessMethods:
     # Define inputs as fixtures
     @pytest.fixture
     def raw_field(self):
-        return xr.open_dataset(
+        data = xr.open_dataset(
             f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc"
         ).sel(
             time=slice("2010-01-01", "2011-12-31"),
             latitude=slice(40, 30),
             longitude=slice(180, 190),
         )
+        return data.chunk({"time": data.time.size})
 
     def test_check_input_data_incorrect_type(self):
         dummy_data = np.ones((3, 3))
@@ -49,6 +50,7 @@ class TestPreprocessMethods:
             raw_field,
             input_core_dims=[["time"]],
             output_core_dims=[["time"]],
+            dask="parallelized",
         ).transpose("time", ...)
         trend = preprocess._get_trend(raw_field, "linear")
         result = preprocess._subtract_trend(raw_field, "linear", trend)
