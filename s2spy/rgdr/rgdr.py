@@ -281,6 +281,7 @@ def correlation(
         field,
         target,
         input_core_dims=[[corr_dim], [corr_dim]],
+        dask="allowed",
         vectorize=True,
         output_core_dims=[[], []],
     )
