@@ -12,6 +12,7 @@ def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
 
     Used to make linregress more ufunc-friendly.
 
+
     Args:
         x: First array.
         y: Second array.
