@@ -209,13 +209,15 @@ class Preprocessor:
         self._trend: dict
         self._is_fit = False
 
-    def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
+    def fit(self, data: Union[xr.DataArray, xr.Dataset], dropna=False) -> None:
         """Fit this Preprocessor to input data.
 
         Args:
             data: Input data for fitting.
         """
         _check_input_data(data)
+        if dropna:
+            data = data.dropna("time")
         if self._window_size not in [None, 1]:
             data_rolling = data.rolling(
                 dim={"time": self._window_size},  # type: ignore
@@ -228,7 +230,6 @@ class Preprocessor:
 
         if self._subtract_climatology:
             self._climatology = _get_climatology(data_rolling, self._timescale)
-
         if self._detrend is not None:
             if self._subtract_climatology:
                 deseasonalized = _subtract_climatology(
@@ -241,7 +242,7 @@ class Preprocessor:
         self._is_fit = True
 
     def transform(
-        self, data: Union[xr.DataArray, xr.Dataset]
+        self, data: Union[xr.DataArray, xr.Dataset], dropna=False
     ) -> Union[xr.DataArray, xr.Dataset]:
         """Apply the preprocessing steps to the input data.
 
@@ -251,6 +252,11 @@ class Preprocessor:
         Returns:
             Preprocessed data.
         """
+        if dropna:
+            print("Dropping NaN values from data")
+            data = data.dropna("time")
+            print(data)
+
         if not self._is_fit:
             raise ValueError(
                 "The preprocessor has to be fit to data before a transform"
