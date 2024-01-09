@@ -254,9 +254,7 @@ class Preprocessor:
             Preprocessed data.
         """
         if dropna:
-            print("Dropping NaN values from data")
             data = data.dropna("time")
-            print(data)
 
         if not self._is_fit:
             raise ValueError(
