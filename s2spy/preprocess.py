@@ -215,6 +215,7 @@ class Preprocessor:
 
         Args:
             data: Input data for fitting.
+            dropna: If True, drop all NaN values from the data before preprocessing.
         """
         _check_input_data(data)
         if dropna:
@@ -249,6 +250,7 @@ class Preprocessor:
 
         Args:
             data: Input data to perform preprocessing.
+            dropna: If True, drop all NaN values from the data before preprocessing.
 
         Returns:
             Preprocessed data.
