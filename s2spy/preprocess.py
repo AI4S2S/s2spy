@@ -8,7 +8,9 @@ import xarray as xr
 
 
 def _linregress(
-    x: np.ndarray, y: np.ndarray, nan_mask: str = "individual"
+    x: np.ndarray,
+    y: np.ndarray,
+    nan_mask: Literal["individual", "complete"] = "individual",
 ) -> tuple[float, float]:
     """Calculate the slope and intercept between two arrays using scipy's linregress.
 
@@ -18,7 +20,7 @@ def _linregress(
     Args:
         x: First array.
         y: Second array.
-        dropna: How to handle NaN values. If 'complete', returns nan if x or y contains
+        nan_mask: How to handle NaN values. If 'complete', returns nan if x or y contains
             1 or more NaN values. If 'individual', fit a trend by masking only the
             indices with the NaNs.
 
@@ -26,11 +28,13 @@ def _linregress(
         slope, intercept
     """
     if nan_mask == "individual":
-        mask = ~np.logical_or(np.isnan(x), np.isnan(y))
+        mask = np.logical_or(np.isnan(x), np.isnan(y))
         if np.all(mask):
             slope, intercept = np.nan, np.nan
+        elif np.any(mask):
+            slope, intercept, _, _, _ = scipy.stats.linregress(x[~mask], y[~mask])
         else:
-            slope, intercept, _, _, _ = scipy.stats.linregress(x[mask], y[mask])
+            slope, intercept, _, _, _ = scipy.stats.linregress(x, y)
         return slope, intercept
     elif nan_mask == "complete":
         if np.logical_or(np.isnan(x), np.isnan(y)).any():
@@ -46,7 +50,7 @@ def _trend_linear(
 
     Args:
         data: The input data of which you want to know the trend.
-        dropna: How to handle NaN values. If 'complete', returns nan if x or y contains
+        nan_mask: How to handle NaN values. If 'complete', returns nan if x or y contains
             1 or more NaN values. If 'individual', fit a trend by masking only the
             indices with the NaNs.
 
@@ -248,7 +252,6 @@ class Preprocessor:
 
         Args:
             data: Input data for fitting.
-            dropna: If True, drop all NaN values from the data before preprocessing.
         """
         _check_input_data(data)
         if self._window_size not in [None, 1]:
@@ -281,7 +284,6 @@ class Preprocessor:
 
         Args:
             data: Input data to perform preprocessing.
-            dropna: If True, drop all NaN values from the data before preprocessing.
 
         Returns:
             Preprocessed data.
@@ -309,7 +311,6 @@ class Preprocessor:
 
         Args:
             data: Input data for fit and transform.
-            dropna: If True, drop all NaN values from the data before preprocessing.
 
         Returns:
             Preprocessed data.

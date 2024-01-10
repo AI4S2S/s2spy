@@ -239,8 +239,8 @@ class TestPreprocessor:
             nan_mask="complete",
         )
         single_doy = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
-        single_doy[0, 0, 0] = np.nan  # [0,0] lat/lon NaN at timestep 0
-        single_doy[1:, 1, 1] = np.nan  # [1:,1,1] lat/lon NaN at timestep 1:end
+        single_doy[:2, 0, 0] = np.nan  # [0,0] lat/lon NaN at timestep 0, 1
+        single_doy[2:, 1, 1] = np.nan  # [1:,1,1] lat/lon NaN at timestep 2:end
 
         pp_field = prep.fit_transform(single_doy)
         nans_in_pp_field = np.isnan(pp_field).sum("time")[0, 0]
@@ -258,7 +258,10 @@ class TestPreprocessor:
         )
 
         pp_field = prep.fit_transform(single_doy)
-        assert np.isnan(pp_field).sum("time")[0, 0] == 1, (
+        assert (
+            np.isnan(pp_field).sum("time") == np.isnan(single_doy).sum("time")
+        ).all(), (
             "If any NaNs are present in the data, "
             "the pp will only ignore those NaNs, but still fit a trendline."
+            "Hence, the NaNs should remain the same in this case."
         )
