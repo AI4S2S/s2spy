@@ -236,9 +236,11 @@ class TestPreprocessor:
             timescale="daily",
             detrend="linear",
             subtract_climatology=True,
+            nan_mask="complete",
         )
         single_doy = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
-        single_doy[1, 0, 0] = np.nan
+        single_doy[0, 0, 0] = np.nan  # [0,0] lat/lon NaN at timestep 0
+        single_doy[1:, 1, 1] = np.nan  # [1:,1,1] lat/lon NaN at timestep 1:end
 
         pp_field = prep.fit_transform(single_doy)
         nans_in_pp_field = np.isnan(pp_field).sum("time")[0, 0]
@@ -247,7 +249,15 @@ class TestPreprocessor:
             "the entire timeseries should have become completely NaN in the output."
         )
 
-        pp_field = prep.fit_transform(single_doy, dropna=True)
+        prep = preprocess.Preprocessor(
+            rolling_window_size=1,
+            timescale="daily",
+            detrend="linear",
+            subtract_climatology=True,
+            nan_mask="individual",
+        )
+
+        pp_field = prep.fit_transform(single_doy)
         assert np.isnan(pp_field).sum("time")[0, 0] == 1, (
             "If any NaNs are present in the data, "
             "the pp will only ignore those NaNs, but still fit a trendline."

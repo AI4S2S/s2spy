@@ -7,7 +7,9 @@ import scipy.stats
 import xarray as xr
 
 
-def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
+def _linregress(
+    x: np.ndarray, y: np.ndarray, nan_mask: str = "individual"
+) -> tuple[float, float]:
     """Calculate the slope and intercept between two arrays using scipy's linregress.
 
     Used to make linregress more ufunc-friendly.
@@ -16,28 +18,51 @@ def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     Args:
         x: First array.
         y: Second array.
+        dropna: How to handle NaN values. If 'complete', returns nan if x or y contains
+            1 or more NaN values. If 'individual', fit a trend by masking only the
+            indices with the NaNs.
 
     Returns:
         slope, intercept
     """
-    slope, intercept, _, _, _ = scipy.stats.linregress(x, y)
-    return slope, intercept
+    if nan_mask == "individual":
+        mask = ~np.logical_or(np.isnan(x), np.isnan(y))
+        if np.all(mask):
+            slope, intercept = np.nan, np.nan
+        else:
+            slope, intercept, _, _, _ = scipy.stats.linregress(x[mask], y[mask])
+        return slope, intercept
+    elif nan_mask == "complete":
+        if np.logical_or(np.isnan(x), np.isnan(y)).any():
+            slope, intercept = np.nan, np.nan  # any NaNs in timeseries, return NaN.
+        slope, intercept, _, _, _ = scipy.stats.linregress(x, y)
+        return slope, intercept
 
 
-def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
+def _trend_linear(
+    data: Union[xr.DataArray, xr.Dataset], nan_mask: str = "complete"
+) -> dict:
     """Calculate the linear trend over time.
 
     Args:
         data: The input data of which you want to know the trend.
+        dropna: How to handle NaN values. If 'complete', returns nan if x or y contains
+            1 or more NaN values. If 'individual', fit a trend by masking only the
+            indices with the NaNs.
 
     Returns:
         Dictionary containing the linear trend information (slope and intercept)
     """
+    assert nan_mask in [
+        "complete",
+        "individual",
+    ], "nan_mask should be 'complete' or 'individual'"
     slope, intercept = xr.apply_ufunc(
         _linregress,
         data["time"].astype(float),
         data,
-        input_core_dims=[["time"], ["time"]],
+        nan_mask,
+        input_core_dims=[["time"], ["time"], []],
         output_core_dims=[[], []],
         vectorize=True,
     )
@@ -49,10 +74,12 @@ def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
     return data - trend["intercept"] - trend["slope"] * (data["time"].astype(float))
 
 
-def _get_trend(data: Union[xr.DataArray, xr.Dataset], method: str):
+def _get_trend(
+    data: Union[xr.DataArray, xr.Dataset], method: str, nan_mask: str = "complete"
+):
     """Calculate the trend, with a certain method. Only linear is implemented."""
     if method == "linear":
-        return _trend_linear(data)
+        return _trend_linear(data, nan_mask)
     raise ValueError(f"Unkown detrending method '{method}'")
 
 
@@ -173,6 +200,7 @@ class Preprocessor:
         rolling_min_periods: int = 1,
         subtract_climatology: bool = True,
         detrend: Union[str, None] = "linear",
+        nan_mask: str = "complete",
     ):
         """Preprocessor for s2s data. Can detrend as well as deseasonalize.
 
@@ -198,11 +226,16 @@ class Preprocessor:
             detrend (optional): Which method to use for detrending. Currently the only method
                 supported is "linear". If you want to skip detrending, set this to None.
             timescale: Temporal resolution of input data.
+            nan_mask: How to handle NaN values. If 'complete', returns nan if x or y contains
+                1 or more NaN values. If 'individual', fit a trend by masking only the
+                indices with the NaNs.
         """
         self._window_size = rolling_window_size
         self._min_periods = rolling_min_periods
         self._detrend = detrend
         self._subtract_climatology = subtract_climatology
+        self._nan_mask = nan_mask
+
         if subtract_climatology:
             self._timescale = _check_temporal_resolution(timescale)
 
@@ -210,7 +243,7 @@ class Preprocessor:
         self._trend: dict
         self._is_fit = False
 
-    def fit(self, data: Union[xr.DataArray, xr.Dataset], dropna=False) -> None:
+    def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
         """Fit this Preprocessor to input data.
 
         Args:
@@ -218,8 +251,6 @@ class Preprocessor:
             dropna: If True, drop all NaN values from the data before preprocessing.
         """
         _check_input_data(data)
-        if dropna:
-            data = data.dropna("time")
         if self._window_size not in [None, 1]:
             data_rolling = data.rolling(
                 dim={"time": self._window_size},  # type: ignore
@@ -237,14 +268,14 @@ class Preprocessor:
                 deseasonalized = _subtract_climatology(
                     data_rolling, self._timescale, self._climatology
                 )
-                self._trend = _get_trend(deseasonalized, self._detrend)
+                self._trend = _get_trend(deseasonalized, self._detrend, self._nan_mask)
             else:
-                self._trend = _get_trend(data_rolling, self._detrend)
+                self._trend = _get_trend(data_rolling, self._detrend, self._nan_mask)
 
         self._is_fit = True
 
     def transform(
-        self, data: Union[xr.DataArray, xr.Dataset], dropna=False
+        self, data: Union[xr.DataArray, xr.Dataset]
     ) -> Union[xr.DataArray, xr.Dataset]:
         """Apply the preprocessing steps to the input data.
 
@@ -255,9 +286,6 @@ class Preprocessor:
         Returns:
             Preprocessed data.
         """
-        if dropna:
-            data = data.dropna("time")
-
         if not self._is_fit:
             raise ValueError(
                 "The preprocessor has to be fit to data before a transform"
@@ -275,7 +303,7 @@ class Preprocessor:
         return d
 
     def fit_transform(
-        self, data: Union[xr.DataArray, xr.Dataset], dropna=False
+        self, data: Union[xr.DataArray, xr.Dataset]
     ) -> Union[xr.DataArray, xr.Dataset]:
         """Fit this Preprocessor to input data, and then apply the steps to the data.
 
@@ -286,7 +314,7 @@ class Preprocessor:
         Returns:
             Preprocessed data.
         """
-        self.fit(data, dropna=dropna)
+        self.fit(data)
         return self.transform(data)
 
     @property
