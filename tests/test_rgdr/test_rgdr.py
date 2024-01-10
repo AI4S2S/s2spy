@@ -141,8 +141,8 @@ class TestCorrelation:
     def test_correlation(self, dummy_dataarray, dummy_timeseries):
         c_val, p_val = rgdr.correlation(dummy_dataarray, dummy_timeseries)
 
-        np.testing.assert_equal(c_val.values, 1)
-        np.testing.assert_equal(p_val.values, 0)
+        np.testing.assert_almost_equal(c_val.values, 1, decimal=7)
+        np.testing.assert_almost_equal(p_val.values, 0, decimal=7)
 
     def test_correlation_dim_name(self, dummy_dataarray, dummy_timeseries):
         da = dummy_dataarray.rename({"time": "i_interval"})

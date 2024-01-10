@@ -237,20 +237,17 @@ class TestPreprocessor:
             detrend="linear",
             subtract_climatology=False,
         )
-        single_ts = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
-        single_ts[1, 0, 0] = np.nan
+        single_doy = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
+        single_doy[1, 0, 0] = np.nan
 
-        pp_field = prep.fit_transform(single_ts)
-        # assert np.equal(np.isnan(pp_field)["sst"][0, 0, 0], True)
-        assert (
-            np.isnan(pp_field).sum("time")[0, 0]
-            == np.unique(pp_field.time.dt.year).size
-        ), (
+        pp_field = prep.fit_transform(single_doy)
+        nans_in_pp_field = np.isnan(pp_field).sum("time")[0, 0]
+        assert int(nans_in_pp_field) == np.unique(pp_field.time.dt.year).size, (
             "If any NaNs are present in the data, "
             "the entire timeseries should have become completely NaN in the output."
         )
 
-        pp_field = prep.fit_transform(single_ts, dropna=True)
+        pp_field = prep.fit_transform(single_doy, dropna=True)
         assert np.isnan(pp_field).sum("time")[0, 0] == 1, (
             "If any NaNs are present in the data, "
             "the pp will only ignore those NaNs, but still fit a trendline."

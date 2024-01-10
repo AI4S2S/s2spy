@@ -275,17 +275,18 @@ class Preprocessor:
         return d
 
     def fit_transform(
-        self, data: Union[xr.DataArray, xr.Dataset]
+        self, data: Union[xr.DataArray, xr.Dataset], dropna=False
     ) -> Union[xr.DataArray, xr.Dataset]:
         """Fit this Preprocessor to input data, and then apply the steps to the data.
 
         Args:
             data: Input data for fit and transform.
+            dropna: If True, drop all NaN values from the data before preprocessing.
 
         Returns:
             Preprocessed data.
         """
-        self.fit(data)
+        self.fit(data, dropna=dropna)
         return self.transform(data)
 
     @property
