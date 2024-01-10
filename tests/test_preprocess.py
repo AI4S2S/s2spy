@@ -235,7 +235,7 @@ class TestPreprocessor:
             rolling_window_size=1,
             timescale="daily",
             detrend="linear",
-            subtract_climatology=False,
+            subtract_climatology=True,
         )
         single_doy = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
         single_doy[1, 0, 0] = np.nan
