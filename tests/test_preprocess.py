@@ -229,3 +229,29 @@ class TestPreprocessor:
     def test_trend_property_no_climatology(self, preprocessor_no_climatology):
         with pytest.raises(ValueError, match="subtract_climatology is set to `False`"):
             preprocessor_no_climatology.climatology
+
+    def test_trend_with_nan(self, raw_field):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=1,
+            timescale="daily",
+            detrend="linear",
+            subtract_climatology=False,
+        )
+        single_ts = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
+        single_ts[1, 0, 0] = np.nan
+
+        pp_field = prep.fit_transform(single_ts)
+        # assert np.equal(np.isnan(pp_field)["sst"][0, 0, 0], True)
+        assert (
+            np.isnan(pp_field).sum("time")[0, 0]
+            == np.unique(pp_field.time.dt.year).size
+        ), (
+            "If any NaNs are present in the data, "
+            "the entire timeseries should have become completely NaN in the output."
+        )
+
+        pp_field = prep.fit_transform(single_ts, dropna=True)
+        assert np.isnan(pp_field).sum("time")[0, 0] == 1, (
+            "If any NaNs are present in the data, "
+            "the pp will only ignore those NaNs, but still fit a trendline."
+        )
