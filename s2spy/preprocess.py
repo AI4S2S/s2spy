@@ -64,7 +64,6 @@ def _trend_linear(
         "complete",
         "individual",
     ], "nan_mask should be 'complete' or 'individual'"
-    # breakpoint
     slope, intercept = xr.apply_ufunc(
         _linregress,
         data["time"].astype(float),
