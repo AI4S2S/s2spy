@@ -137,15 +137,17 @@ def _trend_poly(
     if nan_mask == "individual":
         mask = np.isnan(data)
         data = data.where(~mask)
-    elif nan_mask == "complete":
-        if np.isnan(data).any():
-            return {"coefficients": np.nan}
 
     data.coords["ordinal_day"] = (
         ("time",),
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
     )
+
     coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
+
+    if nan_mask == "complete":
+        if np.isnan(data).any():
+            coeffs["polyfit_coefficients"] = np.nan
 
     return {"coefficients": coeffs}
 
