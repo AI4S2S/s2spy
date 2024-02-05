@@ -5,9 +5,6 @@ from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
 
 
 def _linregress(
