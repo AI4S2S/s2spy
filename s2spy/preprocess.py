@@ -94,10 +94,6 @@ def _subtract_polynomial_trend(
     Returns:
         The data with the polynomial trend subtracted.
     """
-    # Ensure time dimension is treated as float for polynomial operations
-
-    # Calculate the polynomial trend values for each time point
-
     data.coords["ordinal_day"] = (
         ("time",),
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
@@ -108,7 +104,6 @@ def _subtract_polynomial_trend(
         data.swap_dims({"time": "ordinal_day"})["ordinal_day"], trend["coefficients"]
     ).swap_dims({"ordinal_day": "time"})
 
-    # Subtract the polynomial trend from the data
     return (data - polynomial_trend).polyfit_coefficients
 
 
@@ -123,7 +118,6 @@ def _get_trend(
         return _trend_linear(data, nan_mask)
 
     if method == "polynomial":
-        # Calculate polynomial trend coefficients and store them.
         return _trend_poly(data, degree, nan_mask)
     raise ValueError(f"Unkown detrending method '{method}'")
 
@@ -156,12 +150,6 @@ def _trend_poly(
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
     )
     coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
-
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], coeffs
-    )
-    plt.plot(data.time, polynomial_trend.polyfit_coefficients)
-    plt.savefig("/tmp/test.png")
     return {"coefficients": coeffs}
 
 
