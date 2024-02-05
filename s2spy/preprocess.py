@@ -147,9 +147,6 @@ def _trend_poly(
     )
     coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
 
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], coeffs
-    )
     return {"coefficients": coeffs}
 
 
