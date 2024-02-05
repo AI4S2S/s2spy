@@ -1,4 +1,5 @@
 """Tests for the s2spy.preprocess module."""
+
 import numpy as np
 import pytest
 import scipy.signal
@@ -100,11 +101,12 @@ class TestPreprocessor:
     """Test preprocessor."""
 
     @pytest.fixture
-    def preprocessor(self):
+    def preprocessor(self, request):
+        method = request.param[0]
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
             timescale="daily",
-            detrend="linear",
+            detrend=method,
             subtract_climatology=True,
         )
         return prep
@@ -158,6 +160,16 @@ class TestPreprocessor:
         )
         assert isinstance(prep, Preprocessor)
 
+    # pytest.mark.parametrize("preprocessor", ["linear", "polynomial"])
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_fit(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         assert (
@@ -170,11 +182,27 @@ class TestPreprocessor:
             raw_field, timescale="daily"
         )
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_transform(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         preprocessed_data = preprocessor.transform(raw_field)
         assert preprocessed_data is not None
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_transform_without_fit(self, preprocessor, raw_field):
         with pytest.raises(ValueError):
             preprocessor.transform(raw_field)
@@ -209,10 +237,26 @@ class TestPreprocessor:
 
         assert results == raw_field
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_fit_transform(self, preprocessor, raw_field):
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_trend_property_not_fit(self, preprocessor):
         with pytest.raises(ValueError, match="The preprocessor has to be fit"):
             preprocessor.trend
@@ -222,6 +266,14 @@ class TestPreprocessor:
         with pytest.raises(ValueError, match="Detrending is set to `None`"):
             preprocessor_no_detrend.trend
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_climatology_property_not_fit(self, preprocessor):
         with pytest.raises(ValueError, match="The preprocessor has to be fit"):
             preprocessor.climatology
@@ -265,3 +317,42 @@ class TestPreprocessor:
             "the pp will only ignore those NaNs, but still fit a trendline."
             "Hence, the NaNs should remain the same in this case."
         )
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_trendtimeseries_dataset(self, preprocessor, raw_field):
+        preprocessor.fit(raw_field)
+        trend = preprocessor.get_trend_timeseries(raw_field)
+        assert trend is not None
+        assert trend.dims == raw_field.dims
+        assert trend.sst.shape == raw_field.sst.shape
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_trendtimeseries_dataarray(self, preprocessor, raw_field):
+        raw_field = raw_field.to_array().squeeze("variable")
+        preprocessor.fit(raw_field)
+        trend = preprocessor.get_trend_timeseries(raw_field)
+        if preprocessor._detrend == "linear":
+            print("yo")
+        else:
+            print("no")
+        assert trend is not None
+        assert (
+            trend.dims == raw_field.dims
+        ), f"dims do not match \n {trend.dims} \n {raw_field.dims}"
+        assert (
+            trend.shape == raw_field.shape
+        ), f"shape does not match \n {trend.shape} \n {raw_field.shape}"

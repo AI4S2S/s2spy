@@ -1,12 +1,10 @@
 """Preprocessor for s2spy workflow."""
+
 import warnings
 from typing import Literal
 from typing import Union
 import numpy as np
 import scipy.stats
-import xarray as xr
-import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 
 
@@ -76,24 +74,35 @@ def _trend_linear(
     return {"slope": slope, "intercept": intercept}
 
 
-def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
-    """Subtract a previously calclulated linear trend from (new) data."""
-    return data - trend["intercept"] - trend["slope"] * (data["time"].astype(float))
+def _get_lineartrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict):
+    """Calculate the linear trend timeseries from the trend dictionary."""
+    trend_timeseries = trend["intercept"] + trend["slope"] * (
+        data["time"].astype(float)
+    )
+    return trend_timeseries.transpose(*data.dims)
 
 
-def _subtract_polynomial_trend(
-    data: Union[xr.DataArray, xr.Dataset], trend: dict, degree: int = 2
-):
-    """Subtract a previously calculated polynomial trend from (new) data.
+def _trend_poly(data: Union[xr.DataArray, xr.Dataset], degree: int = 2) -> dict:
+    """Calculate the polynomial trend over time and return coefficients.
 
     Args:
-        data: The data from which to subtract the trend (either an xarray DataArray or Dataset).
-        trend: A dictionary containing the polynomial trend coefficients.
-        degree: The degree of the polynomial that was used for the trend. Default is 2 for quadratic.
+        data: Input data.
+        degree: Degree of the polynomial for detrending.
 
     Returns:
-        The data with the polynomial trend subtracted.
+        Dictionary containing polynomial trend coefficients.
     """
+    data.coords["ordinal_day"] = (
+        ("time",),
+        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
+    )
+    coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit(
+        "ordinal_day", deg=degree, skipna=True
+    )
+    return {"coefficients": coeffs}
+
+
+def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict):
     data.coords["ordinal_day"] = (
         ("time",),
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
@@ -101,9 +110,47 @@ def _subtract_polynomial_trend(
     polynomial_trend = xr.polyval(
         data.swap_dims({"time": "ordinal_day"})["ordinal_day"], trend["coefficients"]
     ).swap_dims({"ordinal_day": "time"})
+    # rename f"{data_var}_polyfit_coeffiencts" to orginal data_var name
+    if isinstance(data, xr.Dataset):
+        da_names = list(data.data_vars)
+        rename = dict(
+            map(
+                lambda i, j: (i, j),
+                list(polynomial_trend.data_vars),
+                da_names,
+            )
+        )
+        polynomial_trend = polynomial_trend.rename(rename)
+    if isinstance(
+        data, xr.DataArray
+    ):  # keep consistent with input data and _get_lineartrend_timeseries
+        polynomial_trend = polynomial_trend.to_array().squeeze("variable")
+        polynomial_trend.name = [
+            data.name if data.name is not None else "timeseries_polyfit"
+        ]
+    return polynomial_trend.transpose(*data.dims)
 
+
+def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
+    """Subtract a previously calclulated linear trend from (new) data."""
+    return data - _get_lineartrend_timeseries(data, trend)
+
+
+def _subtract_polynomial_trend(
+    data: Union[xr.DataArray, xr.Dataset],
+    trend: dict,
+):
+    """Subtract a previously calculated polynomial trend from (new) data.
+
+    Args:
+        data: The data from which to subtract the trend (either an xarray DataArray or Dataset).
+        trend: A dictionary containing the polynomial trend coefficients.
+
+    Returns:
+        The data with the polynomial trend subtracted.
+    """
     # Subtract the polynomial trend from the data
-    return (data - polynomial_trend).polyfit_coefficients
+    return data - _get_polytrend_timeseries(data, trend)
 
 
 def _get_trend(
@@ -117,43 +164,10 @@ def _get_trend(
         return _trend_linear(data, nan_mask)
 
     if method == "polynomial":
-        return _trend_poly(data, degree, nan_mask)
+        if nan_mask != "complete":
+            raise ValueError("Polynomial currently only supports 'complete' nan_mask")
+        return _trend_poly(data, degree)
     raise ValueError(f"Unkown detrending method '{method}'")
-
-
-def _trend_poly(
-    data: Union[xr.DataArray, xr.Dataset], degree: int = 2, nan_mask: str = "complete"
-) -> dict:
-    """Calculate the polynomial trend over time and return coefficients.
-
-    Args:
-        data: Input data.
-        degree: Degree of the polynomial for detrending.
-        nan_mask: How to handle NaN values.
-
-    Returns:
-        Dictionary containing polynomial trend coefficients.
-    """
-
-    # Mask NaNs in the data
-
-    if nan_mask == "individual":
-        mask = np.isnan(data)
-        data = data.where(~mask)
-    elif nan_mask == "complete":
-        if np.isnan(data).any():
-            return {"coefficients": np.nan}
-
-    data.coords["ordinal_day"] = (
-        ("time",),
-        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
-    )
-    coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
-
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], coeffs
-    )
-    return {"coefficients": coeffs}
 
 
 def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: dict):
@@ -298,8 +312,9 @@ class Preprocessor:
                 and end of the preprocessed data.
             subtract_climatology (optional): If you want to calculate and remove the
                 climatology of the data. Defaults to True.
-            detrend (optional): Which method to use for detrending. Currently the only method
-                supported is "linear". If you want to skip detrending, set this to None.
+            detrend (optional): Which method to use for detrending. Choose from "linear"
+                or "polynomial". Defaults to "linear". If you want to skip detrending,
+                set this to None.
             timescale: Temporal resolution of input data.
             nan_mask: How to handle NaN values. If 'complete', returns nan if x or y contains
                 1 or more NaN values. If 'individual', fit a trend by masking only the
@@ -388,6 +403,21 @@ class Preprocessor:
         """
         self.fit(data)
         return self.transform(data)
+
+    def get_trend_timeseries(self, data):
+        """Get the trend timeseries from the data."""
+        if not self._is_fit:
+            raise ValueError(
+                "The preprocessor has to be fit to data before the trend"
+                " timeseries can be requested."
+            )
+        if self._detrend is None:
+            raise ValueError("Detrending is set to `None`, so no trend is available")
+        if self._detrend == "linear":
+            return _get_lineartrend_timeseries(data, self.trend)
+        elif self._detrend == "polynomial":
+            return _get_polytrend_timeseries(data, self.trend)
+        raise ValueError(f"Unkown detrending method '{self._detrend}'")
 
     @property
     def trend(self) -> dict:
