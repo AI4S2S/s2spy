@@ -5,9 +5,6 @@ from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
 
 
 def _linregress(
@@ -81,96 +78,19 @@ def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
     return data - trend["intercept"] - trend["slope"] * (data["time"].astype(float))
 
 
-def _subtract_polynomial_trend(
-    data: Union[xr.DataArray, xr.Dataset], trend: dict, degree: int = 2
-):
-    """Subtract a previously calculated polynomial trend from (new) data.
-
-    Args:
-        data: The data from which to subtract the trend (either an xarray DataArray or Dataset).
-        trend: A dictionary containing the polynomial trend coefficients.
-        degree: The degree of the polynomial that was used for the trend. Default is 2 for quadratic.
-
-    Returns:
-        The data with the polynomial trend subtracted.
-    """
-    # Ensure time dimension is treated as float for polynomial operations
-
-    # Calculate the polynomial trend values for each time point
-
-    data.coords["ordinal_day"] = (
-        ("time",),
-        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
-    )
-    coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
-
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], trend["coefficients"]
-    ).swap_dims({"ordinal_day": "time"})
-
-    # Subtract the polynomial trend from the data
-    return (data - polynomial_trend).polyfit_coefficients
-
-
 def _get_trend(
-    data: Union[xr.DataArray, xr.Dataset],
-    method: str,
-    nan_mask: str = "complete",
-    degree=2,
+    data: Union[xr.DataArray, xr.Dataset], method: str, nan_mask: str = "complete"
 ):
     """Calculate the trend, with a certain method. Only linear is implemented."""
     if method == "linear":
         return _trend_linear(data, nan_mask)
-
-    if method == "polynomial":
-        # Calculate polynomial trend coefficients and store them.
-        return _trend_poly(data, degree, nan_mask)
     raise ValueError(f"Unkown detrending method '{method}'")
-
-
-def _trend_poly(
-    data: Union[xr.DataArray, xr.Dataset], degree: int = 2, nan_mask: str = "complete"
-) -> dict:
-    """Calculate the polynomial trend over time and return coefficients.
-
-    Args:
-        data: Input data.
-        degree: Degree of the polynomial for detrending.
-        nan_mask: How to handle NaN values.
-
-    Returns:
-        Dictionary containing polynomial trend coefficients.
-    """
-
-    # Mask NaNs in the data
-
-    if nan_mask == "individual":
-        mask = np.isnan(data)
-        data = data.where(~mask)
-    elif nan_mask == "complete":
-        if np.isnan(data).any():
-            return {"coefficients": np.nan}
-
-    data.coords["ordinal_day"] = (
-        ("time",),
-        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
-    )
-    coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
-
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], coeffs
-    )
-    plt.plot(data.time, polynomial_trend.polyfit_coefficients)
-    plt.savefig("/tmp/test.png")
-    return {"coefficients": coeffs}
 
 
 def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: dict):
     """Subtract the previously calculated trend from (new) data. Only linear is implemented."""
     if method == "linear":
         return _subtract_linear_trend(data, trend)
-    if method == "polynomial":
-        return _subtract_polynomial_trend(data, trend)
     raise NotImplementedError
 
 
