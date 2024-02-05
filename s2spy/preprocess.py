@@ -5,6 +5,9 @@ from typing import Union
 import numpy as np
 import scipy.stats
 import xarray as xr
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
 
 
 def _linregress(
@@ -95,25 +98,25 @@ def _subtract_polynomial_trend(
         ("time",),
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
     )
-    coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
-
     polynomial_trend = xr.polyval(
         data.swap_dims({"time": "ordinal_day"})["ordinal_day"], trend["coefficients"]
     ).swap_dims({"ordinal_day": "time"})
 
+    # Subtract the polynomial trend from the data
     return (data - polynomial_trend).polyfit_coefficients
 
 
 def _get_trend(
     data: Union[xr.DataArray, xr.Dataset],
-    degree: int = 2,
+    method: str,
     nan_mask: str = "complete",
+    degree=2,
 ):
     """Calculate the trend, with a certain method. Only linear is implemented."""
-    if degree == 1:
+    if method == "linear":
         return _trend_linear(data, nan_mask)
 
-    if degree > 1:
+    if method == "polynomial":
         return _trend_poly(data, degree, nan_mask)
     raise ValueError(f"Unkown detrending method '{method}'")
 
@@ -146,6 +149,10 @@ def _trend_poly(
         (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
     )
     coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit("ordinal_day", deg=degree)
+
+    polynomial_trend = xr.polyval(
+        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], coeffs
+    )
     return {"coefficients": coeffs}
 
 
@@ -154,7 +161,8 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     if method == "linear":
         return _subtract_linear_trend(data, trend)
     if method == "polynomial":
-        return _subtract_polynomial_trend(data, trend, degree)
+        return _subtract_polynomial_trend(data, trend)
+    raise NotImplementedError
 
 
 def _get_climatology(
@@ -308,9 +316,7 @@ class Preprocessor:
 
         self._climatology: Union[xr.DataArray, xr.Dataset]
         self._trend: dict
-        self._is_fit = Fals
-        # for now only quadratic detrend or linear
-        self.degree = 1 if detrend == "linear" else 2
+        self._is_fit = False
 
     def fit(self, data: Union[xr.DataArray, xr.Dataset]) -> None:
         """Fit this Preprocessor to input data.
@@ -336,9 +342,9 @@ class Preprocessor:
                 deseasonalized = _subtract_climatology(
                     data_rolling, self._timescale, self._climatology
                 )
-                self._trend = _get_trend(deseasonalized, self.degree, self._nan_mask)
+                self._trend = _get_trend(deseasonalized, self._detrend, self._nan_mask)
             else:
-                self._trend = _get_trend(data_rolling, self.degree, self._nan_mask)
+                self._trend = _get_trend(data_rolling, self._detrend, self._nan_mask)
 
         self._is_fit = True
 
