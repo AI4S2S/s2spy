@@ -345,10 +345,6 @@ class TestPreprocessor:
         raw_field = raw_field.to_array().squeeze("variable")
         preprocessor.fit(raw_field)
         trend = preprocessor.get_trend_timeseries(raw_field)
-        if preprocessor._detrend == "linear":
-            print("yo")
-        else:
-            print("no")
         assert trend is not None
         assert (
             trend.dims == raw_field.dims
