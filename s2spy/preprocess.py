@@ -125,10 +125,12 @@ def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict
         data, xr.DataArray
     ):  # keep consistent with input data and _get_lineartrend_timeseries
         polynomial_trend = polynomial_trend.to_array().squeeze("variable")
-        polynomial_trend.name = [
+        polynomial_trend.name = (
             data.name if data.name is not None else "timeseries_polyfit"
-        ]
-    return polynomial_trend.transpose(*data.dims)
+        )
+    # if "ordinal_day" in polynomial_trend.coords:
+    # polynomial_trend = polynomial_trend
+    return polynomial_trend.drop_vars("ordinal_day").transpose(*data.dims)
 
 
 def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
