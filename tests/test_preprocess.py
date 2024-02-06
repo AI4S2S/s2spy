@@ -245,7 +245,20 @@ class TestPreprocessor:
         ],
         indirect=True,
     )
-    def test_fit_transform(self, preprocessor, raw_field):
+    def test_fit_transform_ds(self, preprocessor, raw_field):
+        preprocessed_data = preprocessor.fit_transform(raw_field)
+        assert preprocessed_data is not None
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_fit_transform_da(self, preprocessor, raw_field):
+        raw_field = raw_field.to_array().squeeze("variable")
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
 

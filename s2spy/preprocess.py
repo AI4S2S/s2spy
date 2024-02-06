@@ -103,13 +103,21 @@ def _trend_poly(data: Union[xr.DataArray, xr.Dataset], degree: int = 2) -> dict:
 
 
 def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict):
-    data.coords["ordinal_day"] = (
-        ("time",),
-        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
-    )
-    polynomial_trend = xr.polyval(
-        data.swap_dims({"time": "ordinal_day"})["ordinal_day"], trend["coefficients"]
-    ).swap_dims({"ordinal_day": "time"})
+    """Calculate the polynomial trend timeseries from the trend dictionary."""
+    polynomial_trend = (
+        xr.polyval(
+            data.assign_coords(
+                ordinal_day=(
+                    "time",
+                    (data.time - data.time.min())
+                    .values.astype("timedelta64[D]")
+                    .astype(int),
+                )
+            ).swap_dims({"time": "ordinal_day"})["ordinal_day"],
+            trend["coefficients"],
+        ).swap_dims({"ordinal_day": "time"})
+    ).drop_vars("ordinal_day")
+    # data = data # remove the ordinal_day coordinate
     # rename f"{data_var}_polyfit_coeffiencts" to orginal data_var name
     if isinstance(data, xr.Dataset):
         da_names = list(data.data_vars)
@@ -124,13 +132,11 @@ def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict
     if isinstance(
         data, xr.DataArray
     ):  # keep consistent with input data and _get_lineartrend_timeseries
-        polynomial_trend = polynomial_trend.to_array().squeeze("variable")
+        polynomial_trend = polynomial_trend.to_array().drop_vars("variable")
         polynomial_trend.name = (
             data.name if data.name is not None else "timeseries_polyfit"
         )
-    # if "ordinal_day" in polynomial_trend.coords:
-    # polynomial_trend = polynomial_trend
-    return polynomial_trend.drop_vars("ordinal_day").transpose(*data.dims)
+    return polynomial_trend.transpose(*data.dims)
 
 
 def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
@@ -177,6 +183,7 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     if method == "linear":
         return _subtract_linear_trend(data, trend)
     if method == "polynomial":
+
         return _subtract_polynomial_trend(data, trend)
     raise NotImplementedError
 
