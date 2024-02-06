@@ -261,8 +261,13 @@ class TestPreprocessor:
         
         raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
         raw_field.name = "da_name"
-        preprocessed_data = preprocessor.fit_transform(raw_field)
-        assert preprocessed_data is not None
+        years = np.unique(raw_field.time.dt.year.values)
+        train = raw_field.sel(time=raw_field.time.dt.year.isin([years[:-1]]))
+        tranform_to = raw_field.sel(time=raw_field.time.dt.year.isin([years[-2:]]))
+        fit_transformed = preprocessor.fit_transform(train)
+        transformed = preprocessor.transform(tranform_to)
+        assert fit_transformed is not None
+        assert bool((fit_transformed.sel(time="2013-01-01") == transformed.sel(time="2013-01-01")).all())
 
     @pytest.mark.parametrize(
         "preprocessor",

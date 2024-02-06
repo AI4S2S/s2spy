@@ -92,9 +92,10 @@ def _trend_poly(data: Union[xr.DataArray, xr.Dataset], degree: int = 2) -> dict:
     Returns:
         Dictionary containing polynomial trend coefficients.
     """
+    fixed_timestamp = np.datetime64("1900-01-01")
     data.coords["ordinal_day"] = (
         ("time",),
-        (data.time - data.time.min()).values.astype("timedelta64[D]").astype(int),
+        (data.time - fixed_timestamp).values.astype("timedelta64[D]").astype(int),
     )
     coeffs = data.swap_dims({"time": "ordinal_day"}).polyfit(
         "ordinal_day", deg=degree, skipna=True
@@ -104,12 +105,13 @@ def _trend_poly(data: Union[xr.DataArray, xr.Dataset], degree: int = 2) -> dict:
 
 def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict):
     """Calculate the polynomial trend timeseries from the trend dictionary."""
+    fixed_timestamp = np.datetime64("1900-01-01")
     polynomial_trend = (
         xr.polyval(
             data.assign_coords(
                 ordinal_day=(
                     "time",
-                    (data.time - data.time.min())
+                    (data.time - fixed_timestamp)
                     .values.astype("timedelta64[D]")
                     .astype(int),
                 )
@@ -183,7 +185,6 @@ def _subtract_trend(data: Union[xr.DataArray, xr.Dataset], method: str, trend: d
     if method == "linear":
         return _subtract_linear_trend(data, trend)
     if method == "polynomial":
-
         return _subtract_polynomial_trend(data, trend)
     raise NotImplementedError
 
