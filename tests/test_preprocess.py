@@ -258,7 +258,9 @@ class TestPreprocessor:
         indirect=True,
     )
     def test_fit_transform_da(self, preprocessor, raw_field):
-        raw_field = raw_field.to_array().squeeze("variable")
+        
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
+        raw_field.name = "da_name"
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
 
@@ -355,7 +357,7 @@ class TestPreprocessor:
         indirect=True,
     )
     def test_get_trendtimeseries_dataarray(self, preprocessor, raw_field):
-        raw_field = raw_field.to_array().squeeze("variable")
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
         preprocessor.fit(raw_field)
         trend = preprocessor.get_trend_timeseries(raw_field)
         assert trend is not None

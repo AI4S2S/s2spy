@@ -132,7 +132,7 @@ def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict
     if isinstance(
         data, xr.DataArray
     ):  # keep consistent with input data and _get_lineartrend_timeseries
-        polynomial_trend = polynomial_trend.to_array().drop_vars("variable")
+        polynomial_trend = polynomial_trend.to_array().squeeze("variable").drop_vars("variable")
         polynomial_trend.name = (
             data.name if data.name is not None else "timeseries_polyfit"
         )
