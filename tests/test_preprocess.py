@@ -258,7 +258,7 @@ class TestPreprocessor:
         indirect=True,
     )
     def test_fit_transform_da(self, preprocessor, raw_field):
-        
+
         raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
         raw_field.name = "da_name"
         years = np.unique(raw_field.time.dt.year.values)
@@ -267,7 +267,12 @@ class TestPreprocessor:
         fit_transformed = preprocessor.fit_transform(train)
         transformed = preprocessor.transform(tranform_to)
         assert fit_transformed is not None
-        assert bool((fit_transformed.sel(time="2013-01-01") == transformed.sel(time="2013-01-01")).all())
+        assert bool(
+            (
+                fit_transformed.sel(time="2013-01-01")
+                == transformed.sel(time="2013-01-01")
+            ).all()
+        )
 
     @pytest.mark.parametrize(
         "preprocessor",
@@ -352,6 +357,15 @@ class TestPreprocessor:
         assert trend is not None
         assert trend.dims == raw_field.dims
         assert trend.sst.shape == raw_field.sst.shape
+
+        # get timeseries if single lat-lon point is seleted:
+        subset_latlon = raw_field.isel(latitude=[0], longitude=[0])
+        trend = preprocessor.get_trend_timeseries(
+            subset_latlon, align_coords=True
+        )
+        assert trend is not None
+        assert trend.dims == subset_latlon.dims
+        assert trend.sst.shape == subset_latlon.sst.shape        
 
     @pytest.mark.parametrize(
         "preprocessor",

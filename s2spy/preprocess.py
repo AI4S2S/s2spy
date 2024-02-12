@@ -134,7 +134,9 @@ def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict
     if isinstance(
         data, xr.DataArray
     ):  # keep consistent with input data and _get_lineartrend_timeseries
-        polynomial_trend = polynomial_trend.to_array().squeeze("variable").drop_vars("variable")
+        polynomial_trend = (
+            polynomial_trend.to_array().squeeze("variable").drop_vars("variable")
+        )
         polynomial_trend.name = (
             data.name if data.name is not None else "timeseries_polyfit"
         )
@@ -414,8 +416,13 @@ class Preprocessor:
         self.fit(data)
         return self.transform(data)
 
-    def get_trend_timeseries(self, data):
-        """Get the trend timeseries from the data."""
+    def get_trend_timeseries(self, data, align_coords: bool = False):
+        """Get the trend timeseries from the data.
+
+        Args:
+            data (xr.DataArray or xr.Dataset): input data.
+            align_coords (bool): align coordinates to data.
+        """
         if not self._is_fit:
             raise ValueError(
                 "The preprocessor has to be fit to data before the trend"
@@ -423,10 +430,14 @@ class Preprocessor:
             )
         if self._detrend is None:
             raise ValueError("Detrending is set to `None`, so no trend is available")
+        if align_coords:
+            trend = self.align_coords(data)
+        else:
+            trend = self.trend
         if self._detrend == "linear":
-            return _get_lineartrend_timeseries(data, self.trend)
+            return _get_lineartrend_timeseries(data, trend)
         elif self._detrend == "polynomial":
-            return _get_polytrend_timeseries(data, self.trend)
+            return _get_polytrend_timeseries(data, trend)
         raise ValueError(f"Unkown detrending method '{self._detrend}'")
 
     @property
@@ -455,3 +466,25 @@ class Preprocessor:
                 " climatology can be requested."
             )
         return self._climatology
+
+    def align_coords(self, data):
+        """Align coordinates between data and trend.
+
+        Args:
+            data (xr.DataArray or xr.Dataset): time, (lat), (lon) array.
+            trend ():
+        """
+        if self._detrend == "linear":
+            align_trend = self.trend.copy()
+            align_trend["intercept"], align_trend["slope"] = xr.align(
+                *[align_trend["intercept"], align_trend["slope"], data]
+            )[:2]
+        elif self._detrend == "polynomial":
+            align_trend = self.trend.copy()
+            align_trend["coefficients"] = xr.align(
+                align_trend["coefficients"], data
+            )[0]
+        else:
+            raise ValueError(f"Unkown detrending method '{self._detrend}'")
+        return align_trend
+        
