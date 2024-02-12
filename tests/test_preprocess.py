@@ -245,9 +245,29 @@ class TestPreprocessor:
         ],
         indirect=True,
     )
-    def test_fit_transform(self, preprocessor, raw_field):
+    def test_fit_transform_ds(self, preprocessor, raw_field):
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_fit_transform_da(self, preprocessor, raw_field):
+        
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
+        raw_field.name = "da_name"
+        years = np.unique(raw_field.time.dt.year.values)
+        train = raw_field.sel(time=raw_field.time.dt.year.isin([years[:-1]]))
+        tranform_to = raw_field.sel(time=raw_field.time.dt.year.isin([years[-2:]]))
+        fit_transformed = preprocessor.fit_transform(train)
+        transformed = preprocessor.transform(tranform_to)
+        assert fit_transformed is not None
+        assert bool((fit_transformed.sel(time="2013-01-01") == transformed.sel(time="2013-01-01")).all())
 
     @pytest.mark.parametrize(
         "preprocessor",
@@ -342,7 +362,7 @@ class TestPreprocessor:
         indirect=True,
     )
     def test_get_trendtimeseries_dataarray(self, preprocessor, raw_field):
-        raw_field = raw_field.to_array().squeeze("variable")
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
         preprocessor.fit(raw_field)
         trend = preprocessor.get_trend_timeseries(raw_field)
         assert trend is not None
