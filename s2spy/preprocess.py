@@ -79,7 +79,7 @@ def _get_lineartrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: di
     trend_timeseries = trend["intercept"] + trend["slope"] * (
         data["time"].astype(float)
     )
-    return trend_timeseries.transpose(*data.dims)
+    return trend_timeseries.transpose(*list(data.dims) + [...])
 
 
 def _trend_poly(data: Union[xr.DataArray, xr.Dataset], degree: int = 2) -> dict:
@@ -140,7 +140,7 @@ def _get_polytrend_timeseries(data: Union[xr.DataArray, xr.Dataset], trend: dict
         polynomial_trend.name = (
             data.name if data.name is not None else "timeseries_polyfit"
         )
-    return polynomial_trend.transpose(*data.dims)
+    return polynomial_trend.transpose(*list(data.dims) + [...])
 
 
 def _subtract_linear_trend(data: Union[xr.DataArray, xr.Dataset], trend: dict):
