@@ -209,9 +209,18 @@ def _get_climatology(
     return climatology
 
 
-def climatology_to_timeseries(group, climatology):
+def climatology_to_timeseries(
+    group,
+    climatology,
+    timescale: Literal["monthly", "weekly", "daily"],
+):
     """Convert climatology to timeseries."""
-    return climatology.sel(dayofyear=group.time.dt.dayofyear).drop_vars("dayofyear")
+    if timescale == "monthly":
+        return climatology.sel(month=group.time.dt.month).drop_vars("month")
+    elif timescale == "weekly":
+        return climatology.sel(week=group.time.dt.isocalendar().week).drop_vars("week")
+    elif timescale == "daily":
+        return climatology.sel(dayofyear=group.time.dt.dayofyear).drop_vars("dayofyear")
 
 
 def _subtract_climatology(
@@ -473,7 +482,7 @@ class Preprocessor:
         else:
             climatology = self.climatology
         return data.groupby("time.year").map(
-            lambda x: climatology_to_timeseries(x, climatology)
+            lambda x: climatology_to_timeseries(x, climatology, self._timescale)
         )
 
     @property
