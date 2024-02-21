@@ -360,12 +360,10 @@ class TestPreprocessor:
 
         # get timeseries if single lat-lon point is seleted:
         subset_latlon = raw_field.isel(latitude=[0], longitude=[0])
-        trend = preprocessor.get_trend_timeseries(
-            subset_latlon, align_coords=True
-        )
+        trend = preprocessor.get_trend_timeseries(subset_latlon, align_coords=True)
         assert trend is not None
         assert trend.dims == subset_latlon.dims
-        assert trend.sst.shape == subset_latlon.sst.shape        
+        assert trend.sst.shape == subset_latlon.sst.shape
 
     @pytest.mark.parametrize(
         "preprocessor",
@@ -386,3 +384,27 @@ class TestPreprocessor:
         assert (
             trend.shape == raw_field.shape
         ), f"shape does not match \n {trend.shape} \n {raw_field.shape}"
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_climatology_timeseries(self, preprocessor, raw_field):
+        preprocessor.fit(raw_field)
+        climatology = preprocessor.get_climatology_timeseries(raw_field)
+        assert climatology is not None
+        assert climatology.dims == raw_field.dims
+        assert climatology.sst.shape == raw_field.sst.shape
+
+        # get timeseries if single lat-lon point is seleted:
+        subset_latlon = raw_field.isel(latitude=[0], longitude=[0])
+        climatology = preprocessor.get_climatology_timeseries(
+            subset_latlon, align_coords=True
+        )
+        assert climatology is not None
+        assert climatology.dims == subset_latlon.dims
+        assert climatology.sst.shape == subset_latlon.sst.shape

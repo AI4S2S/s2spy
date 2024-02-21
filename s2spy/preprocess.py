@@ -209,6 +209,11 @@ def _get_climatology(
     return climatology
 
 
+def climatology_to_timeseries(group, climatology):
+    """Convert climatology to timeseries."""
+    return climatology.sel(dayofyear=group.time.dt.dayofyear).drop_vars("dayofyear")
+
+
 def _subtract_climatology(
     data: Union[xr.Dataset, xr.DataArray],
     timescale: Literal["monthly", "weekly", "daily"],
@@ -421,7 +426,11 @@ class Preprocessor:
 
         Args:
             data (xr.DataArray or xr.Dataset): input data.
-            align_coords (bool): align coordinates to data.
+            align_coords (bool): Construction of trend timeseries only uses the time
+                coordinate. Hence, your input to-be-transformed-array might be a subset
+                of the original array, but it will still return the original coordinates
+                (as stored in the trendline). With align_coords=True, the trend
+                timeseries will be aligned to the data passed to this function.
         """
         if not self._is_fit:
             raise ValueError(
@@ -431,7 +440,7 @@ class Preprocessor:
         if self._detrend is None:
             raise ValueError("Detrending is set to `None`, so no trend is available")
         if align_coords:
-            trend = self.align_coords(data)
+            trend = self.align_trend_coords(data)
         else:
             trend = self.trend
         if self._detrend == "linear":
@@ -439,6 +448,33 @@ class Preprocessor:
         elif self._detrend == "polynomial":
             return _get_polytrend_timeseries(data, trend)
         raise ValueError(f"Unkown detrending method '{self._detrend}'")
+
+    def get_climatology_timeseries(self, data, align_coords: bool = False):
+        """Get the climatology timeseries from the data.
+
+        Args:
+            data (xr.DataArray or xr.Dataset): input data.
+            align_coords (bool): Construction of climatology timeseries only uses the time
+                coordinate. This aligns the coords to the data. See
+                `get_trend_timeseries` for more information.
+        """
+        if not self._is_fit:
+            raise ValueError(
+                "The preprocessor has to be fit to data before the trend"
+                " timeseries can be requested."
+            )
+        if not self._subtract_climatology:
+            raise ValueError(
+                "`subtract_climatology is set to `False`, so no climatology "
+                "data is available"
+            )
+        if align_coords:
+            climatology = xr.align(self.climatology, data)[0]
+        else:
+            climatology = self.climatology
+        return data.groupby("time.year").map(
+            lambda x: climatology_to_timeseries(x, climatology)
+        )
 
     @property
     def trend(self) -> dict:
@@ -467,7 +503,7 @@ class Preprocessor:
             )
         return self._climatology
 
-    def align_coords(self, data):
+    def align_trend_coords(self, data):
         """Align coordinates between data and trend.
 
         Args:
@@ -481,10 +517,7 @@ class Preprocessor:
             )[:2]
         elif self._detrend == "polynomial":
             align_trend = self.trend.copy()
-            align_trend["coefficients"] = xr.align(
-                align_trend["coefficients"], data
-            )[0]
+            align_trend["coefficients"] = xr.align(align_trend["coefficients"], data)[0]
         else:
             raise ValueError(f"Unkown detrending method '{self._detrend}'")
         return align_trend
-        
