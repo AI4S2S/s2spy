@@ -1,4 +1,5 @@
 """Tests for the s2spy.preprocess module."""
+
 import numpy as np
 import pytest
 import scipy.signal
@@ -100,11 +101,12 @@ class TestPreprocessor:
     """Test preprocessor."""
 
     @pytest.fixture
-    def preprocessor(self):
+    def preprocessor(self, request):
+        method = request.param[0]
         prep = preprocess.Preprocessor(
             rolling_window_size=25,
             timescale="daily",
-            detrend="linear",
+            detrend=method,
             subtract_climatology=True,
         )
         return prep
@@ -158,6 +160,16 @@ class TestPreprocessor:
         )
         assert isinstance(prep, Preprocessor)
 
+    # pytest.mark.parametrize("preprocessor", ["linear", "polynomial"])
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_fit(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         assert (
@@ -170,11 +182,27 @@ class TestPreprocessor:
             raw_field, timescale="daily"
         )
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_transform(self, preprocessor, raw_field):
         preprocessor.fit(raw_field)
         preprocessed_data = preprocessor.transform(raw_field)
         assert preprocessed_data is not None
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_transform_without_fit(self, preprocessor, raw_field):
         with pytest.raises(ValueError):
             preprocessor.transform(raw_field)
@@ -209,10 +237,51 @@ class TestPreprocessor:
 
         assert results == raw_field
 
-    def test_fit_transform(self, preprocessor, raw_field):
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_fit_transform_ds(self, preprocessor, raw_field):
         preprocessed_data = preprocessor.fit_transform(raw_field)
         assert preprocessed_data is not None
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_fit_transform_da(self, preprocessor, raw_field):
+
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
+        raw_field.name = "da_name"
+        years = np.unique(raw_field.time.dt.year.values)
+        train = raw_field.sel(time=raw_field.time.dt.year.isin([years[:-1]]))
+        tranform_to = raw_field.sel(time=raw_field.time.dt.year.isin([years[-2:]]))
+        fit_transformed = preprocessor.fit_transform(train)
+        transformed = preprocessor.transform(tranform_to)
+        assert fit_transformed is not None
+        assert bool(
+            (
+                fit_transformed.sel(time="2013-01-01")
+                == transformed.sel(time="2013-01-01")
+            ).all()
+        )
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_trend_property_not_fit(self, preprocessor):
         with pytest.raises(ValueError, match="The preprocessor has to be fit"):
             preprocessor.trend
@@ -222,6 +291,14 @@ class TestPreprocessor:
         with pytest.raises(ValueError, match="Detrending is set to `None`"):
             preprocessor_no_detrend.trend
 
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
     def test_climatology_property_not_fit(self, preprocessor):
         with pytest.raises(ValueError, match="The preprocessor has to be fit"):
             preprocessor.climatology
@@ -229,3 +306,105 @@ class TestPreprocessor:
     def test_trend_property_no_climatology(self, preprocessor_no_climatology):
         with pytest.raises(ValueError, match="subtract_climatology is set to `False`"):
             preprocessor_no_climatology.climatology
+
+    def test_trend_with_nan(self, raw_field):
+        prep = preprocess.Preprocessor(
+            rolling_window_size=1,
+            timescale="daily",
+            detrend="linear",
+            subtract_climatology=True,
+            nan_mask="complete",
+        )
+        single_doy = raw_field["sst"].sel(time=raw_field["sst"].time.dt.dayofyear == 1)
+        single_doy[:2, 0, 0] = np.nan  # [0,0] lat/lon NaN at timestep 0, 1
+        single_doy[2:, 1, 1] = np.nan  # [1:,1,1] lat/lon NaN at timestep 2:end
+
+        pp_field = prep.fit_transform(single_doy)
+        nans_in_pp_field = np.isnan(pp_field).sum("time")[0, 0]
+        assert int(nans_in_pp_field) == np.unique(pp_field.time.dt.year).size, (
+            "If any NaNs are present in the data, "
+            "the entire timeseries should have become completely NaN in the output."
+        )
+
+        prep = preprocess.Preprocessor(
+            rolling_window_size=1,
+            timescale="daily",
+            detrend="linear",
+            subtract_climatology=True,
+            nan_mask="individual",
+        )
+
+        pp_field = prep.fit_transform(single_doy)
+        assert (
+            np.isnan(pp_field).sum("time") == np.isnan(single_doy).sum("time")
+        ).all(), (
+            "If any NaNs are present in the data, "
+            "the pp will only ignore those NaNs, but still fit a trendline."
+            "Hence, the NaNs should remain the same in this case."
+        )
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_trendtimeseries_dataset(self, preprocessor, raw_field):
+        preprocessor.fit(raw_field)
+        trend = preprocessor.get_trend_timeseries(raw_field)
+        assert trend is not None
+        assert trend.dims == raw_field.dims
+        assert trend.sst.shape == raw_field.sst.shape
+
+        # get timeseries if single lat-lon point is seleted:
+        subset_latlon = raw_field.isel(latitude=[0], longitude=[0])
+        trend = preprocessor.get_trend_timeseries(subset_latlon, align_coords=True)
+        assert trend is not None
+        assert trend.dims == subset_latlon.dims
+        assert trend.sst.shape == subset_latlon.sst.shape
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_trendtimeseries_dataarray(self, preprocessor, raw_field):
+        raw_field = raw_field.to_array().squeeze("variable").drop_vars("variable")
+        preprocessor.fit(raw_field)
+        trend = preprocessor.get_trend_timeseries(raw_field)
+        assert trend is not None
+        assert (
+            trend.dims == raw_field.dims
+        ), f"dims do not match \n {trend.dims} \n {raw_field.dims}"
+        assert (
+            trend.shape == raw_field.shape
+        ), f"shape does not match \n {trend.shape} \n {raw_field.shape}"
+
+    @pytest.mark.parametrize(
+        "preprocessor",
+        [
+            ("linear",),
+            ("polynomial",),
+        ],
+        indirect=True,
+    )
+    def test_get_climatology_timeseries(self, preprocessor, raw_field):
+        preprocessor.fit(raw_field)
+        climatology = preprocessor.get_climatology_timeseries(raw_field)
+        assert climatology is not None
+        assert climatology.dims == raw_field.dims
+        assert climatology.sst.shape == raw_field.sst.shape
+
+        # get timeseries if single lat-lon point is seleted:
+        subset_latlon = raw_field.isel(latitude=[0], longitude=[0])
+        climatology = preprocessor.get_climatology_timeseries(
+            subset_latlon, align_coords=True
+        )
+        assert climatology is not None
+        assert climatology.dims == subset_latlon.dims
+        assert climatology.sst.shape == subset_latlon.sst.shape
