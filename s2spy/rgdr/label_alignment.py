@@ -1,4 +1,5 @@
 """Label alignment tools for RGDR clusters."""
+
 import itertools
 import string
 from copy import copy
