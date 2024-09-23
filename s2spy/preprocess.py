@@ -54,7 +54,7 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
         input_core_dims=[["time"], ["time"]],
         output_core_dims=[[], []],
         vectorize=True,
-        dask="allowed",
+        dask="parallelized",
         # dask_gufunc_kwargs={"allow_rechunk": True},  # Same as above
     )
 

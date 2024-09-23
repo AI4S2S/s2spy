@@ -22,13 +22,14 @@ class TestPreprocessMethods:
     @pytest.fixture
     def raw_field(self):
         data = xr.open_dataset(
-            f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc"
+            f"{TEST_FILE_PATH}/sst_daily_1979-2018_5deg_Pacific_175_240E_25_50N.nc", 
+            chunks="auto"
         ).sel(
             time=slice("2010-01-01", "2011-12-31"),
             latitude=slice(40, 30),
             longitude=slice(180, 190),
         )
-        return data.chunk({"time": data.time.size})
+        return data
 
     def test_check_input_data_incorrect_type(self):
         dummy_data = np.ones((3, 3))
