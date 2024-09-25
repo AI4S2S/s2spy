@@ -38,6 +38,12 @@ authors:
     given-names: Jannes
     affiliation: "Vrije Universiteit Amsterdam"
 
+    -
+    affiliation: "Netherlands eScience Center"
+    family-names: Donnelly
+    given-names: Claire
+    orcid: https://orcid.org/0000-0002-2546-4528
+
 date-released: 2022-09-02
 version: "0.4.0"
 repository-code: "https://github.com/AI4S2S/s2spy"
