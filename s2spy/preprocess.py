@@ -161,7 +161,7 @@ def _check_data_resolution_match(
         "daily": np.timedelta64(1, "D"),
     }
     time_intervals = np.diff(data["time"].to_numpy())
-    temporal_resolution = np.median(time_intervals).astype("timedelta64[D]")
+    temporal_resolution: np.timedelta64 = np.median(time_intervals).astype("timedelta64[D]")
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
         min_days, max_days = (28, 31)

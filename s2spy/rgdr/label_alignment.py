@@ -103,7 +103,7 @@ def _calculate_overlap(
     mask_a = xr.where(cluster_labels.sel(split=split_a) == cluster_a, 1, 0).values
     mask_b = xr.where(cluster_labels.sel(split=split_b) == cluster_b, 1, 0).values
 
-    return np.sum(np.logical_and(mask_a, mask_b)) / np.sum(mask_a)
+    return np.sum(np.logical_and(mask_a, mask_b)) / np.sum(mask_a) # type: ignore
 
 
 def calculate_overlap_table(cluster_labels: xr.DataArray) -> pd.DataFrame:
