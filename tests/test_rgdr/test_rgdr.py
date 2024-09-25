@@ -1,4 +1,5 @@
 """Tests for the s2s.rgdr module."""
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np

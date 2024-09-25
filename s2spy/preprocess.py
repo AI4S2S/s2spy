@@ -24,21 +24,6 @@ def _linregress(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     return slope, intercept
 
 
-# def _linregress(da: xr.DataArray) -> xr.Dataset:
-#     """Calculate the slope and intercept between two arrays using scipy's linregress.
-
-#     Used to make linregress more ufunc-friendly.
-
-#     Args:
-#         da: xr.DataArray
-
-#     Returns:
-#         slope, intercept
-#     """
-#     sst_polyfit_coef = da.polyfit(dim="time", deg=1, skipna=True)
-#     return sst_polyfit_coef
-
-
 def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
     """Calculate the linear trend over time.
 
@@ -56,7 +41,6 @@ def _trend_linear(data: Union[xr.DataArray, xr.Dataset]) -> dict:
         output_core_dims=[[], []],
         vectorize=True,
         dask="parallelized",
-        # dask_gufunc_kwargs={"allow_rechunk": True},  # Same as above
     )
 
     return {"slope": slope, "intercept": intercept}
@@ -161,7 +145,9 @@ def _check_data_resolution_match(
         "daily": np.timedelta64(1, "D"),
     }
     time_intervals = np.diff(data["time"].to_numpy())
-    temporal_resolution: np.timedelta64 = np.median(time_intervals).astype("timedelta64[D]")
+    temporal_resolution: np.timedelta64 = np.median(time_intervals).astype(
+        "timedelta64[D]"
+    )
     if timescale == "monthly":
         temporal_resolution = temporal_resolution.astype(int)
         min_days, max_days = (28, 31)
