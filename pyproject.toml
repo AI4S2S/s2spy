@@ -36,6 +36,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+    "dask",
     "lilio",
     "matplotlib",
     "netcdf4",
@@ -48,7 +49,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "dask",
     "bump2version",
     "hatch",
     "ruff",
