@@ -48,6 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "dask",
     "bump2version",
     "hatch",
     "ruff",
