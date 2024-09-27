@@ -11,7 +11,7 @@ license = "Apache-2.0"
 requires-python = ">3.8,<3.12"
 authors = [
   {email = "y.liu@esciencecenter.nl"},
-  {name = "Yang Liu, Bart Schilperoort, Peter Kalverla, Jannes van Ingen, Sem Vijverberg"}
+  {name = "Yang Liu, Bart Schilperoort, Peter Kalverla, Jannes van Ingen, Sem Vijverberg, Claire Donnelly"}
 ]
 maintainers = [
   {name = "Yang Liu", email = "y.liu@esciencecenter.nl"},
@@ -19,6 +19,7 @@ maintainers = [
   {name = "Peter Kalverla", email = "b.schilperoort@esciencecenter.nl"},
   {name = "Jannes van Ingen", email = "jannes.van.ingen@s2s-ai.com"},
   {name = "Sem Vijverberg", email = "sem.vijverberg@vu.nl"},
+  {name = "Claire Donnelly", email = "c.donnelly@esciencecenter.nl"},
 ]
 keywords = [
     "AI",
@@ -35,7 +36,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-    "dask",
     "lilio",
     "matplotlib",
     "netcdf4",
