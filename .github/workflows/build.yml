@@ -41,7 +41,7 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     name: Linting build
