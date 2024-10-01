@@ -8,8 +8,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7708338.svg)](https://doi.org/10.5281/zenodo.7708338)
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml)
-[![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
-[![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
+[![codecov](https://codecov.io/gh/AI4S2S/s2spy/graph/badge.svg?token=8HFAXHTTB1)](https://codecov.io/gh/AI4S2S/s2spy)
 
 A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
 
