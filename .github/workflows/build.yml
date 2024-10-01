@@ -37,8 +37,7 @@ jobs:
       - name: Verify that we can build the package
         run: hatch build
       - name: Test coverage
-        run: pytest --cov --cov-report=xml
-        shell: bash -l {0}
+        run: hatch run coverage
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
