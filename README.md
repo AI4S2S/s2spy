@@ -41,18 +41,7 @@ python3 -m pip install git+https://github.com/AI4S2S/s2spy.git
 ```
 
 ### Configure the package for development and testing
-The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code and install `s2spy` via the command:
-
-```py
-git clone https://github.com/AI4S2S/s2spy.git
-cd s2spy
-python3 -m pip install -e .
-```
-
-Then, run tests:
-```py
-python3 -m pytest
-```
+For developing and testing the package, please follow the developer guide, which can be found [here](https://github.com/AI4S2S/s2spy/blob/main/docs/README.dev.md).
 
 ## Getting started
 `s2spy` provides end-to-end solutions for machine learning (ML) based S2S forecasting.
