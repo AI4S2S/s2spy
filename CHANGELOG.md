@@ -6,10 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## Added
+## 0.4.1 (2024-10-02)
+### Added
 - Dask support ([#181] (https://github.com/AI4S2S/s2spy/pull/181))
 
-## Changed
+### Changed
+- Changed code coverage from SonarCloud to Codecov ([#183] (https://github.com/AI4S2S/s2spy/pull/183))
+- Update CONTRIBUTING.md and README.md to be consistent with README.dev.md ([#183] (https://github.com/AI4S2S/s2spy/pull/183))
 
 ## 0.4.0 (2023-09-13)
 

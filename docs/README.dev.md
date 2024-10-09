@@ -98,14 +98,14 @@ This section describes how to make a release in 3 parts: preparation, release an
 Make a release and tag on GitHub.com. This will:
 
  - trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.
- - start a GitHub action that builds and uploads the new version to [PyPI](https://pypi.org/project/lilio/).
-    - Which should trigger [conda-forge](https://anaconda.org/conda-forge/lilio) to update the package as well.
+ - start a GitHub action that builds and uploads the new version to [PyPI](https://pypi.org/project/s2spy/).
+    - Which should trigger [conda-forge](https://anaconda.org/conda-forge/s2spy) to update the package as well.
 
 
 ### Validation
 
 After making the release, you should check that:
 
-1. The [Zenodo page](https://doi.org/10.5281/zenodo.7620212) is updated
-1. The [publishing action](https://github.com/AI4S2S/lilio/actions/workflows/python-publish.yml) ran successfully, and that `pip install lilio` installs the new version.
-1. The [conda-forge package](https://anaconda.org/conda-forge/lilio) is updated, and can be installed using conda.
+1. The [Zenodo page](https://doi.org/10.5281/zenodo.7708337) is updated
+1. The [publishing action](https://github.com/AI4S2S/s2spy/actions/workflows/python-publish.yml) ran successfully, and that `pip install s2spy` installs the new version.
+1. The [conda-forge package](https://anaconda.org/conda-forge/s2spy) is updated, and can be installed using conda.

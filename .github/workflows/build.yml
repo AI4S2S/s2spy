@@ -36,6 +36,12 @@ jobs:
         run: hatch run test
       - name: Verify that we can build the package
         run: hatch build
+      - name: Test coverage
+        run: hatch run coverage
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     name: Linting build
@@ -58,3 +64,4 @@ jobs:
           python3 -m pip install --upgrade pip hatch
       - name: Check style against standards
         run: hatch run lint
+      

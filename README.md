@@ -8,8 +8,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7708338.svg)](https://doi.org/10.5281/zenodo.7708338)
 [![Documentation Status](https://readthedocs.org/projects/ai4s2s/badge/?version=latest)](https://ai4s2s.readthedocs.io/en/latest/?badge=latest)
 [![build](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/build.yml)
-[![sonarcloud](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/AI4S2S/s2spy/actions/workflows/sonarcloud.yml)
-[![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=AI4S2S_ai4s2s&metric=coverage)](https://sonarcloud.io/dashboard?id=AI4S2S_ai4s2s)
+[![codecov](https://codecov.io/gh/AI4S2S/s2spy/graph/badge.svg?token=8HFAXHTTB1)](https://codecov.io/gh/AI4S2S/s2spy)
 
 A high-level python package integrating expert knowledge and artificial intelligence to boost (sub) seasonal forecasting.
 
@@ -42,18 +41,7 @@ python3 -m pip install git+https://github.com/AI4S2S/s2spy.git
 ```
 
 ### Configure the package for development and testing
-The testing framework used here is [pytest](https://pytest.org). Before running the test, we get a local copy of the source code and install `s2spy` via the command:
-
-```py
-git clone https://github.com/AI4S2S/s2spy.git
-cd s2spy
-python3 -m pip install -e .
-```
-
-Then, run tests:
-```py
-python3 -m pytest
-```
+For developing and testing the package, please follow the developer guide, which can be found [here](https://github.com/AI4S2S/s2spy/blob/main/docs/README.dev.md).
 
 ## Getting started
 `s2spy` provides end-to-end solutions for machine learning (ML) based S2S forecasting.
