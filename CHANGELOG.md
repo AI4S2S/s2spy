@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## 0.4.1 (2024-10-02)
+## 0.4.1 (2024-10-09)
 ### Added
 - Dask support ([#181] (https://github.com/AI4S2S/s2spy/pull/181))
 
